@@ -229,10 +229,6 @@ public class RTMClient {
         RTMResourceCenter.close();
     }
 
-    public static void setPingInterval(int intervalInSeconds) {
-        RTMResourceCenter.setPingInterval(intervalInSeconds);
-    }
-
     //-----------------------------------------------------//
     //--                  Private APIs                   --//
     //-----------------------------------------------------//
@@ -251,10 +247,6 @@ public class RTMClient {
     //-----------------------------------------------------//
     //--          RTM Connect & close (Internal)         --//
     //-----------------------------------------------------//
-
-    private void startAndRegisterResourceCenter() {
-        RTMResourceCenter.instance().registerRTMClient(this);
-    }
     private void sendQuestInCache() {
 
         TreeSet<RTMQuestCachedPackage> swapCache;
@@ -353,7 +345,6 @@ public class RTMClient {
                     if (authCallback != null)
                         authCallback.authResult(true);
 
-                    startAndRegisterResourceCenter();
                     sendQuestInCache();
                 }
                 else {
@@ -401,8 +392,6 @@ public class RTMClient {
                 notifyAll();
             }
         }
-
-        RTMResourceCenter.instance().unregisterRTMClient(this);
 
         if (closedCallback != null) {
             closedCallback.RTMClosed(causedByError);
@@ -652,37 +641,6 @@ public class RTMClient {
     }
 
     //=============================[ Special APIs ]==============================//
-    //-----------------[ ping ]-----------------//
-
-    public void ping(DoneCallback callback, int timeoutInseconds) {
-
-        Quest quest = new Quest("ping");
-
-        AnswerCallback internalCallback = new FPNNDoneCallbackWrapper(callback);
-
-        sendQuest(quest, internalCallback, timeoutInseconds);
-    }
-
-    public void ping(DoneCallback callback) {
-        ping(callback, questTimeout);
-    }
-
-    public void ping(int timeoutInseconds) throws RTMException, InterruptedException {
-
-        Quest quest = new Quest("ping");
-
-        Answer answer = sendQuest(quest, timeoutInseconds);
-        if (answer.isErrorAnswer()) {
-            int errorCode = answer.getErrorCode();
-            String errorMessage = answer.getErrorMessage();
-            throw new RTMException(errorCode, errorMessage);
-        }
-    }
-
-    public void ping() throws RTMException, InterruptedException {
-        ping(questTimeout);
-    }
-
     //-----------------[ bye ]-----------------//
 
     public void bye(DoneCallback callback, int timeoutInseconds) {

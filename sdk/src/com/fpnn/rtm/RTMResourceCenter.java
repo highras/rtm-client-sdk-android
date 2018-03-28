@@ -14,7 +14,6 @@ class RTMResourceCenter extends Thread {
 
     private static volatile boolean created = false;
     private static volatile boolean stoppedCalled = true;
-    private static volatile int pingIntervalSeconds = 20;
     private static RTMResourceCenter instance = null;
 
     public static RTMResourceCenter instance() {
@@ -58,10 +57,6 @@ class RTMResourceCenter extends Thread {
         }
     }
 
-    public static void setPingInterval(int intervalInSeconds) {
-        pingIntervalSeconds = intervalInSeconds;
-    }
-
     //-------------------[ Instance Fields & Functions ]--------------------//
 
     private class FileGateInfo {
@@ -74,25 +69,13 @@ class RTMResourceCenter extends Thread {
         }
     }
 
-    private class RTMClientInfo {
-        long lastPingTime;
-        int refCount;
-
-        RTMClientInfo() {
-            lastPingTime = 0;
-            refCount = 1;
-        }
-    }
-
     private static final int fileGateKeptMilliseconds = 10 * 60 * 1000;     //-- 10 minutes;
     private HashMap<String, FileGateInfo> fileGateCache;
-    private HashMap<RTMClient, RTMClientInfo> rtmClients;
     private DuplicatedMseeageFilter midFilter;
     private volatile boolean running;
 
     private RTMResourceCenter() {
         fileGateCache = new HashMap<>();
-        rtmClients = new HashMap<>();
         midFilter = new DuplicatedMseeageFilter();
         running = true;
         setDaemon(true);
@@ -119,40 +102,11 @@ class RTMResourceCenter extends Thread {
         }
     }
 
-    public void registerRTMClient(RTMClient client) {
-        synchronized (this) {
-            RTMClientInfo info = rtmClients.get(client);
-            if (info == null) {
-                info = new RTMClientInfo();
-                info.refCount = 1;
-            }
-            else {
-                info.refCount += 1;
-            }
-            rtmClients.put(client, info);
-        }
-    }
-
-    public void unregisterRTMClient(RTMClient client) {
-        synchronized (this) {
-            RTMClientInfo info = rtmClients.get(client);
-            if (info != null) {
-                if (info.refCount == 1)
-                    rtmClients.remove(client);
-                else {
-                    info.refCount -= 1;
-                    rtmClients.put(client, info);
-                }
-            }
-        }
-    }
-
     @Override
     public void run() {
 
         while (running) {
             cleanFileGate();
-            RTMClientPing();
             midFilter.cleanExpiredCache();
             try {
                 sleep(1000);
@@ -182,26 +136,6 @@ class RTMResourceCenter extends Thread {
 
             for (String endpoint : expiredFileGate) {
                 fileGateCache.remove(endpoint);
-            }
-        }
-    }
-
-    private void RTMClientPing() {
-        long curr = System.currentTimeMillis();
-        long threshold = curr - pingIntervalSeconds * 1000;
-
-        synchronized (this) {
-
-            Iterator<Map.Entry<RTMClient, RTMClientInfo>> entries = rtmClients.entrySet().iterator();
-            while (entries.hasNext()) {
-                Map.Entry<RTMClient, RTMClientInfo> entry = entries.next();
-                RTMClientInfo info = entry.getValue();
-                if (info.lastPingTime <= threshold) {
-
-                    RTMClient client = entry.getKey();
-                    client.ping(null);
-                    info.lastPingTime = curr;
-                }
             }
         }
     }
