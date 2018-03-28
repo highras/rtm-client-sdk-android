@@ -4,8 +4,8 @@ import java.util.Set;
 
 public interface RTMEventHandlerInterface {
 
-    void bye();
     void kickout();
+    void roomKickout(long roomId);
 
     void recvP2PMessage(long fromUid, byte mType, byte fType, long mid, String message, String attrs);
     void recvGroupMessage(long groupId, long fromUid, byte mType, byte fType, long mid, String message, String attrs);

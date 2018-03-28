@@ -19,16 +19,26 @@ class RTMQuestProcessor {
         this.rtmGated = rtmGated;
     }
 
-    public Answer bye(Quest quest, InetSocketAddress peerAddress) {
-        processor.bye();
-        rtmGated.close();
-        return null;
-    }
-
     public Answer kickout(Quest quest, InetSocketAddress peerAddress) {
         processor.kickout();
         rtmGated.close();
         return null;
+    }
+
+    public Answer kickoutroom(Quest quest, InetSocketAddress peerAddress) {
+        try {
+            long roomId = (long)quest.want("rid");
+            processor.roomKickout(roomId);
+
+        } catch (NoSuchElementException | ClassCastException e) {
+            ErrorRecorder.record("Decode server pushed kickout room exception.", e);
+        }
+
+        return null;
+    }
+
+    public Answer ping(Quest quest, InetSocketAddress peerAddress) {
+        return new Answer(quest);
     }
 
     public Answer pushmsg(Quest quest, InetSocketAddress peerAddress) {
