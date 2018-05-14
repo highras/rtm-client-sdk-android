@@ -1,4 +1,4 @@
-# FPNN RTM ANDROID SDK #
+# FPNN RTM Android SDK #
 
 底层基于NIO实现, 支持FPNN加密.
 
