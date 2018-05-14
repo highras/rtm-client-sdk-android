@@ -16,6 +16,8 @@
     * 默认实现`Executors.newFixedThreadPool(FPConfig.MAX_THREAD_COUNT)`
     * 如需自己管理线程，实现该接口并注册线程池`ThreadPool.getInstance().setPool(IThreadPool value)`
 
+* 不要阻塞事件触发和回调, 否则线程池被耗尽
+
 #### 一个例子 ####
 
 ```java
