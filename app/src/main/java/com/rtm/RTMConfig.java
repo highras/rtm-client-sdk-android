@@ -1,0 +1,82 @@
+package com.rtm;
+
+public class RTMConfig {
+
+    public static final int MID_TTL = 5 * 1000;
+
+    public class SERVER_PUSH {
+
+        public static final String kickOut = "kickout";
+        public static final String kickOutRoom = "kickoutroom";
+        public static final String recvMessage = "pushmsg";
+        public static final String recvGroupMessage = "pushgroupmsg";
+        public static final String recvRoomMessage = "pushroommsg";
+        public static final String recvBroadcastMessage = "pushbroadcastmsg";
+        public static final String recvFile = "pushfile";
+        public static final String recvGroupFile = "pushgroupfile";
+        public static final String recvRoomFile = "pushroomfile";
+        public static final String recvBroadcastFile = "pushbroadcastfile";
+        public static final String recvTranslatedMessage = "transmsg";
+        public static final String recvTranslatedGroupMessage = "transgroupmsg";
+        public static final String recvTranslatedRoomMessage = "transroommsg";
+        public static final String recvTranslatedBroadcastMessage = "transbroadcastmsg";
+        public static final String recvUnreadMsgStatus = "pushunread";
+        public static final String recvPing = "ping";
+    }
+
+    public class SERVER_EVENT {
+
+        public static final String login = "login";
+        public static final String logout = "logout";
+    }
+
+    public class FILE_TYPE {
+
+        public static final int message = 0;
+        public static final int image = 10;
+        public static final int audio = 11;
+        public static final int video = 12;
+        public static final int file = 100;
+    }
+
+    public class ERROR_CODE {
+
+        public static final int RTM_EC_INVALID_PROJECT_ID_OR_USER_ID = 200001;
+        public static final int RTM_EC_INVALID_PROJECT_ID_OR_SIGN = 200002;
+        public static final int RTM_EC_INVALID_FILE_OR_SIGN_OR_TOKEN = 200003;
+        public static final int RTM_EC_ATTRS_WITHOUT_SIGN_OR_EXT = 200004;
+
+        public static final int RTM_EC_API_FREQUENCY_LIMITED = 200010;
+        public static final int RTM_EC_MESSAGE_FREQUENCY_LIMITED = 200011;
+
+        public static final int RTM_EC_FORBIDDEN_METHOD = 200020;
+        public static final int RTM_EC_PERMISSION_DENIED = 200021;
+        public static final int RTM_EC_UNAUTHORIZED = 200022;
+        public static final int RTM_EC_DUPLCATED_AUTH = 200023;
+        public static final int RTM_EC_AUTH_DENIED = 200024;
+        public static final int RTM_EC_ADMIN_LOGIN = 200025;
+        public static final int RTM_EC_ADMIN_ONLY = 200026;
+
+        public static final int RTM_EC_LARGE_MESSAGE_OR_ATTRS = 200030;
+        public static final int RTM_EC_LARGE_FILE_OR_ATTRS = 200031;
+        public static final int RTM_EC_TOO_MANY_ITEMS_IN_PARAMETERS = 200032;
+        public static final int RTM_EC_EMPTY_PARAMETER = 200033;
+
+        public static final int RTM_EC_NOT_IN_ROOM = 200040;
+        public static final int RTM_EC_NOT_GROUP_MEMBER = 200041;
+        public static final int RTM_EC_MAX_GROUP_MEMBER_COUNT = 200042;
+        public static final int RTM_EC_NOT_FRIEND = 200043;
+        public static final int RTM_EC_BANNED_IN_GROUP = 200044;
+        public static final int RTM_EC_BANNED_IN_ROOM = 200045;
+        public static final int RTM_EC_EMPTY_GROUP = 200046;
+        public static final int RTM_EC_ENTER_TOO_MANY_ROOMS = 200047;
+
+        public static final int RTM_EC_UNSUPPORTED_LANGUAGE = 200050;
+        public static final int RTM_EC_EMPTY_TRANSLATION = 200051;
+        public static final int RTM_EC_SEND_TO_SELF = 200052;
+        public static final int RTM_EC_DUPLCATED_MID = 200053;
+        public static final int RTM_EC_SENSITIVE_WORDS = 200054;
+
+        public static final int RTM_EC_UNKNOWN_ERROR = 200999;
+    }
+}
