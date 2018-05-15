@@ -1,5 +1,7 @@
 package com.rtm;
 
+import android.app.admin.SystemUpdateInfo;
+
 import com.fpnn.FPClient;
 import com.fpnn.FPData;
 import com.fpnn.FPProcessor;
@@ -106,6 +108,16 @@ public class RTMClient {
 
             this._rtmClient.sendQuest(data, this._rtmClient.questCallback(callback), timeout);
         }
+    }
+
+    public FPCallback sendQuest(FPData data, int timeout) throws InterruptedException {
+
+        if (this._rtmClient != null) {
+
+            return this._rtmClient.sendQuest(data, timeout);
+        }
+
+        return null;
     }
 
     /**
@@ -1496,6 +1508,65 @@ public class RTMClient {
         ops.put("file", fileBytes);
 
         this.fileSendProcess(ops, timeout, callback);
+    }
+
+    public void connect(String endpoint, int timeout) {
+
+        this._endpoint = endpoint;
+
+        if (this._rtmClient != null && this._rtmClient.isOpen()) {
+
+            this._rtmClient.close();
+            return;
+        }
+
+        this._rtmClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
+
+        final RTMClient self = this;
+        final int ftimeout = timeout;
+        FPEvent.IListener listener = new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(FPEvent event) {
+
+                switch (event.getType()) {
+                    case "connect":
+                        self._rtmClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
+
+                            @Override
+                            public void fpEvent(FPEvent event) {
+
+                                self._isClose = true;
+                            }
+                        });
+                        self.getEvent().fireEvent(new FPEvent(this, "connect"));
+                        break;
+                    case "close":
+                        self.getEvent().fireEvent(new FPEvent(this, "close"));
+                        self._rtmClient.getEvent().removeListener();
+                        self.reConnect();
+                        break;
+                    case "error":
+                        self.getEvent().fireEvent(new FPEvent(this, "error", event.getException()));
+                        break;
+                }
+            }
+        };
+
+        this._rtmClient.getEvent().addListener("connect", listener);
+        this._rtmClient.getEvent().addListener("close", listener);
+        this._rtmClient.getEvent().addListener("error", listener);
+
+        FPProcessor processor = this._rtmClient.getProcessor();
+        processor.setProcessor(new RTMProcessor(processor));
+
+        if (this._derKey != null && this._curve != null) {
+
+            this._rtmClient.enableEncryptorByData(this._curve, this._derKey, false, false);
+        } else {
+
+            this._rtmClient.enableConnect();
+        }
     }
 
     private void fileSendProcess(Map ops, int timeout, FPCallback.ICallback callback) {
