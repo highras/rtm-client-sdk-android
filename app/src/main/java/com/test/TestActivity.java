@@ -23,7 +23,7 @@ public class TestActivity extends AppCompatActivity {
 
         System.out.println(new String("Test with activity!"));
 
-        ThreadPool.getInstance().execute(new Runnable() {
+        new Thread(new Runnable() {
 
             @Override
             public void run() {
@@ -36,7 +36,7 @@ public class TestActivity extends AppCompatActivity {
                 // case 3
 //                singleClientConcurrentTest();
             }
-        });
+        }).start();
     }
 
     public void baseTest() {
