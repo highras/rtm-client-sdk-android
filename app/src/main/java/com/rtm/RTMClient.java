@@ -1729,6 +1729,7 @@ public class RTMClient {
                             public void fpEvent(FPEvent event) {
 
                                 self._isClose = true;
+                                self._rtmClient.close();
                             }
                         });
                         self.auth(ftimeout);
