@@ -1,14 +1,13 @@
 package com.rtm;
 
-import android.app.admin.SystemUpdateInfo;
-
 import com.fpnn.FPClient;
 import com.fpnn.FPData;
 import com.fpnn.FPProcessor;
+import com.fpnn.callback.CallbackData;
 import com.fpnn.callback.FPCallback;
 import com.fpnn.encryptor.FPEncryptor;
+import com.fpnn.event.EventData;
 import com.fpnn.event.FPEvent;
-import com.fpnn.event.FPEventManager;
 import com.fpnn.nio.ThreadPool;
 import com.rtm.json.JsonHelper;
 import com.rtm.msgpack.PayloadPacker;
@@ -39,9 +38,9 @@ public class RTMClient {
         }
     }
 
-    private FPEventManager _event = new FPEventManager();
+    private FPEvent _event = new FPEvent();
 
-    public FPEventManager getEvent() {
+    public FPEvent getEvent() {
 
         return this._event;
     }
@@ -110,7 +109,7 @@ public class RTMClient {
         }
     }
 
-    public FPCallback sendQuest(FPData data, int timeout) throws InterruptedException {
+    public CallbackData sendQuest(FPData data, int timeout) throws InterruptedException {
 
         if (this._rtmClient != null) {
 
@@ -154,9 +153,9 @@ public class RTMClient {
         this._dispatchClient.which(payload, this._timeout, this._dispatchClient.questCallback(new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
@@ -377,7 +376,7 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
                 self._rtmClient.close();
             }
@@ -516,22 +515,22 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
                 if (cb == null) {
 
                     return;
                 }
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
                     List uids = (List<Long>) payload.get("uids");
-                    cb.callback(new FPCallback(uids));
+                    cb.callback(new CallbackData(uids));
                     return;
                 }
 
-                cb.callback(fpcb);
+                cb.callback(cbd);
             }
         }, timeout);
     }
@@ -641,22 +640,22 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
                 if (cb == null) {
 
                     return;
                 }
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
                     List<Long> uids = (List<Long>) payload.get("uids");
-                    cb.callback(new FPCallback(uids));
+                    cb.callback(new CallbackData(uids));
                     return;
                 }
 
-                cb.callback(fpcb);
+                cb.callback(cbd);
             }
         }, timeout);
     }
@@ -693,22 +692,22 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
                 if (cb == null) {
 
                     return;
                 }
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
                     List<Long> gids = (List<Long>) payload.get("gids");
-                    cb.callback(new FPCallback(gids));
+                    cb.callback(new CallbackData(gids));
                     return;
                 }
 
-                cb.callback(fpcb);
+                cb.callback(cbd);
             }
         }, timeout);
     }
@@ -811,22 +810,22 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
                 if (cb == null) {
 
                     return;
                 }
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
                     List<Long> rids = (List<Long>) payload.get("rooms");
-                    cb.callback(new FPCallback(rids));
+                    cb.callback(new CallbackData(rids));
                     return;
                 }
 
-                cb.callback(fpcb);
+                cb.callback(cbd);
             }
         }, timeout);
     }
@@ -866,22 +865,22 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
                 if (cb == null) {
 
                     return;
                 }
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
                     List<Long> uids = (List<Long>) payload.get("uids");
-                    cb.callback(new FPCallback(uids));
+                    cb.callback(new CallbackData(uids));
                     return;
                 }
 
-                cb.callback(fpcb);
+                cb.callback(cbd);
             }
         }, timeout);
     }
@@ -1386,22 +1385,22 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
                 if (cb == null) {
 
                     return;
                 }
 
-                Map payload = (Map) fpcb.getPayload();
+                Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
 
                     List<ArrayList> geos = (List<ArrayList>) payload.get("geos");
-                    cb.callback(new FPCallback(geos));
+                    cb.callback(new CallbackData(geos));
                     return;
                 }
 
-                cb.callback(fpcb);
+                cb.callback(cbd);
             }
         }, timeout);
     }
@@ -1418,7 +1417,7 @@ public class RTMClient {
 
         if (fileBytes == null || fileBytes.length <= 0) {
 
-            this.getEvent().fireEvent(new FPEvent(this, "error", new Exception("empty file bytes!")));
+            this.getEvent().fireEvent(new EventData(this, "error", new Exception("empty file bytes!")));
             return;
         }
 
@@ -1444,7 +1443,7 @@ public class RTMClient {
 
         if (fileBytes == null || fileBytes.length <= 0) {
 
-            this.getEvent().fireEvent(new FPEvent(this, "error", new Exception("empty file bytes!")));
+            this.getEvent().fireEvent(new EventData(this, "error", new Exception("empty file bytes!")));
             return;
         }
 
@@ -1470,7 +1469,7 @@ public class RTMClient {
 
         if (fileBytes == null || fileBytes.length <= 0) {
 
-            this.getEvent().fireEvent(new FPEvent(this, "error", new Exception("empty file bytes!")));
+            this.getEvent().fireEvent(new EventData(this, "error", new Exception("empty file bytes!")));
             return;
         }
 
@@ -1496,7 +1495,7 @@ public class RTMClient {
 
         if (fileBytes == null || fileBytes.length <= 0) {
 
-            this.getEvent().fireEvent(new FPEvent(this, "error", new Exception("empty file bytes!")));
+            this.getEvent().fireEvent(new EventData(this, "error", new Exception("empty file bytes!")));
             return;
         }
 
@@ -1527,27 +1526,27 @@ public class RTMClient {
         FPEvent.IListener listener = new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
 
                 switch (event.getType()) {
                     case "connect":
                         self._rtmClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
 
                             @Override
-                            public void fpEvent(FPEvent event) {
+                            public void fpEvent(EventData event) {
 
                                 self._isClose = true;
                             }
                         });
-                        self.getEvent().fireEvent(new FPEvent(this, "connect"));
+                        self.getEvent().fireEvent(new EventData(this, "connect"));
                         break;
                     case "close":
-                        self.getEvent().fireEvent(new FPEvent(this, "close"));
+                        self.getEvent().fireEvent(new EventData(this, "close"));
                         self._rtmClient.getEvent().removeListener();
                         self.reConnect();
                         break;
                     case "error":
-                        self.getEvent().fireEvent(new FPEvent(this, "error", event.getException()));
+                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
                         break;
                 }
             }
@@ -1603,17 +1602,17 @@ public class RTMClient {
         this.filetoken(payload, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Exception exception = fpcb.getException();
+                Exception exception = cbd.getException();
 
                 if (exception != null) {
 
-                    self.getEvent().fireEvent(new FPEvent(self, "error", exception));
+                    self.getEvent().fireEvent(new EventData(self, "error", exception));
                     return;
                 }
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -1624,7 +1623,7 @@ public class RTMClient {
 
                     if (token.isEmpty() || endpoint.isEmpty()) {
 
-                        self.getEvent().fireEvent(new FPEvent(self, "error", new Exception(obj.toString())));
+                        self.getEvent().fireEvent(new EventData(self, "error", new Exception(obj.toString())));
                         return;
                     }
 
@@ -1719,14 +1718,14 @@ public class RTMClient {
         FPEvent.IListener listener = new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
 
                 switch (event.getType()) {
                     case "connect":
                         self._rtmClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
 
                             @Override
-                            public void fpEvent(FPEvent event) {
+                            public void fpEvent(EventData event) {
 
                                 self._isClose = true;
                                 self._rtmClient.close();
@@ -1735,12 +1734,12 @@ public class RTMClient {
                         self.auth(ftimeout);
                         break;
                     case "close":
-                        self.getEvent().fireEvent(new FPEvent(this, "close"));
+                        self.getEvent().fireEvent(new EventData(this, "close"));
                         self._rtmClient.getEvent().removeListener();
                         self.reConnect();
                         break;
                     case "error":
-                        self.getEvent().fireEvent(new FPEvent(this, "error", event.getException()));
+                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
                         break;
                 }
             }
@@ -1795,9 +1794,9 @@ public class RTMClient {
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Exception exception = fpcb.getException();
+                Exception exception = cbd.getException();
 
                 if (exception != null) {
 
@@ -1805,7 +1804,7 @@ public class RTMClient {
                     return;
                 }
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -1814,7 +1813,7 @@ public class RTMClient {
 
                     if (ok) {
 
-                        self.getEvent().fireEvent(new FPEvent(this, "login", self._endpoint));
+                        self.getEvent().fireEvent(new EventData(this, "login", self._endpoint));
                         return;
                     }
 
@@ -1829,12 +1828,12 @@ public class RTMClient {
 
                     if (!ok) {
 
-                        self.getEvent().fireEvent(new FPEvent(this, "login", new Exception("token error!")));
+                        self.getEvent().fireEvent(new EventData(this, "login", new Exception("token error!")));
                         return;
                     }
                 }
 
-                self.getEvent().fireEvent(new FPEvent(this, "error", new Exception(obj.toString())));
+                self.getEvent().fireEvent(new EventData(this, "error", new Exception(obj.toString())));
             }
         }, timeout);
     }
@@ -1861,7 +1860,7 @@ class DispatchClient extends BaseClient {
         FPEvent.IListener listener = new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
 
                 switch (event.getType()) {
                     case "connect":
@@ -1947,7 +1946,7 @@ class FileClient extends BaseClient {
         FPEvent.IListener listener = new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
                 switch (event.getType()) {
                     case "connect":
                         self.onConnect();
@@ -1974,7 +1973,7 @@ class FileClient extends BaseClient {
 
         if (sign.isEmpty()) {
 
-            this.getEvent().fireEvent(new FPEvent(this, "error", new Exception("wrong sign!")));
+            this.getEvent().fireEvent(new EventData(this, "error", new Exception("wrong sign!")));
             return;
         }
 
@@ -2162,10 +2161,10 @@ class BaseClient extends FPClient {
         return sb.toString();
     }
 
-    private void checkFPCallback(FPCallback fpcb) {
+    private void checkFPCallback(CallbackData cbd) {
 
         Map payload = null;
-        FPData data = fpcb.getData();
+        FPData data = cbd.getData();
 
         if (data != null) {
 
@@ -2189,7 +2188,7 @@ class BaseClient extends FPClient {
             }
         }
 
-        fpcb.checkException(payload);
+        cbd.checkException(payload);
     }
 
     public FPCallback.ICallback questCallback(FPCallback.ICallback callback) {
@@ -2200,15 +2199,15 @@ class BaseClient extends FPClient {
         return new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
                 if (cb == null) {
 
                     return;
                 }
 
-                self.checkFPCallback(fpcb);
-                cb.callback(fpcb);
+                self.checkFPCallback(cbd);
+                cb.callback(cbd);
             }
         };
     }

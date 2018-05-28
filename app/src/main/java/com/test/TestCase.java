@@ -1,6 +1,8 @@
 package com.test;
 
+import com.fpnn.callback.CallbackData;
 import com.fpnn.callback.FPCallback;
+import com.fpnn.event.EventData;
 import com.fpnn.event.FPEvent;
 import com.rtm.RTMClient;
 import com.rtm.RTMConfig;
@@ -34,7 +36,7 @@ public class TestCase {
         FPEvent.IListener listener = new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
 
                 switch (event.getType()) {
                     case "login":
@@ -76,7 +78,7 @@ public class TestCase {
         this._client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
 
                 System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
                 System.out.println(event.getPayload().toString());
@@ -124,9 +126,9 @@ public class TestCase {
         this._client.sendMessage(to, (byte) 8, "hello !", "", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -136,7 +138,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] sendMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -146,9 +148,9 @@ public class TestCase {
         this._client.sendMessages(tos, (byte) 8, "hello !", "", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -158,7 +160,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] sendMessages:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -168,9 +170,9 @@ public class TestCase {
         this._client.sendGroupMessage(gid, (byte) 8, "hello !", "", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -180,7 +182,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] sendGroupMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -190,9 +192,9 @@ public class TestCase {
         this._client.sendRoomMessage(rid, (byte) 8, "hello !", "", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -202,7 +204,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] sendRoomMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -212,9 +214,9 @@ public class TestCase {
         this._client.addVariables(dict, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -224,7 +226,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] addVariables:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -234,9 +236,9 @@ public class TestCase {
         this._client.addFriends(friends, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -246,7 +248,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] addFriends:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -256,9 +258,9 @@ public class TestCase {
         this._client.deleteFriends(friends, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -268,7 +270,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] deleteFriends:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -278,9 +280,9 @@ public class TestCase {
         this._client.getFriends(timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -290,7 +292,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getFriends:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -300,9 +302,9 @@ public class TestCase {
         this._client.addGroupMembers(gid, tos, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -312,7 +314,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] addGroupMembers:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -322,9 +324,9 @@ public class TestCase {
         this._client.deleteGroupMembers(rid, tos, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -334,7 +336,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] deleteGroupMembers:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -344,9 +346,9 @@ public class TestCase {
         this._client.getGroupMembers(gid, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -356,7 +358,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getGroupMembers:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -366,9 +368,9 @@ public class TestCase {
         this._client.getUserGroups(timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -378,7 +380,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getUserGroups:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -388,9 +390,9 @@ public class TestCase {
         this._client.enterRoom(rid, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -400,7 +402,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] enterRoom:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -410,9 +412,9 @@ public class TestCase {
         this._client.leaveRoom(rid, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -422,7 +424,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] leaveRoom:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -432,9 +434,9 @@ public class TestCase {
         this._client.getUserRooms(timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -444,7 +446,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getUserRooms:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -454,9 +456,9 @@ public class TestCase {
         this._client.getOnlineUsers(tos, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -466,7 +468,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getOnlineUsers:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -476,9 +478,9 @@ public class TestCase {
         this._client.checkUnreadMessage(timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -488,7 +490,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] checkUnreadMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -498,9 +500,9 @@ public class TestCase {
         this._client.getGroupMessage(gid, 10, false, 0, 0, 0, null, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -510,7 +512,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getGroupMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -520,9 +522,9 @@ public class TestCase {
         this._client.getRoomMessage(rid, 10, false, 0, 0, 0, null, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -532,7 +534,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getRoomMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -542,9 +544,9 @@ public class TestCase {
         this._client.getBroadcastMessage(10, false, 0, 0, 0, null, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -554,7 +556,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getBroadcastMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -564,9 +566,9 @@ public class TestCase {
         this._client.getP2PMessage(to, 10, 0, false, 0, 0, 0, null, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -576,7 +578,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getP2PMessage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -586,9 +588,9 @@ public class TestCase {
         this._client.addDevice("app-info", "device-token", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -598,7 +600,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] addDevice:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -608,9 +610,9 @@ public class TestCase {
         this._client.removeDevice("device-token", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -620,7 +622,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] removeDevice:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -630,9 +632,9 @@ public class TestCase {
         this._client.setTranslationLanguage("en", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -642,7 +644,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] setTranslationLanguage:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -652,9 +654,9 @@ public class TestCase {
         this._client.translate("你好!", null, "en", timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -664,7 +666,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] translate:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -674,9 +676,9 @@ public class TestCase {
         this._client.setGeo(lat, lng, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -686,7 +688,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] setGeo:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -696,9 +698,9 @@ public class TestCase {
         this._client.getGeo(timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -708,7 +710,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getGeo:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -718,9 +720,9 @@ public class TestCase {
         this._client.getGeos(tos, timeout, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -730,7 +732,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] getGeos:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });
@@ -740,9 +742,9 @@ public class TestCase {
         this._client.sendFile((byte) 8, to, this._fileBytes, 20 * 1000, new FPCallback.ICallback() {
 
             @Override
-            public void callback(FPCallback fpcb) {
+            public void callback(CallbackData cbd) {
 
-                Object obj = fpcb.getPayload();
+                Object obj = cbd.getPayload();
 
                 if (obj != null) {
 
@@ -752,7 +754,7 @@ public class TestCase {
                 } else {
 
                     System.err.println("\n[ERR] sendFile:");
-                    System.err.println(fpcb.getException().getMessage());
+                    System.err.println(cbd.getException().getMessage());
                 }
             }
         });

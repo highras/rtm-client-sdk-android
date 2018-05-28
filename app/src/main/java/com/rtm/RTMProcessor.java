@@ -3,6 +3,7 @@ package com.rtm;
 import com.fpnn.FPClient;
 import com.fpnn.FPData;
 import com.fpnn.FPProcessor;
+import com.fpnn.event.EventData;
 import com.fpnn.event.FPEvent;
 import com.fpnn.nio.NIOCore;
 import com.rtm.json.JsonHelper;
@@ -110,7 +111,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
                     this.ping(payload);
                     break;
                 default:
-                    this._fppr.getEvent().fireEvent(new FPEvent(this, data.getMethod(), payload));
+                    this._fppr.getEvent().fireEvent(new EventData(this, data.getMethod(), payload));
                     break;
             }
         }
@@ -121,7 +122,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      */
     private void kickout(Map data) {
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.kickOut, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.kickOut, data));
     }
 
     /**
@@ -129,7 +130,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      */
     private void kickoutroom(Map data) {
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.kickOutRoom, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.kickOutRoom, data));
     }
 
     /**
@@ -154,12 +155,12 @@ public class RTMProcessor implements FPProcessor.IProcessor {
 
         if ((byte) data.get("ftype") > 0) {
 
-            this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvFile, data));
+            this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvFile, data));
             return;
         }
 
         data.remove("ftype");
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvMessage, data));
     }
 
     /**
@@ -184,12 +185,12 @@ public class RTMProcessor implements FPProcessor.IProcessor {
 
         if ((byte) data.get("ftype") > 0) {
 
-            this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvGroupFile, data));
+            this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvGroupFile, data));
             return;
         }
 
         data.remove("ftype");
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvGroupMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvGroupMessage, data));
     }
 
     /**
@@ -214,12 +215,12 @@ public class RTMProcessor implements FPProcessor.IProcessor {
 
         if ((byte) data.get("ftype") > 0) {
 
-            this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvRoomFile, data));
+            this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvRoomFile, data));
             return;
         }
 
         data.remove("ftype");
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvRoomMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvRoomMessage, data));
     }
 
     /**
@@ -242,12 +243,12 @@ public class RTMProcessor implements FPProcessor.IProcessor {
 
         if ((byte) data.get("ftype") > 0) {
 
-            this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvBroadcastFile, data));
+            this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvBroadcastFile, data));
             return;
         }
 
         data.remove("ftype");
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvBroadcastMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvBroadcastMessage, data));
     }
 
     /**
@@ -266,7 +267,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvTranslatedMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedMessage, data));
     }
 
     /**
@@ -286,7 +287,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvTranslatedGroupMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedGroupMessage, data));
     }
 
     /**
@@ -306,7 +307,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvTranslatedRoomMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedRoomMessage, data));
     }
 
     /**
@@ -325,7 +326,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvTranslatedBroadcastMessage, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedBroadcastMessage, data));
     }
 
     /**
@@ -335,7 +336,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      */
     private void pushunread(Map data) {
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvUnreadMsgStatus, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvUnreadMsgStatus, data));
     }
 
     /**
@@ -343,7 +344,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      */
     private void ping(Map data) {
 
-        this._fppr.getEvent().fireEvent(new FPEvent(this, RTMConfig.SERVER_PUSH.recvPing, data));
+        this._fppr.getEvent().fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvPing, data));
     }
 
     @Override

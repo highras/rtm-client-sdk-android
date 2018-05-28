@@ -1,6 +1,7 @@
 package com.test;
 
 import com.fpnn.FPData;
+import com.fpnn.callback.CallbackData;
 import com.fpnn.callback.FPCallback;
 import com.rtm.RTMClient;
 import com.rtm.msgpack.PayloadPacker;
@@ -159,7 +160,7 @@ public class TestHolder {
                         case 0: {
 
                             System.out.print('*');
-                            FPCallback answer = client.sendQuest(buildStandardTestQuest(), 5 * 1000);
+                            CallbackData answer = client.sendQuest(buildStandardTestQuest(), 5 * 1000);
                             if (answer != null) {
                                 if (answer.getException() == null)
                                     System.out.print('^');
@@ -176,10 +177,10 @@ public class TestHolder {
                             System.out.print('&');
                             client.sendQuest(buildStandardTestQuest(), new FPCallback.ICallback() {
                                 @Override
-                                public void callback(FPCallback fpcb) {
-                                    if (fpcb.getException() == null) {
+                                public void callback(CallbackData cbd) {
+                                    if (cbd.getException() == null) {
                                         System.out.print('@');
-                                    }else{
+                                    } else {
                                         System.out.print(';');
                                     }
                                 }

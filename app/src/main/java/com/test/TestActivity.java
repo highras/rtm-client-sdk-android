@@ -1,10 +1,10 @@
 package com.test;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
+import com.fpnn.event.EventData;
 import com.fpnn.event.FPEvent;
-import com.fpnn.nio.ThreadPool;
 import com.rtm.R;
 import com.rtm.RTMClient;
 
@@ -91,7 +91,7 @@ public class TestActivity extends AppCompatActivity {
         FPEvent.IListener listener = new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(FPEvent event) {
+            public void fpEvent(EventData event) {
 
                 switch (event.getType()) {
                     case "connect":

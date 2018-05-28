@@ -69,15 +69,15 @@ FPEvent.IListener listener = new FPEvent.IListener() {
                 // 发送消息
                 client.sendMessage(778899, (byte) 8, "hello !", "", 5 * 1000, new FPCallback.ICallback() {
                     @Override
-                    public void callback(FPCallback fpcb) {
-                        Object obj = fpcb.getPayload();
+                    public void callback(CallbackData cbd) {
+                        Object obj = cbd.getPayload();
                         if (obj != null) {
                             Map payload = (Map) obj;
                             System.out.println("\n[DATA] sendMessage:");
                             System.out.println(payload.toString());
                         } else {
                             System.err.println("\n[ERR] sendMessage:");
-                            System.err.println(fpcb.getException().getMessage());
+                            System.err.println(cbd.getException().getMessage());
                         }
                     }
                 });
