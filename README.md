@@ -40,9 +40,6 @@ client.getEvent().addListener("login", listener);
 client.getEvent().addListener("close", listener);
 client.getEvent().addListener("error", listener);
 
-// 开启连接
-client.login(null, false);
-
 FPEvent.IListener listener = new FPEvent.IListener() {
 
     @Override
@@ -91,6 +88,9 @@ FPEvent.IListener listener = new FPEvent.IListener() {
         }
     }
 };
+
+// 开启连接
+client.login(null, false);
 ```
 
 #### 测试 ####

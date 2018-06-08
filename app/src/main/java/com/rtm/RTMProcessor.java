@@ -1,10 +1,8 @@
 package com.rtm;
 
-import com.fpnn.FPClient;
 import com.fpnn.FPData;
 import com.fpnn.FPProcessor;
 import com.fpnn.event.EventData;
-import com.fpnn.event.FPEvent;
 import com.fpnn.nio.NIOCore;
 import com.rtm.json.JsonHelper;
 import com.rtm.msgpack.PayloadPacker;
@@ -28,7 +26,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
     }
 
     @Override
-    public void service(FPData data, FPClient.IAnswer answer) {
+    public void service(FPData data, FPProcessor.IAnswer answer) {
 
         Map payload = null;
 
