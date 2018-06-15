@@ -1556,8 +1556,7 @@ public class RTMClient {
         this._rtmClient.getEvent().addListener("close", listener);
         this._rtmClient.getEvent().addListener("error", listener);
 
-        FPProcessor processor = this._rtmClient.getProcessor();
-        processor.setProcessor(new RTMProcessor(processor));
+        this._rtmClient.getProcessor().setProcessor(new RTMProcessor());
 
         if (this._derKey != null && this._curve != null) {
 
@@ -1749,8 +1748,7 @@ public class RTMClient {
         this._rtmClient.getEvent().addListener("close", listener);
         this._rtmClient.getEvent().addListener("error", listener);
 
-        FPProcessor processor = this._rtmClient.getProcessor();
-        processor.setProcessor(new RTMProcessor(processor));
+        this._rtmClient.getProcessor().setProcessor(new RTMProcessor());
 
         if (this._derKey != null && this._curve != null) {
 
