@@ -21,10 +21,10 @@ public class TestCase {
     public TestCase(byte[] derKey, byte[] fileBytes) {
 
         this._client = new RTMClient(
-                "highras-rtm-rtmgated.ifunplus.cn:13325",
-                1017,
+                "35.167.185.139:13325",
+                1000012,
                 654321,
-                "69D963B0978348179BC1B90422AF10DB",
+                "5C65CD872903AAB37211EC468B4A1364",
                 null,
                 false,
                 true,
@@ -47,7 +47,7 @@ public class TestCase {
                         self.onLogin(event.getPayload());
                         break;
                     case "close":
-                        self.onClose();
+                        self.onClose(event.hasRetry());
                         break;
                     case "error":
                         self.onError(event.getException());
@@ -763,9 +763,9 @@ public class TestCase {
         System.out.println("\ntest end! ".concat(String.valueOf(this._sleepCount - 1)));
     }
 
-    private void onClose() {
+    private void onClose(boolean retry) {
 
-        System.out.println(new String("Closed!"));
+        System.out.println(new String("Closed! retry: " + retry));
     }
 
     private void onError(Exception ex) {

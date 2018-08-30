@@ -24,10 +24,10 @@
 
 // 创建Client
 RTMClient client = new RTMClient(
-    "highras-rtm-rtmgated.ifunplus.cn:13325",
-    1017,
+    "rtm-nx-front.ifunplus.cn:13325",
+    1000012,
     654321,
-    "69D963B0978348179BC1B90422AF10DB",
+    "5C65CD872903AAB37211EC468B4A1364",
     null,
     false,
     true,
@@ -80,7 +80,7 @@ FPEvent.IListener listener = new FPEvent.IListener() {
                 });
                 break;
             case "close":
-                System.out.println("Closed!");
+                System.out.println("Closed! retry:" + event.hasRetry());
                 break;
             case "error":
                 event.getException().printStackTrace();
@@ -116,7 +116,9 @@ baseTest();
         * `exception`: **(Exception)** auth失败, token失效需重新获取
         * `payload`: **(Map)** 当前连接的RTMGate地址, 可在本地缓存, 下次登陆可使用该地址以加速登陆过程, **每次登陆成功需更新本地缓存**
     * `error`: 发生异常
+        * `exception`: **(Exception)**
     * `close`: 连接关闭
+        * `retry`: **(boolean)** 是否自动重连
 
 #### PushService ####
 
@@ -398,6 +400,14 @@ baseTest();
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
+            * `payload.id` **(long)**
+            * `payload.from` **(long)**
+            * `payload.mtype` **(int)**
+            * `payload.ftype` **(int)**
+            * `payload.mid` **(long)**
+            * `payload.msg` **(String)**
+            * `payload.attrs` **(String)**
+            * `payload.mtime` **(int)**
 
 * `getRoomMessage(long rid, int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback)`: 获取Room历史消息
     * `rid`: **(long)** Room id
@@ -411,6 +421,14 @@ baseTest();
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
+            * `payload.id` **(long)**
+            * `payload.from` **(long)**
+            * `payload.mtype` **(int)**
+            * `payload.ftype` **(int)**
+            * `payload.mid` **(long)**
+            * `payload.msg` **(String)**
+            * `payload.attrs` **(String)**
+            * `payload.mtime` **(int)**
 
 * `getBroadcastMessage(int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback)`: 获取广播历史消息
     * `num`: **(int)** 获取数量, **一次最多获取10条**
@@ -423,6 +441,14 @@ baseTest();
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
+            * `payload.id` **(long)**
+            * `payload.from` **(long)**
+            * `payload.mtype` **(int)**
+            * `payload.ftype` **(int)**
+            * `payload.mid` **(long)**
+            * `payload.msg` **(String)**
+            * `payload.attrs` **(String)**
+            * `payload.mtime` **(int)**
 
 * `getP2PMessage(long peeruid, int num, int direction, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback)`: 获取P2P历史消息
     * `peeruid`: **(long)** 发送者 id
@@ -437,6 +463,14 @@ baseTest();
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
+            * `payload.id` **(long)**
+            * `payload.direction` **(int)**
+            * `payload.mtype` **(int)**
+            * `payload.ftype` **(int)**
+            * `payload.mid` **(long)**
+            * `payload.msg` **(String)**
+            * `payload.attrs` **(String)**
+            * `payload.mtime` **(int)**
 
 * `addDevice(String apptype, String devicetoken, int timeout, FPCallback.ICallback callback)`: 添加设备, 应用信息
     * `apptype`: **(String)** 应用信息

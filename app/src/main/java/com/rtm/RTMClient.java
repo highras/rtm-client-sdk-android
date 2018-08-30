@@ -1541,7 +1541,7 @@ public class RTMClient {
                         self.getEvent().fireEvent(new EventData(this, "connect"));
                         break;
                     case "close":
-                        self.getEvent().fireEvent(new EventData(this, "close"));
+                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
                         self._rtmClient.getEvent().removeListener();
                         self.reConnect();
                         break;
@@ -1733,7 +1733,7 @@ public class RTMClient {
                         self.auth(ftimeout);
                         break;
                     case "close":
-                        self.getEvent().fireEvent(new EventData(this, "close"));
+                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
                         self._rtmClient.getEvent().removeListener();
                         self.reConnect();
                         break;

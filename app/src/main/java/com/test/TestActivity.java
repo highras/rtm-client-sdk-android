@@ -28,10 +28,10 @@ public class TestActivity extends AppCompatActivity {
             @Override
             public void run() {
                 // case 1
-//                baseTest();
+                baseTest();
 
                 // case 2
-                asyncStressTest();
+//                asyncStressTest();
 
                 // case 3
 //                singleClientConcurrentTest();
@@ -77,10 +77,10 @@ public class TestActivity extends AppCompatActivity {
         String endpoint = "35.167.185.139:13013";
 
         RTMClient client = new RTMClient(
-                "highras-rtm-rtmgated.ifunplus.cn:13325",
-                1017,
+                "35.167.185.139:13325",
+                1000012,
                 654321,
-                "69D963B0978348179BC1B90422AF10DB",
+                "5C65CD872903AAB37211EC468B4A1364",
                 null,
                 false,
                 true,
