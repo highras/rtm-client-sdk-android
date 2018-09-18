@@ -43,17 +43,18 @@ public class PayloadUnpacker {
                     Boolean boolValue = unpacker.unpackBoolean();
                     return boolValue;
                 case INTEGER:
+                    // just return type long
                     switch (format) {
                         case UINT64:
                             BigInteger bigIntValue = unpacker.unpackBigInteger();
-                            return bigIntValue;
+                            return bigIntValue.longValue();
                         case INT64:
                         case UINT32:
                             Long longValue = unpacker.unpackLong();
                             return longValue;
                         default:
                             Integer intValue = unpacker.unpackInt();
-                            return intValue;
+                            return intValue.longValue();
                     }
                 case FLOAT:
                     Double doubleValue = unpacker.unpackDouble();

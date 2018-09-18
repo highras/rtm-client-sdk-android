@@ -2,6 +2,7 @@ package com.rtm;
 
 import com.fpnn.FPClient;
 import com.fpnn.FPData;
+import com.fpnn.FPPackage;
 import com.fpnn.FPProcessor;
 import com.fpnn.callback.CallbackData;
 import com.fpnn.callback.FPCallback;
@@ -39,6 +40,7 @@ public class RTMClient {
     }
 
     private FPEvent _event = new FPEvent();
+    private FPProcessor.IProcessor _processor = new RTMProcessor(_event);
 
     public FPEvent getEvent() {
 
@@ -91,11 +93,16 @@ public class RTMClient {
         this._startTimerThread = startTimerThread;
     }
 
-    public FPProcessor getProcessor() {
+    public FPProcessor.IProcessor getProcessor() {
+
+        return this._processor;
+    }
+
+    public FPPackage getPackage() {
 
         if (this._rtmClient != null) {
 
-            return this._rtmClient.getProcessor();
+            return this._rtmClient.getPackage();
         }
 
         return null;
@@ -117,6 +124,31 @@ public class RTMClient {
         }
 
         return null;
+    }
+
+    public void destroy() {
+
+        this.close();
+
+        if (this._rtmClient != null) {
+
+            this._rtmClient.destroy();
+            this._rtmClient = null;
+        }
+
+        if (this._dispatchClient != null) {
+
+            this._dispatchClient.destroy();
+            this._dispatchClient = null;
+        }
+
+        if (this._fileClient != null) {
+
+            this._fileClient.destroy();
+            this._fileClient = null;
+        }
+
+        this._event.removeListener();
     }
 
     /**
@@ -158,6 +190,9 @@ public class RTMClient {
                 Map payload = (Map) cbd.getPayload();
 
                 if (payload != null) {
+
+                    self._dispatchClient.destroy();
+                    self._dispatchClient = null;
 
                     String endpoint = (String) payload.get("endpoint");
                     self.login(endpoint, self._ipv6);
@@ -1556,7 +1591,7 @@ public class RTMClient {
         this._rtmClient.getEvent().addListener("close", listener);
         this._rtmClient.getEvent().addListener("error", listener);
 
-        this._rtmClient.getProcessor().setProcessor(new RTMProcessor());
+        this._rtmClient.getProcessor().setProcessor(this._processor);
 
         if (this._derKey != null && this._curve != null) {
 
@@ -1748,7 +1783,7 @@ public class RTMClient {
         this._rtmClient.getEvent().addListener("close", listener);
         this._rtmClient.getEvent().addListener("error", listener);
 
-        this._rtmClient.getProcessor().setProcessor(new RTMProcessor());
+        this._rtmClient.getProcessor().setProcessor(this._processor);
 
         if (this._derKey != null && this._curve != null) {
 
@@ -2164,6 +2199,8 @@ class BaseClient extends FPClient {
         Map payload = null;
         FPData data = cbd.getData();
 
+        Boolean isAnswerException = false;
+
         if (data != null) {
 
             if (data.getFlag() == 0) {
@@ -2184,9 +2221,14 @@ class BaseClient extends FPClient {
                     ex.printStackTrace();
                 }
             }
+
+            if (this.getPackage().isAnswer(data)) {
+
+                isAnswerException = data.getSS() != 0;
+            }
         }
 
-        cbd.checkException(payload);
+        cbd.checkException(isAnswerException, payload);
     }
 
     public FPCallback.ICallback questCallback(FPCallback.ICallback callback) {

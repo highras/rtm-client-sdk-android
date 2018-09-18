@@ -60,6 +60,16 @@ public class TestCase {
         this._client.getEvent().addListener("close", listener);
         this._client.getEvent().addListener("error", listener);
 
+        this._client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
+                System.out.println(event.getPayload().toString());
+            }
+        });
+
         if (derKey != null && derKey.length > 0) {
 
             this._client.login("secp256k1", derKey, null, false);
@@ -74,16 +84,6 @@ public class TestCase {
     private void onLogin(Object obj) {
 
         System.out.println("Login on ".concat(obj.toString()));
-
-        this._client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
-
-            @Override
-            public void fpEvent(EventData event) {
-
-                System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
-                System.out.println(event.getPayload().toString());
-            }
-        });
 
         long to = 778899;
         long fuid = 778898;

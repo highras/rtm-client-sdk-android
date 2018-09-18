@@ -1,7 +1,6 @@
 package com.fpnn.event;
 
 import com.fpnn.FPData;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.nio.channels.SocketChannel;
 import java.util.EventObject;

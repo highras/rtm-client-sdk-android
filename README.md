@@ -40,6 +40,15 @@ client.getEvent().addListener("login", listener);
 client.getEvent().addListener("close", listener);
 client.getEvent().addListener("error", listener);
 
+// push service
+client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
+    @Override
+    public void fpEvent(FPEvent event) {
+        System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
+        System.out.println(event.getPayload().toString());
+    }
+});
+
 FPEvent.IListener listener = new FPEvent.IListener() {
 
     @Override
@@ -53,15 +62,6 @@ FPEvent.IListener listener = new FPEvent.IListener() {
                 }
 
                 System.out.println("Authed!");
-
-                // push service
-                client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
-                    @Override
-                    public void fpEvent(FPEvent event) {
-                        System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
-                        System.out.println(event.getPayload().toString());
-                    }
-                });
 
                 // 发送消息
                 client.sendMessage(778899, (byte) 8, "hello !", "", 5 * 1000, new FPCallback.ICallback() {
@@ -91,6 +91,7 @@ FPEvent.IListener listener = new FPEvent.IListener() {
 
 // 开启连接
 client.login(null, false);
+
 ```
 
 #### 测试 ####
@@ -399,15 +400,15 @@ baseTest();
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
-        * `payload`: **(Map)**
-            * `payload.id` **(long)**
-            * `payload.from` **(long)**
-            * `payload.mtype` **(int)**
-            * `payload.ftype` **(int)**
-            * `payload.mid` **(long)**
-            * `payload.msg` **(String)**
-            * `payload.attrs` **(String)**
-            * `payload.mtime` **(int)**
+        * `payload`: **(Map<num:int16, maxid:long, msgs:List<GroupMsg>>)**
+            * `GroupMsg.id` **(long)**
+            * `GroupMsg.from` **(long)**
+            * `GroupMsg.mtype` **(byte)**
+            * `GroupMsg.ftype` **(byte)**
+            * `GroupMsg.mid` **(long)**
+            * `GroupMsg.msg` **(String)**
+            * `GroupMsg.attrs` **(String)**
+            * `GroupMsg.mtime` **(int)**
 
 * `getRoomMessage(long rid, int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback)`: 获取Room历史消息
     * `rid`: **(long)** Room id
@@ -420,15 +421,15 @@ baseTest();
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
-        * `payload`: **(Map)**
-            * `payload.id` **(long)**
-            * `payload.from` **(long)**
-            * `payload.mtype` **(int)**
-            * `payload.ftype` **(int)**
-            * `payload.mid` **(long)**
-            * `payload.msg` **(String)**
-            * `payload.attrs` **(String)**
-            * `payload.mtime` **(int)**
+        * `payload`: **(Map<num:int16, maxid:long, msgs:List<RoomMsg>>)**
+            * `RoomMsg.id` **(long)**
+            * `RoomMsg.from` **(long)**
+            * `RoomMsg.mtype` **(byte)**
+            * `RoomMsg.ftype` **(byte)**
+            * `RoomMsg.mid` **(long)**
+            * `RoomMsg.msg` **(String)**
+            * `RoomMsg.attrs` **(String)**
+            * `RoomMsg.mtime` **(int)**
 
 * `getBroadcastMessage(int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback)`: 获取广播历史消息
     * `num`: **(int)** 获取数量, **一次最多获取10条**
@@ -440,15 +441,15 @@ baseTest();
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
-        * `payload`: **(Map)**
-            * `payload.id` **(long)**
-            * `payload.from` **(long)**
-            * `payload.mtype` **(int)**
-            * `payload.ftype` **(int)**
-            * `payload.mid` **(long)**
-            * `payload.msg` **(String)**
-            * `payload.attrs` **(String)**
-            * `payload.mtime` **(int)**
+        * `payload`: **(Map<num:int16, maxid:long, msgs:List<BroadcastMsg>>)**
+            * `BroadcastMsg.id` **(long)**
+            * `BroadcastMsg.from` **(long)**
+            * `BroadcastMsg.mtype` **(byte)**
+            * `BroadcastMsg.ftype` **(byte)**
+            * `BroadcastMsg.mid` **(long)**
+            * `BroadcastMsg.msg` **(String)**
+            * `BroadcastMsg.attrs` **(String)**
+            * `BroadcastMsg.mtime` **(int)**
 
 * `getP2PMessage(long peeruid, int num, int direction, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback)`: 获取P2P历史消息
     * `peeruid`: **(long)** 发送者 id
@@ -462,15 +463,15 @@ baseTest();
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
-        * `payload`: **(Map)**
-            * `payload.id` **(long)**
-            * `payload.direction` **(int)**
-            * `payload.mtype` **(int)**
-            * `payload.ftype` **(int)**
-            * `payload.mid` **(long)**
-            * `payload.msg` **(String)**
-            * `payload.attrs` **(String)**
-            * `payload.mtime` **(int)**
+        * `payload`: **(Map<num:int16, maxid:long, msgs:List<P2PMsg>>)**
+            * `P2PMsg.id` **(long)**
+            * `P2PMsg.direction` **(byte)**
+            * `P2PMsg.mtype` **(byte)**
+            * `P2PMsg.ftype` **(byte)**
+            * `P2PMsg.mid` **(long)**
+            * `P2PMsg.msg` **(String)**
+            * `P2PMsg.attrs` **(String)**
+            * `P2PMsg.mtime` **(int)**
 
 * `addDevice(String apptype, String devicetoken, int timeout, FPCallback.ICallback callback)`: 添加设备, 应用信息
     * `apptype`: **(String)** 应用信息
