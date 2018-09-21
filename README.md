@@ -92,6 +92,9 @@ FPEvent.IListener listener = new FPEvent.IListener() {
 // 开启连接
 client.login(null, false);
 
+// destory
+// client.destory();
+// client = null;
 ```
 
 #### 测试 ####
@@ -247,6 +250,8 @@ baseTest();
     * `startTimerThread`: **(boolean)** 是否开启计时器线程 (负责超时检测/安全检查)
 
 * `getProcessor`: **(FPProcessor)** 监听PushService的句柄
+
+* `destroy()`: 断开连接并销毁
 
 * `login(String endpoint, boolean ipv6)`: 连接并登陆
     * `endpoint`: **(String)** RTMGate服务地址, 由Dispatch服务获取, 或由RTM提供

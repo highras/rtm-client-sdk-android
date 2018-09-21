@@ -256,7 +256,23 @@ public class RTMClient {
         }
 
         data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
+
+        final long mid = (long) payload.get("mid");
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                cbd.setMid(mid);
+
+                if (cb != null) {
+
+                    cb.callback(cbd);
+                }
+            }
+        }, timeout);
     }
 
     /**
@@ -296,7 +312,23 @@ public class RTMClient {
         }
 
         data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
+
+        final long mid = (long) payload.get("mid");
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                cbd.setMid(mid);
+
+                if (cb != null) {
+
+                    cb.callback(cbd);
+                }
+            }
+        }, timeout);
     }
 
     /**
@@ -336,7 +368,23 @@ public class RTMClient {
         }
 
         data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
+
+        final long mid = (long) payload.get("mid");
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                cbd.setMid(mid);
+
+                if (cb != null) {
+
+                    cb.callback(cbd);
+                }
+            }
+        }, timeout);
     }
 
     /**
@@ -376,7 +424,23 @@ public class RTMClient {
         }
 
         data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
+
+        final long mid = (long) payload.get("mid");
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                cbd.setMid(mid);
+
+                if (cb != null) {
+
+                    cb.callback(cbd);
+                }
+            }
+        }, timeout);
     }
 
     /**
