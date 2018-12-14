@@ -107,7 +107,7 @@ client.login(null, false);
 
 #### 测试 ####
 
-参考`TestActivity`:
+参考`app/src/main/java/com/test/MainTest.java`:
 
 ```java
 
