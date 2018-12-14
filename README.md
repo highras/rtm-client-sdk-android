@@ -4,7 +4,8 @@
 
 #### 关于依赖 ####
 
-* [msgpack-core-0.8.16.jar](https://github.com/msgpack/msgpack-java)
+* [fpnn.jar](https://github.com/highras/fpnn-sdk-java)
+* [msgpack-core.jar](https://github.com/msgpack/msgpack-java)
 
 #### 关于线程 ####
 
@@ -21,6 +22,13 @@
 #### 一个例子 ####
 
 ```java
+import com.fpnn.callback.CallbackData;
+import com.fpnn.callback.FPCallback;
+import com.fpnn.event.EventData;
+import com.fpnn.event.FPEvent;
+import com.rtm.RTMClient;
+import com.rtm.RTMConfig;
+...
 
 // 创建Client
 RTMClient client = new RTMClient(
@@ -64,7 +72,7 @@ FPEvent.IListener listener = new FPEvent.IListener() {
                 System.out.println("Authed!");
 
                 // 发送消息
-                client.sendMessage(778899, (byte) 8, "hello !", "", 5 * 1000, new FPCallback.ICallback() {
+                client.sendMessage(778899, (byte) 8, "hello !", "", 0, 5 * 1000, new FPCallback.ICallback() {
                     @Override
                     public void callback(CallbackData cbd) {
                         Object obj = cbd.getPayload();
@@ -263,41 +271,45 @@ baseTest();
     * `endpoint`: **(String)** RTMGate服务地址, 由Dispatch服务获取, 或由RTM提供
     * `ipv6`: **(boolean)** 是否为IPV6地址格式
 
-* `sendMessage(long to, byte mtype, String msg, String attrs, int timeout, FPCallback.ICallback callback)`: 发送消息
+* `sendMessage(long to, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback)`: 发送消息
     * `to`: **(long)** 接收方uid
     * `mtype`: **(byte)** 消息类型
     * `msg`: **(String)** 消息内容
     * `attrs`: **(String)** 消息附加信息, 没有可传`""`
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
 
-* `sendMessages(List<Long> tos, byte mtype, String msg, String attrs, int timeout, FPCallback.ICallback callback)`: 发送多人消息
+* `sendMessages(List<Long> tos, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback)`: 发送多人消息
     * `tos`: **(List<Long>)** 接收方uids
     * `mtype`: **(byte)** 消息类型
     * `msg`: **(String)** 消息内容
     * `attrs`: **(String)** 消息附加信息, 没有可传`""`
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
 
-* `sendGroupMessage(long gid, byte mtype, String msg, String attrs, int timeout, FPCallback.ICallback callback)`: 发送group消息
+* `sendGroupMessage(long gid, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback)`: 发送group消息
     * `gid`: **(long)** group id
     * `mtype`: **(byte)** 消息类型
     * `msg`: **(String)** 消息内容
     * `attrs`: **(String)** 消息附加信息, 可传`""`
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
 
-* `sendRoomMessage(long rid, byte mtype, String msg, String attrs, int timeout, FPCallback.ICallback callback)`: 发送room消息
+* `sendRoomMessage(long rid, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback)`: 发送room消息
     * `rid`: **(long)** room id
     * `mtype`: **(byte)** 消息类型
     * `msg`: **(String)** 消息内容
     * `attrs`: **(String)** 消息附加信息, 可传`""`
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
@@ -530,37 +542,41 @@ baseTest();
         * `exception`: **(Exception)**
         * `payload`: **(List<ArrayList>)**
 
-* `sendFile(byte mtype, long to, byte[] fileBytes, int timeout, FPCallback.ICallback callback)`: 发送文件
+* `sendFile(byte mtype, long to, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback)`: 发送文件
     * `mtype`: **(byte)** 消息类型
     * `to`: **(long)** 接收者 id
     * `fileBytes`: **(byte[])** 要发送的文件
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
 
-* `sendFiles(byte mtype, List<Long> tos, byte[] fileBytes, int timeout, FPCallback.ICallback callback)`: 发送多人文件
+* `sendFiles(byte mtype, List<Long> tos, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback)`: 发送多人文件
     * `mtype`: **(byte)** 消息类型
     * `tos`: **(List<Long>)** 接收者 id
     * `fileBytes`: **(byte[])** 要发送的文件
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
 
-* `sendGroupFile(byte mtype, long gid, byte[] fileBytes, int timeout, FPCallback.ICallback callback)`: 发送文件
+* `sendGroupFile(byte mtype, long gid, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback)`: 发送文件
     * `mtype`: **(byte)** 消息类型
     * `gid`: **(long)** Group id
     * `fileBytes`: **(byte[])** 要发送的文件
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
         * `payload`: **(Map)**
 
-* `sendRoomFile(byte mtype, long rid, byte[] fileBytes, int timeout, FPCallback.ICallback callback)`: 发送文件
+* `sendRoomFile(byte mtype, long rid, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback)`: 发送文件
     * `mtype`: **(byte)** 消息类型
     * `rid`: **(long)** Room id
     * `fileBytes`: **(byte[])** 要发送的文件
+    * `mid`: **(long)** 消息 id, 用于过滤重复消息, 非重发时为`0`
     * `timeout`: **(int)** 超时时间(ms)
     * `callback`: **(FPCallback.ICallback)** 回调方法
         * `exception`: **(Exception)**
