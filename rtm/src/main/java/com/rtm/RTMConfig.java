@@ -16,11 +16,6 @@ public class RTMConfig {
         public static final String recvGroupFile = "pushgroupfile";
         public static final String recvRoomFile = "pushroomfile";
         public static final String recvBroadcastFile = "pushbroadcastfile";
-        public static final String recvTranslatedMessage = "transmsg";
-        public static final String recvTranslatedGroupMessage = "transgroupmsg";
-        public static final String recvTranslatedRoomMessage = "transroommsg";
-        public static final String recvTranslatedBroadcastMessage = "transbroadcastmsg";
-        public static final String recvUnreadMsgStatus = "pushunread";
         public static final String recvPing = "ping";
     }
 
@@ -32,11 +27,10 @@ public class RTMConfig {
 
     public class FILE_TYPE {
 
-        public static final int message = 0;
-        public static final int image = 10;
-        public static final int audio = 11;
-        public static final int video = 12;
-        public static final int file = 100;
+        public static final byte image = 40;        //图片
+        public static final byte audio = 41;        //语音
+        public static final byte video = 42;        //视频
+        public static final byte file = 50;         //泛指文件，服务器会修改此值（如果服务器可以判断出具体类型的话，仅在mtype=50的情况下）
     }
 
     public class ERROR_CODE {

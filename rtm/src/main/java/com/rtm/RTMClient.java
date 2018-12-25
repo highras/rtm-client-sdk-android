@@ -52,7 +52,7 @@ public class RTMClient {
     private long _uid;
     private String _token;
     private String _version;
-    private boolean _recvUnreadMsg;
+    private Map<String, String> _attrs;
     private boolean _reconnect;
     private int _timeout;
     private boolean _startTimerThread;
@@ -69,24 +69,24 @@ public class RTMClient {
     private DispatchClient _dispatchClient;
 
     /**
-     * @param {String}  dispatch
-     * @param {int}     pid
-     * @param {long}    uid
-     * @param {String}  token
-     * @param {String}  version
-     * @param {boolean} recvUnreadMsg
-     * @param {boolean} reconnect
-     * @param {int}     timeout
-     * @param {boolean} startTimerThread
+     * @param {String}                  dispatch
+     * @param {int}                     pid
+     * @param {long}                    uid
+     * @param {String}                  token
+     * @param {String}                  version
+     * @param {Map(String,String)}      attrs
+     * @param {boolean}                 reconnect
+     * @param {int}                     timeout
+     * @param {boolean}                 startTimerThread
      */
-    public RTMClient(String dispatch, int pid, long uid, String token, String version, boolean recvUnreadMsg, boolean reconnect, int timeout, boolean startTimerThread) {
+    public RTMClient(String dispatch, int pid, long uid, String token, String version, Map<String, String> attrs, boolean reconnect, int timeout, boolean startTimerThread) {
 
         this._dispatch = dispatch;
         this._pid = pid;
         this._uid = uid;
         this._token = token;
         this._version = version;
-        this._recvUnreadMsg = recvUnreadMsg;
+        this._attrs = attrs;
         this._reconnect = reconnect;
         this._timeout = timeout;
         this._startTimerThread = startTimerThread;
@@ -213,21 +213,37 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 to
-     * @param {byte}                 mtype
-     * @param {String}               msg
-     * @param {String}               attrs
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (2)
+     *
+     * @param {long}                    to
+     * @param {byte}                    mtype
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map(mtime:long)}         payload
+     * @param {Exception}               exception
+     * @param {long}                    mid
+     * </CallbackData>
      */
     public void sendMessage(long to, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback) {
+
+        if (mid == 0) {
+
+            mid = MidGenerator.gen();
+        }
 
         Map payload = new HashMap();
 
         payload.put("to", to);
-        payload.put("mid", mid != 0 ? mid : MidGenerator.gen());
+        payload.put("mid", mid);
         payload.put("mtype", mtype);
         payload.put("msg", msg);
         payload.put("attrs", attrs);
@@ -270,78 +286,37 @@ public class RTMClient {
     }
 
     /**
-     * @param {List<Long>}           tos
-     * @param {byte}                 mtype
-     * @param {String}               msg
-     * @param {String}               attrs
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
-     */
-    public void sendMessages(List<Long> tos, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("tos", tos);
-        payload.put("mid", mid != 0 ? mid : MidGenerator.gen());
-        payload.put("mtype", mtype);
-        payload.put("msg", msg);
-        payload.put("attrs", attrs);
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("sendmsgs");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-
-        final long fmid = (long) payload.get("mid");
-        final FPCallback.ICallback cb = callback;
-
-        this.sendQuest(data, new FPCallback.ICallback() {
-
-            @Override
-            public void callback(CallbackData cbd) {
-
-                cbd.setMid(fmid);
-
-                if (cb != null) {
-
-                    cb.callback(cbd);
-                }
-            }
-        }, timeout);
-    }
-
-    /**
-     * @param {long                  gid
-     * @param {byte}                 mtype
-     * @param {String}               msg
-     * @param {String}               attrs
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (3)
+     *
+     * @param {long}                    gid
+     * @param {byte}                    mtype
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map(mtime:long)}         payload
+     * @param {Exception}               exception
+     * @param {long}                    mid
+     * </CallbackData>
      */
     public void sendGroupMessage(long gid, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback) {
+
+        if (mid == 0) {
+
+            mid = MidGenerator.gen();
+        }
 
         Map payload = new HashMap();
 
         payload.put("gid", gid);
-        payload.put("mid", mid != 0 ? mid : MidGenerator.gen());
+        payload.put("mid", mid);
         payload.put("mtype", mtype);
         payload.put("msg", msg);
         payload.put("attrs", attrs);
@@ -384,21 +359,37 @@ public class RTMClient {
     }
 
     /**
-     * @param {long                  rid
-     * @param {byte}                 mtype
-     * @param {String}               msg
-     * @param {String}               attrs
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (4)
+     *
+     * @param {long}                    rid
+     * @param {byte}                    mtype
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map(mtime:long)}         payload
+     * @param {Exception}               exception
+     * @param {long}                    mid
+     * </CallbackData>
      */
     public void sendRoomMessage(long rid, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback) {
+
+        if (mid == 0) {
+
+            mid = MidGenerator.gen();
+        }
 
         Map payload = new HashMap();
 
         payload.put("rid", rid);
-        payload.put("mid", mid != 0 ? mid : MidGenerator.gen());
+        payload.put("mid", mid);
         payload.put("mtype", mtype);
         payload.put("msg", msg);
         payload.put("attrs", attrs);
@@ -442,6 +433,645 @@ public class RTMClient {
 
     /**
      *
+     * rtmGate (5)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {long}                    mid
+     * @param {Exception}               exception
+     * @param {Map(p2p:Map(String,int),group:Map(String,int))}         payload
+     * </CallbackData>
+     */
+    public void getUnreadMessage(int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getunreadmsg");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (6)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {long}                    mid
+     * @param {Exception}               exception
+     * @param {Map}                     payload
+     * </CallbackData>
+     */
+    public void cleanUnreadMessage(int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("cleanunreadmsg");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (7)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {long}                    mid
+     * @param {Exception}               exception
+     * @param {Map(p2p:Map(String,long),group:Map(String,long))}         payload
+     * </CallbackData>
+     */
+    public void getSession(int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getsession");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (8)
+     *
+     * @param {long}                    gid
+     * @param {boolean}                 desc
+     * @param {int}                     num
+     * @param {long}                    begin
+     * @param {long}                    end
+     * @param {long}                    lastid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(num:int,lastid:long,begin:long,end:long,msgs:List(GroupMsg))} payload
+     * </CallbackData>
+     *
+     * <GroupMsg>
+     * @param {long}                    id
+     * @param {long}                    from
+     * @param {byte}                    mtype
+     * @param {long}                    mid
+     * @param {boolean}                 deleted
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mtime
+     * </GroupMsg>
+     */
+    public void getGroupMessage(long gid, boolean desc, int num, long begin, long end, long lastid, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("gid", gid);
+        payload.put("desc", desc);
+        payload.put("num", num);
+
+        if (begin > 0) {
+
+            payload.put("begin", begin);
+        }
+
+        if (end > 0) {
+
+            payload.put("end", end);
+        }
+
+        if (lastid > 0) {
+
+            payload.put("lastid", lastid);
+        }
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getgroupmsg");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                if (cb == null) {
+
+                    return;
+                }
+
+                Map payload = (Map) cbd.getPayload();
+
+                if (payload != null) {
+
+                    List list = (ArrayList) payload.get("msgs");
+
+                    for (int i = 0; i < list.size(); i++) {
+
+                        Map map = new HashMap();
+                        List items = (ArrayList) list.get(i);
+
+                        map.put("id", items.get(0));
+                        map.put("from", items.get(1));
+                        map.put("mtype", items.get(2));
+                        map.put("mid", items.get(3));
+                        map.put("deleted", items.get(4));
+                        map.put("msg", items.get(5));
+                        map.put("attrs", items.get(6));
+                        map.put("mtime", items.get(7));
+
+                        list.set(i, map);
+                    }
+
+                    cb.callback(new CallbackData(payload));
+                    return;
+                }
+
+                cb.callback(cbd);
+            }
+        }, timeout);
+    }
+
+    /**
+     *
+     * ServerGate (9)
+     *
+     * @param {long}                    rid
+     * @param {boolean}                 desc
+     * @param {int}                     num
+     * @param {long}                    begin
+     * @param {long}                    end
+     * @param {long}                    lastid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(num:int,lastid:long,begin:long,end:long,msgs:List(RoomMsg))} payload
+     * </CallbackData>
+     *
+     * <RoomMsg>
+     * @param {long}                    id
+     * @param {long}                    from
+     * @param {byte}                    mtype
+     * @param {long}                    mid
+     * @param {boolean}                 deleted
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mtime
+     * </RoomMsg>
+     */
+    public void getRoomMessage(long rid, boolean desc, int num, long begin, long end, long lastid, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("rid", rid);
+        payload.put("desc", desc);
+        payload.put("num", num);
+
+        if (begin > 0) {
+
+            payload.put("begin", begin);
+        }
+
+        if (end > 0) {
+
+            payload.put("end", end);
+        }
+
+        if (lastid > 0) {
+
+            payload.put("lastid", lastid);
+        }
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getroommsg");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                if (cb == null) {
+
+                    return;
+                }
+
+                Map payload = (Map) cbd.getPayload();
+
+                if (payload != null) {
+
+                    List list = (ArrayList) payload.get("msgs");
+
+                    for (int i = 0; i < list.size(); i++) {
+
+                        Map map = new HashMap();
+                        List items = (ArrayList) list.get(i);
+
+                        map.put("id", items.get(0));
+                        map.put("from", items.get(1));
+                        map.put("mtype", items.get(2));
+                        map.put("mid", items.get(3));
+                        map.put("deleted", items.get(4));
+                        map.put("msg", items.get(5));
+                        map.put("attrs", items.get(6));
+                        map.put("mtime", items.get(7));
+
+                        list.set(i, map);
+                    }
+
+                    cb.callback(new CallbackData(payload));
+                    return;
+                }
+
+                cb.callback(cbd);
+            }
+        }, timeout);
+    }
+
+    /**
+     *
+     * ServerGate (10)
+     *
+     * @param {boolean}                 desc
+     * @param {int}                     num
+     * @param {long}                    begin
+     * @param {long}                    end
+     * @param {long}                    lastid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(num:int,lastid:long,begin:long,end:long,msgs:List(BroadcastMsg))} payload
+     * </CallbackData>
+     *
+     * <BroadcastMsg>
+     * @param {long}                    id
+     * @param {long}                    from
+     * @param {byte}                    mtype
+     * @param {long}                    mid
+     * @param {boolean}                 deleted
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mtime
+     * </BroadcastMsg>
+     */
+    public void getBroadcastMessage(boolean desc, int num, long begin, long end, long lastid, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("desc", desc);
+        payload.put("num", num);
+
+        if (begin > 0) {
+
+            payload.put("begin", begin);
+        }
+
+        if (end > 0) {
+
+            payload.put("end", end);
+        }
+
+        if (lastid > 0) {
+
+            payload.put("lastid", lastid);
+        }
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getbroadcastmsg");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                if (cb == null) {
+
+                    return;
+                }
+
+                Map payload = (Map) cbd.getPayload();
+
+                if (payload != null) {
+
+                    List list = (ArrayList) payload.get("msgs");
+
+                    for (int i = 0; i < list.size(); i++) {
+
+                        Map map = new HashMap();
+                        List items = (ArrayList) list.get(i);
+
+                        map.put("id", items.get(0));
+                        map.put("from", items.get(1));
+                        map.put("mtype", items.get(2));
+                        map.put("mid", items.get(3));
+                        map.put("deleted", items.get(4));
+                        map.put("msg", items.get(5));
+                        map.put("attrs", items.get(6));
+                        map.put("mtime", items.get(7));
+
+                        list.set(i, map);
+                    }
+
+                    cb.callback(new CallbackData(payload));
+                    return;
+                }
+
+                cb.callback(cbd);
+            }
+        }, timeout);
+    }
+
+    /**
+     *
+     * ServerGate (11)
+     *
+     * @param {long}                    ouid
+     * @param {boolean}                 desc
+     * @param {int}                     num
+     * @param {long}                    begin
+     * @param {long}                    end
+     * @param {long}                    lastid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(num:int,lastid:long,begin:long,end:long,msgs:List(P2PMsg))} payload
+     * </CallbackData>
+     *
+     * <P2PMsg>
+     * @param {long}                    id
+     * @param {byte}                    direction
+     * @param {byte}                    mtype
+     * @param {long}                    mid
+     * @param {boolean}                 deleted
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {long}                    mtime
+     * </P2PMsg>
+     */
+    public void getP2PMessage(long ouid, boolean desc, int num, long begin, long end, long lastid, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("ouid", ouid);
+        payload.put("desc", desc);
+        payload.put("num", num);
+
+        if (begin > 0) {
+
+            payload.put("begin", begin);
+        }
+
+        if (end > 0) {
+
+            payload.put("end", end);
+        }
+
+        if (lastid > 0) {
+
+            payload.put("lastid", lastid);
+        }
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getp2pmsg");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        final FPCallback.ICallback cb = callback;
+
+        this.sendQuest(data, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                if (cb == null) {
+
+                    return;
+                }
+
+                Map payload = (Map) cbd.getPayload();
+
+                if (payload != null) {
+
+                    List list = (ArrayList) payload.get("msgs");
+
+                    for (int i = 0; i < list.size(); i++) {
+
+                        Map map = new HashMap();
+                        List items = (ArrayList) list.get(i);
+
+                        map.put("id", items.get(0));
+                        map.put("direction", items.get(1));
+                        map.put("mtype", items.get(2));
+                        map.put("mid", items.get(3));
+                        map.put("deleted", items.get(4));
+                        map.put("msg", items.get(5));
+                        map.put("attrs", items.get(6));
+                        map.put("mtime", items.get(7));
+
+                        list.set(i, map);
+                    }
+
+                    cb.callback(new CallbackData(payload));
+                    return;
+                }
+
+                cb.callback(cbd);
+            }
+        }, timeout);
+    }
+
+    /**
+     *
+     * ServerGate (12)
+     *
+     * @param {String}                  cmd
+     * @param {List(Long)}              tos
+     * @param {long}                    to
+     * @param {long}                    rid
+     * @param {long}                    gid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(token:string,endpoint:string)}   payload
+     * </CallbackData>
+     */
+    public void fileToken(String cmd, List<Long> tos, long to, long rid, long gid, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("cmd", cmd);
+
+        if (tos != null && tos.size() > 0) {
+
+            payload.put("tos", tos);
+        }
+
+        if (to > 0) {
+
+            payload.put("to", to);
+        }
+
+        if (rid > 0) {
+
+            payload.put("rid", rid);
+        }
+
+        if (gid > 0) {
+
+            payload.put("gid", gid);
+        }
+
+        this.filetoken(payload, callback, timeout);
+    }
+
+
+    /**
+     * rtmGate (13)
      */
     public void close() {
 
@@ -467,8 +1097,8 @@ public class RTMClient {
         }
 
         data.setPayload(bytes);
-
         final RTMClient self = this;
+
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
@@ -480,21 +1110,31 @@ public class RTMClient {
     }
 
     /**
-     * @param {Map}                  dict
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (14)
+     *
+     * @param {Map(String,String)}      attrs
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map}                     payload
+     * </CallbackData>
      */
-    public void addVariables(Map dict, int timeout, FPCallback.ICallback callback) {
+    public void addAttrs(Map<String, String> attrs, int timeout, FPCallback.ICallback callback) {
 
         Map payload = new HashMap();
 
-        payload.put("var", dict);
+        payload.put("attrs", attrs);
 
         FPData data = new FPData();
         data.setFlag(0x1);
         data.setMtype(0x1);
-        data.setMethod("addvariables");
+        data.setMethod("addattrs");
 
         byte[] bytes = new byte[0];
         PayloadPacker packer = new PayloadPacker();
@@ -513,10 +1153,293 @@ public class RTMClient {
     }
 
     /**
-     * @param {List<Long>}           friends
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (15)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(attrs:List(Map))}    payload
+     * </CallbackData>
+     *
+     * <Map>
+     * @param {String}                  ce
+     * @param {String}                  login
+     * @param {String}                  my
+     * </Map>
+     */
+    public void getAttrs(int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("getattrs");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (16)
+     *
+     * @param {String}                  msg
+     * @param {String}                  attrs
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
+     */
+    public void addDebugLog(String msg, String attrs, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("msg", msg);
+        payload.put("attrs", attrs);
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("adddebuglog");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (17)
+     *
+     * @param {String}                  apptype
+     * @param {String}                  devicetoken
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
+     */
+    public void addDevice(String apptype, String devicetoken, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("apptype", apptype);
+        payload.put("devicetoken", devicetoken);
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("adddevice");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (18)
+     *
+     * @param {String}                  devicetoken
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
+     */
+    public void removeDevice(String devicetoken, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("devicetoken", devicetoken);
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("removedevice");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (19)
+     *
+     * @param {String}                  targetLanguage
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
+     */
+    public void setTranslationLanguage(String targetLanguage, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("lang", targetLanguage);
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("setlang");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (20)
+     *
+     * @param {String}                  originalMessage
+     * @param {String}                  originalLanguage
+     * @param {String}                  targetLanguage
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(stext:String,src:String,dtext:String,dst:String)}    payload
+     * </CallbackData>
+     */
+    public void translate(String originalMessage, String originalLanguage, String targetLanguage, int timeout, FPCallback.ICallback callback) {
+
+        Map payload = new HashMap();
+
+        payload.put("text", originalMessage);
+        payload.put("dst", targetLanguage);
+
+        if (originalLanguage != null) {
+
+            payload.put("src", originalLanguage);
+        }
+
+        FPData data = new FPData();
+        data.setFlag(0x1);
+        data.setMtype(0x1);
+        data.setMethod("translate");
+
+        byte[] bytes = new byte[0];
+        PayloadPacker packer = new PayloadPacker();
+
+        try {
+
+            packer.pack(payload);
+            bytes = packer.toByteArray();
+        } catch (IOException ex) {
+
+            ex.printStackTrace();
+        }
+
+        data.setPayload(bytes);
+        this.sendQuest(data, callback, timeout);
+    }
+
+    /**
+     *
+     * rtmGate (21)
+     *
+     * @param {List(Long)}              friends
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void addFriends(List<Long> friends, int timeout, FPCallback.ICallback callback) {
 
@@ -546,10 +1469,20 @@ public class RTMClient {
     }
 
     /**
-     * @param {List<Long>}           friends
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (22)
+     *
+     * @param {List(Long)}              friends
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void deleteFriends(List<Long> friends, int timeout, FPCallback.ICallback callback) {
 
@@ -579,9 +1512,19 @@ public class RTMClient {
     }
 
     /**
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {List<Long>}        payload
+     *
+     * rtmGate (23)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {List(Long)}              payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void getFriends(int timeout, FPCallback.ICallback callback) {
 
@@ -605,13 +1548,13 @@ public class RTMClient {
         }
 
         data.setPayload(bytes);
-
         final FPCallback.ICallback cb = callback;
 
         this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
             public void callback(CallbackData cbd) {
+
                 if (cb == null) {
 
                     return;
@@ -632,11 +1575,21 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 gid
-     * @param {List<Long>}           uids
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (24)
+     *
+     * @param {long}                    gid
+     * @param {List(Long)}              uids
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void addGroupMembers(long gid, List<Long> uids, int timeout, FPCallback.ICallback callback) {
 
@@ -667,11 +1620,21 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 gid
-     * @param {List<Long>}           uids
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (25)
+     *
+     * @param {long}                    gid
+     * @param {List(Long)}              uids
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void deleteGroupMembers(long gid, List<Long> uids, int timeout, FPCallback.ICallback callback) {
 
@@ -702,10 +1665,20 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 gid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {List<Long>}        payload
+     *
+     * rtmGate (26)
+     *
+     * @param {long}                    gid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {List(Long)}              payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void getGroupMembers(long gid, int timeout, FPCallback.ICallback callback) {
 
@@ -757,9 +1730,19 @@ public class RTMClient {
     }
 
     /**
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {List<Long>}        payload
+     *
+     * rtmGate (27)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {List(Long)}              payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void getUserGroups(int timeout, FPCallback.ICallback callback) {
 
@@ -809,10 +1792,20 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 rid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (28)
+     *
+     * @param {long}                    rid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void enterRoom(long rid, int timeout, FPCallback.ICallback callback) {
 
@@ -842,10 +1835,20 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 rid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * rtmGate (29)
+     *
+     * @param {long}                    rid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void leaveRoom(long rid, int timeout, FPCallback.ICallback callback) {
 
@@ -875,9 +1878,19 @@ public class RTMClient {
     }
 
     /**
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {List<Long>}        payload
+     *
+     * rtmGate (30)
+     *
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {List(Long)}              payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void getUserRooms(int timeout, FPCallback.ICallback callback) {
 
@@ -927,10 +1940,20 @@ public class RTMClient {
     }
 
     /**
-     * @param {List<Long>}           uids
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {List<Long>}        payload
+     *
+     * rtmGate (31)
+     *
+     * @param {List(Long)}              uids
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {List(Long)}              payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
     public void getOnlineUsers(List<Long> uids, int timeout, FPCallback.ICallback callback) {
 
@@ -982,18 +2005,35 @@ public class RTMClient {
     }
 
     /**
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<p2p:List<Long>, group:List<Long>, bc:boolean>} payload
+     *
+     * rtmGate (32)
+     *
+     * @param {long}                    mid
+     * @param {long}                    xid
+     * @param {byte}                    type
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
-    public void checkUnreadMessage(int timeout, FPCallback.ICallback callback) {
+    public void deleteMessage(long mid, long xid, byte type, int timeout, FPCallback.ICallback callback) {
 
         Map payload = new HashMap();
+
+        payload.put("mid", mid);
+        payload.put("xid", xid);
+        payload.put("type", type);
 
         FPData data = new FPData();
         data.setFlag(0x1);
         data.setMtype(0x1);
-        data.setMethod("checkunreadmsg");
+        data.setMethod("delmsg");
 
         byte[] bytes = new byte[0];
         PayloadPacker packer = new PayloadPacker();
@@ -1012,45 +2052,31 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 gid
-     * @param {int}                  num
-     * @param {boolean}              desc
-     * @param {int}                  page
-     * @param {long}                 localmid
-     * @param {long}                 localid
-     * @param {List<Byte>}           mtypes
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<num:int, maxid:long, msgs:List<Map>>} payload
+     *
+     * rtmGate (33)
+     *
+     * @param {String}                  ce
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
-    public void getGroupMessage(long gid, int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback) {
+    public void kickout(String ce, int timeout, FPCallback.ICallback callback) {
 
         Map payload = new HashMap();
 
-        payload.put("gid", gid);
-        payload.put("num", num);
-        payload.put("desc", desc);
-        payload.put("page", page);
-
-        if (localmid != 0) {
-
-            payload.put("localmid", localmid);
-        }
-
-        if (localid != 0) {
-
-            payload.put("localid", localid);
-        }
-
-        if (mtypes != null) {
-
-            payload.put("mtypes", mtypes);
-        }
+        payload.put("ce", ce);
 
         FPData data = new FPData();
         data.setFlag(0x1);
         data.setMtype(0x1);
-        data.setMethod("getgroupmsg");
+        data.setMethod("kickout");
 
         byte[] bytes = new byte[0];
         PayloadPacker packer = new PayloadPacker();
@@ -1069,45 +2095,31 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 rid
-     * @param {int}                  num
-     * @param {boolean}              desc
-     * @param {int}                  page
-     * @param {long}                 localmid
-     * @param {long}                 localid
-     * @param {List<Byte>}           mtypes
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<num:int, maxid:long, msgs:List<Map>>} payload
+     *
+     * rtmGate (34)
+     *
+     * @param {String}                  key
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Exception}               exception
+     * @param {Map(val:String)}         payload
+     * </CallbackData>
      */
-    public void getRoomMessage(long rid, int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback) {
+    public void dbGet(String key, int timeout, FPCallback.ICallback callback) {
 
         Map payload = new HashMap();
 
-        payload.put("rid", rid);
-        payload.put("num", num);
-        payload.put("desc", desc);
-        payload.put("page", page);
-
-        if (localmid != 0) {
-
-            payload.put("localmid", localmid);
-        }
-
-        if (localid != 0) {
-
-            payload.put("localid", localid);
-        }
-
-        if (mtypes != null) {
-
-            payload.put("mtypes", mtypes);
-        }
+        payload.put("key", key);
 
         FPData data = new FPData();
         data.setFlag(0x1);
         data.setMtype(0x1);
-        data.setMethod("getroommsg");
+        data.setMethod("dbget");
 
         byte[] bytes = new byte[0];
         PayloadPacker packer = new PayloadPacker();
@@ -1126,43 +2138,33 @@ public class RTMClient {
     }
 
     /**
-     * @param {int}                  num
-     * @param {boolean}              desc
-     * @param {int}                  page
-     * @param {long}                 localmid
-     * @param {long}                 localid
-     * @param {List<Byte>}           mtypes
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<num:int, maxid:long, msgs:List<Map>>} payload
+     *
+     * rtmGate (35)
+     *
+     * @param {String}                  key
+     * @param {String}                  value
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map}                     payload
+     * @param {Exception}               exception
+     * </CallbackData>
      */
-    public void getBroadcastMessage(int num, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback) {
+    public void dbSet(String key, String value, int timeout, FPCallback.ICallback callback) {
 
         Map payload = new HashMap();
 
-        payload.put("num", num);
-        payload.put("desc", desc);
-        payload.put("page", page);
-
-        if (localmid != 0) {
-
-            payload.put("localmid", localmid);
-        }
-
-        if (localid != 0) {
-
-            payload.put("localid", localid);
-        }
-
-        if (mtypes != null) {
-
-            payload.put("mtypes", mtypes);
-        }
+        payload.put("key", key);
+        payload.put("value", value);
 
         FPData data = new FPData();
         data.setFlag(0x1);
         data.setMtype(0x1);
-        data.setMethod("getbroadcastmsg");
+        data.setMethod("dbset");
 
         byte[] bytes = new byte[0];
         PayloadPacker packer = new PayloadPacker();
@@ -1181,334 +2183,24 @@ public class RTMClient {
     }
 
     /**
-     * @param {long}                 peeruid
-     * @param {int}                  num
-     * @param {int}                  direction
-     * @param {boolean}              desc
-     * @param {int}                  page
-     * @param {long}                 localmid
-     * @param {long}                 localid
-     * @param {List<Byte>}           mtypes
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<num:int, maxid:long, msgs:List<Map>>} payload
-     */
-    public void getP2PMessage(long peeruid, int num, int direction, boolean desc, int page, long localmid, long localid, List<Byte> mtypes, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("ouid", peeruid);
-        payload.put("num", num);
-        payload.put("direction", direction);
-        payload.put("desc", desc);
-        payload.put("page", page);
-
-        if (localmid != 0) {
-
-            payload.put("localmid", localmid);
-        }
-
-        if (localid != 0) {
-
-            payload.put("localid", localid);
-        }
-
-        if (mtypes != null) {
-
-            payload.put("mtypes", mtypes);
-        }
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("getp2pmsg");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {String}               apptype
-     * @param {String}               devicetoken
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
-     */
-    public void addDevice(String apptype, String devicetoken, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("apptype", apptype);
-        payload.put("devicetoken", devicetoken);
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("adddevice");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {String}               devicetoken
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
-     */
-    public void removeDevice(String devicetoken, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("devicetoken", devicetoken);
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("removedevice");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {String}               targetLanguage
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
-     */
-    public void setTranslationLanguage(String targetLanguage, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("lang", targetLanguage);
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("setlang");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {String}               originalMessage
-     * @param {String}               originalLanguage
-     * @param {String}               targetLanguage
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<stext:String, src:String, dtext:String, dst:String>} payload
-     */
-    public void translate(String originalMessage, String originalLanguage, String targetLanguage, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("text", originalMessage);
-        payload.put("dst", targetLanguage);
-
-        if (originalLanguage != null) {
-
-            payload.put("src", originalLanguage);
-        }
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("translate");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {double}               lat
-     * @param {double}               lng
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
-     */
-    public void setGeo(double lat, double lng, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("lat", lat);
-        payload.put("lng", lng);
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("setgeo");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map<lat:double, lng:double>} payload
-     */
-    public void getGeo(int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("getgeo");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        this.sendQuest(data, callback, timeout);
-    }
-
-    /**
-     * @param {List<Long>}           uids
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {List<ArrayList<Int64BE, double, double>>} payload
-     */
-    public void getGeos(List<Long> uids, int timeout, FPCallback.ICallback callback) {
-
-        Map payload = new HashMap();
-
-        payload.put("uids", uids);
-
-        FPData data = new FPData();
-        data.setFlag(0x1);
-        data.setMtype(0x1);
-        data.setMethod("getgeos");
-
-        byte[] bytes = new byte[0];
-        PayloadPacker packer = new PayloadPacker();
-
-        try {
-
-            packer.pack(payload);
-            bytes = packer.toByteArray();
-        } catch (IOException ex) {
-
-            ex.printStackTrace();
-        }
-
-        data.setPayload(bytes);
-        final FPCallback.ICallback cb = callback;
-
-        this.sendQuest(data, new FPCallback.ICallback() {
-
-            @Override
-            public void callback(CallbackData cbd) {
-                if (cb == null) {
-
-                    return;
-                }
-
-                Map payload = (Map) cbd.getPayload();
-
-                if (payload != null) {
-
-                    List<ArrayList> geos = (List<ArrayList>) payload.get("geos");
-                    cb.callback(new CallbackData(geos));
-                    return;
-                }
-
-                cb.callback(cbd);
-            }
-        }, timeout);
-    }
-
-    /**
-     * @param {byte}                 mtype
-     * @param {long}                 to
-     * @param {byte[]}               fileBytes
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * fileGate (1)
+     *
+     * @param {byte}                    mtype
+     * @param {long}                    to
+     * @param {byte[]}                  fileBytes
+     * @param {long}                    mid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map(mtime:long)}         payload
+     * @param {Exception}               exception
+     * @param {long}                    mid
+     * </CallbackData>
      */
     public void sendFile(byte mtype, long to, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback) {
 
@@ -1529,40 +2221,24 @@ public class RTMClient {
     }
 
     /**
-     * @param {byte}                 mtype
-     * @param {List<Long>}           tos
-     * @param {byte[]}               fileBytes
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
-     */
-    public void sendFiles(byte mtype, List<Long> tos, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback) {
-
-        if (fileBytes == null || fileBytes.length <= 0) {
-
-            this.getEvent().fireEvent(new EventData(this, "error", new Exception("empty file bytes!")));
-            return;
-        }
-
-        Map ops = new HashMap();
-
-        ops.put("cmd", "sendfiles");
-        ops.put("tos", tos);
-        ops.put("mtype", mtype);
-        ops.put("file", fileBytes);
-
-        this.fileSendProcess(ops, mid, timeout, callback);
-    }
-
-    /**
-     * @param {byte}                 mtype
-     * @param {long}                 gid
-     * @param {byte[]}               fileBytes
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * fileGate (3)
+     *
+     * @param {byte}                    mtype
+     * @param {long}                    gid
+     * @param {byte[]}                  fileBytes
+     * @param {long}                    mid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map(mtime:long)}         payload
+     * @param {Exception}               exception
+     * @param {long}                    mid
+     * </CallbackData>
      */
     public void sendGroupFile(byte mtype, long gid, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback) {
 
@@ -1583,13 +2259,24 @@ public class RTMClient {
     }
 
     /**
-     * @param {byte}                 mtype
-     * @param {long}                 rid
-     * @param {byte[]}               fileBytes
-     * @param {long}                 mid
-     * @param {int}                  timeout
-     * @param {FPCallback.ICallback} callback
-     * @callback {Map}               payload
+     *
+     * fileGate (4)
+     *
+     * @param {byte}                    mtype
+     * @param {long}                    rid
+     * @param {byte[]}                  fileBytes
+     * @param {long}                    mid
+     * @param {int}                     timeout
+     * @param {FPCallback.ICallback}    callback
+     *
+     * @callback
+     * @param {CallbackData}            cbdata
+     *
+     * <CallbackData>
+     * @param {Map(mtime:long)}         payload
+     * @param {Exception}               exception
+     * @param {long}                    mid
+     * </CallbackData>
      */
     public void sendRoomFile(byte mtype, long rid, byte[] fileBytes, long mid, int timeout, FPCallback.ICallback callback) {
 
@@ -1610,61 +2297,61 @@ public class RTMClient {
     }
 
     public void connect(String endpoint, int timeout) {
-
-        this._endpoint = endpoint;
-
-        if (this._baseClient != null && this._baseClient.isOpen()) {
-
-            this._baseClient.close();
-            return;
-        }
-
-        this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
-
-        final RTMClient self = this;
-        final int ftimeout = timeout;
-        FPEvent.IListener listener = new FPEvent.IListener() {
-
-            @Override
-            public void fpEvent(EventData event) {
-
-                switch (event.getType()) {
-                    case "connect":
-                        self._baseClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
-
-                            @Override
-                            public void fpEvent(EventData event) {
-
-                                self._isClose = true;
-                            }
-                        });
-                        self.getEvent().fireEvent(new EventData(this, "connect"));
-                        break;
-                    case "close":
-                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
-                        self._baseClient.getEvent().removeListener();
-                        self.reConnect();
-                        break;
-                    case "error":
-                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
-                        break;
-                }
-            }
-        };
-
-        this._baseClient.getEvent().addListener("connect", listener);
-        this._baseClient.getEvent().addListener("close", listener);
-        this._baseClient.getEvent().addListener("error", listener);
-
-        this._baseClient.getProcessor().setProcessor(this._processor);
-
-        if (this._derKey != null && this._curve != null) {
-
-            this._baseClient.enableEncryptorByData(this._curve, this._derKey, false, false);
-        } else {
-
-            this._baseClient.enableConnect();
-        }
+//
+//        this._endpoint = endpoint;
+//
+//        if (this._baseClient != null && this._baseClient.isOpen()) {
+//
+//            this._baseClient.close();
+//            return;
+//        }
+//
+//        this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
+//
+//        final RTMClient self = this;
+//        final int ftimeout = timeout;
+//        FPEvent.IListener listener = new FPEvent.IListener() {
+//
+//            @Override
+//            public void fpEvent(EventData event) {
+//
+//                switch (event.getType()) {
+//                    case "connect":
+//                        self._baseClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
+//
+//                            @Override
+//                            public void fpEvent(EventData event) {
+//
+//                                self._isClose = true;
+//                            }
+//                        });
+//                        self.getEvent().fireEvent(new EventData(this, "connect"));
+//                        break;
+//                    case "close":
+//                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
+//                        self._baseClient.getEvent().removeListener();
+//                        self.reConnect();
+//                        break;
+//                    case "error":
+//                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
+//                        break;
+//                }
+//            }
+//        };
+//
+//        this._baseClient.getEvent().addListener("connect", listener);
+//        this._baseClient.getEvent().addListener("close", listener);
+//        this._baseClient.getEvent().addListener("error", listener);
+//
+//        this._baseClient.getProcessor().setProcessor(this._processor);
+//
+//        if (this._derKey != null && this._curve != null) {
+//
+//            this._baseClient.enableEncryptorByData(this._curve, this._derKey, false, false);
+//        } else {
+//
+//            this._baseClient.enableConnect();
+//        }
     }
 
     private void fileSendProcess(Map ops, long mid, int timeout, FPCallback.ICallback callback) {
@@ -1803,10 +2490,9 @@ public class RTMClient {
 
     private void connectRTMGate(int timeout) {
 
-        if (this._baseClient != null && this._baseClient.isOpen()) {
+        if (this._baseClient != null) {
 
-            this._baseClient.close();
-            return;
+            this._baseClient.destroy();
         }
 
         this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
@@ -1833,7 +2519,6 @@ public class RTMClient {
                         break;
                     case "close":
                         self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
-                        self._baseClient.getEvent().removeListener();
                         self.reConnect();
                         break;
                     case "error":
@@ -1858,6 +2543,11 @@ public class RTMClient {
         }
     }
 
+    /**
+     *
+     * rtmGate (1)
+     *
+     */
     private void auth(int timeout) {
 
         Map payload = new HashMap();
@@ -1866,7 +2556,7 @@ public class RTMClient {
         payload.put("uid", this._uid);
         payload.put("token", this._token);
         payload.put("version", this._version);
-        payload.put("unread", this._recvUnreadMsg);
+        payload.put("attrs", this._attrs);
 
         FPData data = new FPData();
         data.setFlag(0x1);

@@ -35,12 +35,28 @@ public class RTMProcessor implements FPProcessor.IProcessor {
     @Override
     public void service(FPData data, FPProcessor.IAnswer answer) {
 
+        boolean callCb = true;
+
+        if (RTMConfig.SERVER_PUSH.kickOut == data.getMethod()) {
+
+            callCb = false;
+        }
+
+        if (RTMConfig.SERVER_PUSH.kickOutRoom == data.getMethod()) {
+
+            callCb = false;
+        }
+
         Map payload = null;
 
         if (data.getFlag() == 0) {
 
             JsonHelper.IJson json = JsonHelper.getInstance().getJson();
-            answer.sendAnswer(json.toJSON(new HashMap()), false);
+
+            if (callCb) {
+
+                answer.sendAnswer(json.toJSON(new HashMap()), false);
+            }
 
             payload = json.toMap(data.jsonPayload());
         }
@@ -59,7 +75,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
                 ex.printStackTrace();
             }
 
-            if (bytes.length > 0) {
+            if (callCb && bytes.length > 0) {
 
                 answer.sendAnswer(bytes, false);
             }
@@ -76,11 +92,6 @@ public class RTMProcessor implements FPProcessor.IProcessor {
         }
 
         if (payload != null) {
-
-            if (payload.containsKey("pid")) {
-
-                payload.put("pid", wantInteger(payload, "pid"));
-            }
 
             if (payload.containsKey("mid")) {
 
@@ -107,11 +118,6 @@ public class RTMProcessor implements FPProcessor.IProcessor {
                 payload.put("rid", wantLong(payload, "rid"));
             }
 
-            if (payload.containsKey("ftype")) {
-
-                payload.put("ftype", wantByte(payload, "ftype"));
-            }
-
             if (payload.containsKey("mtype")) {
 
                 payload.put("mtype", wantByte(payload, "mtype"));
@@ -136,21 +142,6 @@ public class RTMProcessor implements FPProcessor.IProcessor {
                     break;
                 case RTMConfig.SERVER_PUSH.recvBroadcastMessage:
                     this.pushbroadcastmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvTranslatedMessage:
-                    this.transmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvTranslatedGroupMessage:
-                    this.transgroupmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvTranslatedRoomMessage:
-                    this.transroommsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvTranslatedBroadcastMessage:
-                    this.transbroadcastmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvUnreadMsgStatus:
-                    this.pushunread(payload);
                     break;
                 case RTMConfig.SERVER_PUSH.recvPing:
                     this.ping(payload);
@@ -185,14 +176,13 @@ public class RTMProcessor implements FPProcessor.IProcessor {
     }
 
     /**
-     * @param {int}    data.pid
      * @param {long}   data.from
      * @param {long}   data.to
      * @param {byte}   data.mtype
-     * @param {byte}   data.ftype
      * @param {long}   data.mid
      * @param {String} data.msg
      * @param {String} data.attrs
+     * @param {long}   data.mtime
      */
     private void pushmsg(Map data) {
 
@@ -204,25 +194,25 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        if ((byte) data.get("ftype") > 0) {
+        byte mtype = (byte) data.get("mtype");
+
+        if (mtype >= 40 && mtype <= 50) {
 
             this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvFile, data));
             return;
         }
 
-        data.remove("ftype");
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvMessage, data));
     }
 
     /**
-     * @param {int}    data.pid
      * @param {long}   data.from
      * @param {long}   data.gid
      * @param {byte}   data.mtype
-     * @param {byte}   data.ftype
      * @param {long}   data.mid
      * @param {String} data.msg
      * @param {String} data.attrs
+     * @param {long}   data.mtime
      */
     private void pushgroupmsg(Map data) {
 
@@ -234,25 +224,25 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        if ((byte) data.get("ftype") > 0) {
+        byte mtype = (byte) data.get("mtype");
+
+        if (mtype >= 40 && mtype <= 50) {
 
             this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvGroupFile, data));
             return;
         }
 
-        data.remove("ftype");
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvGroupMessage, data));
     }
 
     /**
-     * @param {int}    data.pid
      * @param {long}   data.from
      * @param {long}   data.rid
      * @param {byte}   data.mtype
-     * @param {byte}   data.ftype
      * @param {long}   data.mid
      * @param {String} data.msg
      * @param {String} data.attrs
+     * @param {long}   data.mtime
      */
     private void pushroommsg(Map data) {
 
@@ -264,23 +254,24 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        if ((byte) data.get("ftype") > 0) {
+        byte mtype = (byte) data.get("mtype");
+
+        if (mtype >= 40 && mtype <= 50) {
 
             this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvRoomFile, data));
             return;
         }
 
-        data.remove("ftype");
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvRoomMessage, data));
     }
 
     /**
      * @param {long}   data.from
      * @param {byte}   data.mtype
-     * @param {byte}   data.ftype
      * @param {long}   data.mid
      * @param {String} data.msg
      * @param {String} data.attrs
+     * @param {long}   data.mtime
      */
     private void pushbroadcastmsg(Map data) {
 
@@ -292,102 +283,15 @@ public class RTMProcessor implements FPProcessor.IProcessor {
             }
         }
 
-        if ((byte) data.get("ftype") > 0) {
+        byte mtype = (byte) data.get("mtype");
+
+        if (mtype >= 40 && mtype <= 50) {
 
             this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvBroadcastFile, data));
             return;
         }
 
-        data.remove("ftype");
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvBroadcastMessage, data));
-    }
-
-    /**
-     * @param {long}   data.from
-     * @param {long}   data.mid
-     * @param {long}   data.omid
-     * @param {String} data.msg
-     */
-    private void transmsg(Map data) {
-
-        if (data.containsKey("mid")) {
-
-            if (!this.checkMid(1, (long) data.get("mid"), (long) data.get("from"), 0)) {
-
-                return;
-            }
-        }
-
-        this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedMessage, data));
-    }
-
-    /**
-     * @param {long}   data.from
-     * @param {long}   data.gid
-     * @param {long}   data.mid
-     * @param {long}   data.omid
-     * @param {String} data.msg
-     */
-    private void transgroupmsg(Map data) {
-
-        if (data.containsKey("mid")) {
-
-            if (!this.checkMid(2, (long) data.get("mid"), (long) data.get("from"), (long) data.get("gid"))) {
-
-                return;
-            }
-        }
-
-        this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedGroupMessage, data));
-    }
-
-    /**
-     * @param {long}   data.from
-     * @param {long}   data.rid
-     * @param {long}   data.mid
-     * @param {long}   data.omid
-     * @param {String} data.msg
-     */
-    private void transroommsg(Map data) {
-
-        if (data.containsKey("mid")) {
-
-            if (!this.checkMid(3, (long) data.get("mid"), (long) data.get("from"), (long) data.get("rid"))) {
-
-                return;
-            }
-        }
-
-        this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedRoomMessage, data));
-    }
-
-    /**
-     * @param {long}   data.from
-     * @param {long}   data.mid
-     * @param {long}   data.omid
-     * @param {String} data.msg
-     */
-    private void transbroadcastmsg(Map data) {
-
-        if (data.containsKey("mid")) {
-
-            if (!this.checkMid(4, (long) data.get("mid"), (long) data.get("from"), 0)) {
-
-                return;
-            }
-        }
-
-        this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvTranslatedBroadcastMessage, data));
-    }
-
-    /**
-     * @param {List<Long>} data.p2p
-     * @param {List<Long>} data.group
-     * @param {boolean}    data.bc
-     */
-    private void pushunread(Map data) {
-
-        this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvUnreadMsgStatus, data));
     }
 
     /**

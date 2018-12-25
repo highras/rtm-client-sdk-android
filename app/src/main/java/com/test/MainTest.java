@@ -9,6 +9,7 @@ import com.rtm.RTMClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 
 import static java.lang.Thread.sleep;
 
@@ -81,7 +82,7 @@ public class MainTest extends AppCompatActivity {
                 654321,
                 "5C65CD872903AAB37211EC468B4A1364",
                 null,
-                false,
+                new HashMap<String, String>(),
                 true,
                 20 * 1000,
                 true

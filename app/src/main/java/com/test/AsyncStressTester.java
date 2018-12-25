@@ -60,7 +60,7 @@ class AsyncStressTester {
                     654321,
                     "5C65CD872903AAB37211EC468B4A1364",
                     null,
-                    false,
+                    new HashMap<String, String>(),
                     true,
                     20 * 1000,
                     true
