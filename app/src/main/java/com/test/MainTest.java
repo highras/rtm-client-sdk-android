@@ -74,13 +74,13 @@ public class MainTest extends AppCompatActivity {
 
     public static void singleClientConcurrentTest() {
 
-        String endpoint = "35.167.185.139:13013";
+        String endpoint = "52.83.245.22:13013";
 
         RTMClient client = new RTMClient(
-                "35.167.185.139:13325",
+                "52.83.245.22:13325",
                 1000012,
                 654321,
-                "5C65CD872903AAB37211EC468B4A1364",
+                "E94BDE822C5FAA1C5912970668D9E52C",
                 null,
                 new HashMap<String, String>(),
                 true,

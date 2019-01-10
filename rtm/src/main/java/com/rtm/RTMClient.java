@@ -90,6 +90,22 @@ public class RTMClient {
         this._reconnect = reconnect;
         this._timeout = timeout;
         this._startTimerThread = startTimerThread;
+
+        this.initProcessor();
+    }
+
+    private void initProcessor() {
+
+        final RTMClient self = this;
+        this._processor.getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self._isClose = true;
+                self._baseClient.close();
+            }
+        });
     }
 
     public FPProcessor.IProcessor getProcessor() {
@@ -2317,14 +2333,6 @@ public class RTMClient {
 //
 //                switch (event.getType()) {
 //                    case "connect":
-//                        self._baseClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
-//
-//                            @Override
-//                            public void fpEvent(EventData event) {
-//
-//                                self._isClose = true;
-//                            }
-//                        });
 //                        self.getEvent().fireEvent(new EventData(this, "connect"));
 //                        break;
 //                    case "close":
@@ -2506,15 +2514,6 @@ public class RTMClient {
 
                 switch (event.getType()) {
                     case "connect":
-                        self._baseClient.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
-
-                            @Override
-                            public void fpEvent(EventData event) {
-
-                                self._isClose = true;
-                                self._baseClient.close();
-                            }
-                        });
                         self.auth(ftimeout);
                         break;
                     case "close":
