@@ -2586,7 +2586,8 @@ public class RTMClient {
 
                 if (exception != null) {
 
-                    self._baseClient.close(exception);
+                    self.getEvent().fireEvent(new EventData(this, "error", exception));
+                    self.reConnect();
                     return;
                 }
 
@@ -2608,7 +2609,7 @@ public class RTMClient {
                     if (gate != null) {
 
                         self._endpoint = gate;
-                        self._baseClient.close();
+                        self.reConnect();
                         return;
                     }
 
