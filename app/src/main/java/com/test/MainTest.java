@@ -28,10 +28,10 @@ public class MainTest extends AppCompatActivity {
             @Override
             public void run() {
                 // case 1
-                baseTest();
+//                baseTest();
 
                 // case 2
-//                asyncStressTest();
+                asyncStressTest();
 
                 // case 3
 //                singleClientConcurrentTest();
@@ -49,16 +49,10 @@ public class MainTest extends AppCompatActivity {
 
     public static void asyncStressTest() {
 
-        String endpoint = "35.167.185.139:13013";
+        String endpoint = "52.83.245.22:13013";
 
         int clientCount = 10;
-        int totalQPS = 1800;
-
-        /*
-        System.out.println("Usage:");
-        System.out.println("\tasyncStressClient [endpoint] [clientCount] [totalQPS]");
-        System.out.println("\tdefault: endpoint: <please change code>, clientCount = 100, totalQPS = 10000.");
-        */
+        int totalQPS = 500;
 
         AsyncStressTester tester = new AsyncStressTester(endpoint, clientCount, totalQPS);
         tester.launch();
@@ -80,7 +74,7 @@ public class MainTest extends AppCompatActivity {
                 "52.83.245.22:13325",
                 1000012,
                 654321,
-                "E94BDE822C5FAA1C5912970668D9E52C",
+                "56DEAB2B20BE608DDA178C6C54BFE91A",
                 null,
                 new HashMap<String, String>(),
                 true,

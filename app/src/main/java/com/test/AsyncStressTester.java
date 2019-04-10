@@ -26,7 +26,9 @@ class AsyncStressTester {
     private static LinkedList<Tester> threads;
 
     private static void incSend() {
+
         synchronized (AsyncStressTester.class) {
+
             sendCount += 1;
         }
     }
@@ -51,14 +53,15 @@ class AsyncStressTester {
         private RTMClient client;
         private int sleepMills;
         private int batchCount;
+        private FPData buffer;
 
         Tester(String endpoint, int qps) {
 
             client = new RTMClient(
-                    "35.167.185.139:13325",
+                    "52.83.245.22:13325",
                     1000012,
                     654321,
-                    "5C65CD872903AAB37211EC468B4A1364",
+                    "E397902F2C03C4216D115A488E2F687C",
                     null,
                     new HashMap<String, String>(),
                     true,
@@ -68,6 +71,8 @@ class AsyncStressTester {
 
             sleepMills = 1000 / qps;
             batchCount = 1;
+
+            buffer = buildStandardTestQuest();
 
             while (sleepMills == 0) {
                 batchCount += 1;
@@ -129,8 +134,11 @@ class AsyncStressTester {
                     long startTime = System.nanoTime();
 
                     for (int i = 0; i < batchCount; i++) {
+
                         final long send_time = System.nanoTime();
-                        client.sendQuest(buildStandardTestQuest(), new FPCallback.ICallback() {
+                        buffer.setSeq(buffer.getSeq() + 1);
+
+                        client.sendQuest(buffer, new FPCallback.ICallback() {
 
                                     @Override
                                     public void callback(CallbackData cbd) {

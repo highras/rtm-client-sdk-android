@@ -35,7 +35,19 @@ public class RTMClient {
                 count = 0;
             }
 
-            return Long.valueOf(String.valueOf(System.currentTimeMillis()).concat(String.valueOf(count)));
+            String strFix = String.valueOf(count);
+
+            if (count < 100) {
+
+                strFix = "0".concat(strFix);
+            }
+
+            if (count < 10) {
+
+                strFix = "0".concat(strFix);
+            }
+
+            return Long.valueOf(String.valueOf(System.currentTimeMillis()).concat(strFix));
         }
     }
 
@@ -170,15 +182,38 @@ public class RTMClient {
         this._ipv6 = ipv6;
         this._isClose = false;
 
-        if (this._endpoint != null) {
+        if (this._endpoint != null && !this._endpoint.isEmpty()) {
 
             this.connectRTMGate(this._timeout);
             return;
         }
 
+        final RTMClient self = this;
+
         if (this._dispatchClient == null) {
 
             this._dispatchClient = new DispatchClient(this._dispatch, this._timeout, this._startTimerThread);
+
+            this._dispatchClient.getEvent().addListener("close", new FPEvent.IListener() {
+
+                @Override
+                public void fpEvent(EventData event) {
+
+                    System.out.println("[DispatchClient] closed!");
+
+                    if (self._dispatchClient != null) {
+
+                        self._dispatchClient.destroy();
+                        self._dispatchClient = null;
+                    }
+
+                    if (self._endpoint == null || self._endpoint.isEmpty()) {
+
+                        self.getEvent().fireEvent(new EventData(self, "error", new Exception("dispatch client close with err!")));
+                        self.reConnect();
+                    }
+                }
+            });
         }
 
         Map payload = new HashMap();
@@ -189,25 +224,23 @@ public class RTMClient {
         payload.put("addrType", this._ipv6 ? "ipv6" : "ipv4");
         payload.put("version", this._version);
 
-        final RTMClient self = this;
-
         this._dispatchClient.which(payload, this._timeout, this._dispatchClient.questCallback(new FPCallback.ICallback() {
 
             @Override
             public void callback(CallbackData cbd) {
 
                 Map payload = (Map) cbd.getPayload();
+                Exception ex = cbd.getException();
 
                 if (payload != null) {
 
-                    self._dispatchClient.destroy();
-                    self._dispatchClient = null;
-
                     String endpoint = (String) payload.get("endpoint");
                     self.login(endpoint, self._ipv6);
-                } else {
+                }
 
-                    self.reConnect();
+                if (ex != null) {
+
+                    self.getEvent().fireEvent(new EventData(self, "error", ex));
                 }
             }
         }));
@@ -2175,7 +2208,7 @@ public class RTMClient {
         Map payload = new HashMap();
 
         payload.put("key", key);
-        payload.put("value", value);
+        payload.put("val", value);
 
         FPData data = new FPData();
         data.setFlag(0x1);
@@ -2312,54 +2345,53 @@ public class RTMClient {
         this.fileSendProcess(ops, mid, timeout, callback);
     }
 
+    // just for test
     public void connect(String endpoint, int timeout) {
-//
-//        this._endpoint = endpoint;
-//
-//        if (this._baseClient != null && this._baseClient.isOpen()) {
-//
-//            this._baseClient.close();
-//            return;
-//        }
-//
-//        this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
-//
-//        final RTMClient self = this;
-//        final int ftimeout = timeout;
-//        FPEvent.IListener listener = new FPEvent.IListener() {
-//
-//            @Override
-//            public void fpEvent(EventData event) {
-//
-//                switch (event.getType()) {
-//                    case "connect":
-//                        self.getEvent().fireEvent(new EventData(this, "connect"));
-//                        break;
-//                    case "close":
-//                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
-//                        self._baseClient.getEvent().removeListener();
-//                        self.reConnect();
-//                        break;
-//                    case "error":
-//                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
-//                        break;
-//                }
-//            }
-//        };
-//
-//        this._baseClient.getEvent().addListener("connect", listener);
-//        this._baseClient.getEvent().addListener("close", listener);
-//        this._baseClient.getEvent().addListener("error", listener);
-//
-//        this._baseClient.getProcessor().setProcessor(this._processor);
-//
-//        if (this._derKey != null && this._curve != null) {
-//
-//            this._baseClient.enableEncryptorByData(this._curve, this._derKey, false, false);
-//        } else {
-//
-//            this._baseClient.enableConnect();
-//        }
+
+        this._endpoint = endpoint;
+
+        if (this._baseClient != null && this._baseClient.isOpen()) {
+
+            this._baseClient.close();
+            return;
+        }
+
+        this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
+
+        final RTMClient self = this;
+        final int ftimeout = timeout;
+        FPEvent.IListener listener = new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                switch (event.getType()) {
+                    case "connect":
+                        self.getEvent().fireEvent(new EventData(this, "connect"));
+                        break;
+                    case "close":
+                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
+                        break;
+                    case "error":
+                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
+                        break;
+                }
+            }
+        };
+
+        this._baseClient.getEvent().addListener("connect", listener);
+        this._baseClient.getEvent().addListener("close", listener);
+        this._baseClient.getEvent().addListener("error", listener);
+
+        this._baseClient.getProcessor().setProcessor(this._processor);
+
+        if (this._derKey != null && this._curve != null) {
+
+            this._baseClient.enableEncryptorByData(this._curve, this._derKey, false, false);
+        } else {
+
+            this._baseClient.enableConnect();
+        }
     }
 
     private void fileSendProcess(Map ops, long mid, int timeout, FPCallback.ICallback callback) {
@@ -2514,13 +2546,18 @@ public class RTMClient {
 
                 switch (event.getType()) {
                     case "connect":
+
                         self.auth(ftimeout);
                         break;
                     case "close":
+
                         self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
+
+                        self._endpoint = null;
                         self.reConnect();
                         break;
                     case "error":
+
                         self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
                         break;
                 }
@@ -2639,9 +2676,7 @@ class DispatchClient extends BaseClient {
     }
 
     @Override
-    protected void init(String host, int port, boolean reconnect, int timeout) {
-
-        super.init(host, port, reconnect, timeout);
+    protected void addListener() {
 
         final DispatchClient self = this;
         FPEvent.IListener listener = new FPEvent.IListener() {
@@ -2653,9 +2688,6 @@ class DispatchClient extends BaseClient {
                     case "connect":
                         self.onConnect();
                         break;
-                    case "close":
-                        self.onClose();
-                        break;
                     case "error":
                         self.onException(event.getException());
                         break;
@@ -2664,7 +2696,6 @@ class DispatchClient extends BaseClient {
         };
 
         this.getEvent().addListener("connect", listener);
-        this.getEvent().addListener("close", listener);
         this.getEvent().addListener("error", listener);
     }
 
@@ -2698,13 +2729,7 @@ class DispatchClient extends BaseClient {
 
     private void onConnect() {
 
-        System.out.println("Dispatch client connected!");
-    }
-
-    private void onClose() {
-
-        System.out.println("Dispatch client closed!");
-        this.destroy();
+        System.out.println("[DispatchClient] connected!");
     }
 
     private void onException(Exception ex) {
@@ -2726,9 +2751,7 @@ class FileClient extends BaseClient {
     }
 
     @Override
-    protected void init(String host, int port, boolean reconnect, int timeout) {
-
-        super.init(host, port, reconnect, timeout);
+    protected void addListener() {
 
         final FileClient self = this;
         FPEvent.IListener listener = new FPEvent.IListener() {
@@ -2820,12 +2843,12 @@ class FileClient extends BaseClient {
 
     private void onConnect() {
 
-        System.out.println("File client connected!");
+        System.out.println("[FileClient] connected!");
     }
 
     private void onClose() {
 
-        System.out.println("File client closed!");
+        System.out.println("[FileClient] closed!");
         this.destroy();
     }
 
@@ -2845,6 +2868,8 @@ class BaseClient extends FPClient {
 
             ThreadPool.getInstance().startTimerThread();
         }
+
+        this.addListener();
     }
 
     public BaseClient(String host, int port, boolean reconnect, int timeout, boolean startTimerThread) {
@@ -2855,12 +2880,12 @@ class BaseClient extends FPClient {
 
             ThreadPool.getInstance().startTimerThread();
         }
+
+        this.addListener();
     }
 
-    @Override
-    protected void init(String host, int port, boolean reconnect, int timeout) {
+    protected void addListener() {
 
-        super.init(host, port, reconnect, timeout);
     }
 
     public void enableEncryptorByData(String curve, byte[] derKey, boolean streamMode, boolean reinforce) {
