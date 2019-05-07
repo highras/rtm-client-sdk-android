@@ -28,10 +28,10 @@ public class MainTest extends AppCompatActivity {
             @Override
             public void run() {
                 // case 1
-//                baseTest();
+                baseTest();
 
                 // case 2
-                asyncStressTest();
+//                asyncStressTest();
 
                 // case 3
 //                singleClientConcurrentTest();
