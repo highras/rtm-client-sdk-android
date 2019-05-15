@@ -82,31 +82,35 @@ public class MainTest extends AppCompatActivity {
                 true
         );
 
-        FPEvent.IListener listener = new FPEvent.IListener() {
+        client.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData event) {
 
-                switch (event.getType()) {
-                    case "connect":
-                        System.out.println("\nconnect");
-                        incConnectSuccess();
-                        break;
-                    case "close":
-                        System.out.println("\nclose");
-                        incConnectionClosed();
-//                        System.out.print('~');
-                        break;
-                    case "error":
-                        event.getException().printStackTrace();
-                        break;
-                }
+                System.out.println("\nconnect");
+                incConnectSuccess();
             }
-        };
+        });
 
-        client.getEvent().addListener("connect", listener);
-        client.getEvent().addListener("close", listener);
-        client.getEvent().addListener("error", listener);
+        client.getEvent().addListener("close", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                System.out.println("\nclose");
+                incConnectionClosed();
+//                System.out.print('~');
+            }
+        });
+
+        client.getEvent().addListener("error", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                event.getException().printStackTrace();
+            }
+        });
 
         client.connect(endpoint, 20 * 1000);
         TestHolder.showSignDesc();

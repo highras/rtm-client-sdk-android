@@ -33,32 +33,37 @@ public class TestCase {
         );
 
         final TestCase self = this;
-        FPEvent.IListener listener = new FPEvent.IListener() {
+
+        this._client.getEvent().addListener("login", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData event) {
 
-                switch (event.getType()) {
-                    case "login":
-                        if (event.getException() != null) {
-                            self.onError(event.getException());
-                            break;
-                        }
-                        self.onLogin(event.getPayload());
-                        break;
-                    case "close":
-                        self.onClose(event.hasRetry());
-                        break;
-                    case "error":
-                        self.onError(event.getException());
-                        break;
+                if (event.getException() != null) {
+                    self.onError(event.getException());
+                    return;
                 }
+                self.onLogin(event.getPayload());
             }
-        };
+        });
 
-        this._client.getEvent().addListener("login", listener);
-        this._client.getEvent().addListener("close", listener);
-        this._client.getEvent().addListener("error", listener);
+        this._client.getEvent().addListener("close", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.onClose(event.hasRetry());
+            }
+        });
+
+        this._client.getEvent().addListener("error", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.onError(event.getException());
+            }
+        });
 
         this._client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
 

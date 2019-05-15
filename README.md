@@ -44,58 +44,70 @@ RTMClient client = new RTMClient(
 );
 
 // 添加监听
-client.getEvent().addListener("login", listener);
-client.getEvent().addListener("close", listener);
-client.getEvent().addListener("error", listener);
+client.getEvent().addListener("login", new FPEvent.IListener() {
+
+    @Override
+    public void fpEvent(FPEvent event) {
+
+        if (event.getException() != null) {
+
+            System.out.println("Auth Fail!");
+            return;
+        }
+
+        System.out.println("Authed!");
+
+        // 发送消息
+        client.sendMessage(778899, (byte) 8, "hello !", "", 0, 5 * 1000, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                Object obj = cbd.getPayload();
+
+                if (obj != null) {
+
+                    Map payload = (Map) obj;
+                    System.out.println("\n[DATA] sendMessage:");
+                    System.out.println(payload.toString());
+                } else {
+
+                    System.err.println("\n[ERR] sendMessage:");
+                    System.err.println(cbd.getException().getMessage());
+                }
+            }
+        });
+    }
+});
+
+client.getEvent().addListener("close", new FPEvent.IListener() {
+
+    @Override
+    public void fpEvent(FPEvent event) {
+
+        System.out.println("Closed! retry:" + event.hasRetry());
+    }
+});
+
+client.getEvent().addListener("error", new FPEvent.IListener() {
+
+    @Override
+    public void fpEvent(FPEvent event) {
+
+        event.getException().printStackTrace();
+    }
+});
 
 // push service
 client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
+
     @Override
     public void fpEvent(FPEvent event) {
+
         System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
         System.out.println(event.getPayload().toString());
     }
 });
-
-FPEvent.IListener listener = new FPEvent.IListener() {
-
-    @Override
-    public void fpEvent(FPEvent event) {
-
-        switch (event.getType()) {
-            case "login":
-                if (event.getException() != null) {
-                    System.out.println("Auth Fail!");
-                    break;
-                }
-
-                System.out.println("Authed!");
-
-                // 发送消息
-                client.sendMessage(778899, (byte) 8, "hello !", "", 0, 5 * 1000, new FPCallback.ICallback() {
-                    @Override
-                    public void callback(CallbackData cbd) {
-                        Object obj = cbd.getPayload();
-                        if (obj != null) {
-                            Map payload = (Map) obj;
-                            System.out.println("\n[DATA] sendMessage:");
-                            System.out.println(payload.toString());
-                        } else {
-                            System.err.println("\n[ERR] sendMessage:");
-                            System.err.println(cbd.getException().getMessage());
-                        }
-                    }
-                });
-                break;
-            case "close":
-                System.out.println("Closed! retry:" + event.hasRetry());
-                break;
-            case "error":
-                event.getException().printStackTrace();
-                break;
-        }
-    }
-};
 
 // 开启连接
 client.login(null, false);

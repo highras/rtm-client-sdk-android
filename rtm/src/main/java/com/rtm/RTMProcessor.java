@@ -123,32 +123,12 @@ public class RTMProcessor implements FPProcessor.IProcessor {
                 payload.put("mtype", wantByte(payload, "mtype"));
             }
 
-            switch (data.getMethod()) {
+            try {
 
-                case RTMConfig.SERVER_PUSH.kickOut:
-                    this.kickout(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.kickOutRoom:
-                    this.kickoutroom(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvMessage:
-                    this.pushmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvGroupMessage:
-                    this.pushgroupmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvRoomMessage:
-                    this.pushroommsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvBroadcastMessage:
-                    this.pushbroadcastmsg(payload);
-                    break;
-                case RTMConfig.SERVER_PUSH.recvPing:
-                    this.ping(payload);
-                    break;
-                default:
-                    this._event.fireEvent(new EventData(this, data.getMethod(), payload));
-                    break;
+                RTMProcessor.class.getMethod(data.getMethod(), Map.class).invoke(this, payload);
+            } catch(Exception ex) {
+
+                this._event.fireEvent(new EventData(this, "error", ex));
             }
         }
     }
@@ -161,7 +141,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
     /**
      * @param {Map} data
      */
-    private void kickout(Map data) {
+    public void kickout(Map data) {
 
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.kickOut, data));
     }
@@ -169,7 +149,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
     /**
      * @param {long} data.rid
      */
-    private void kickoutroom(Map data) {
+    public void kickoutroom(Map data) {
 
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.kickOutRoom, data));
     }
@@ -183,7 +163,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      * @param {String} data.attrs
      * @param {long}   data.mtime
      */
-    private void pushmsg(Map data) {
+    public void pushmsg(Map data) {
 
         if (data.containsKey("mid")) {
 
@@ -213,7 +193,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      * @param {String} data.attrs
      * @param {long}   data.mtime
      */
-    private void pushgroupmsg(Map data) {
+    public void pushgroupmsg(Map data) {
 
         if (data.containsKey("mid")) {
 
@@ -243,7 +223,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      * @param {String} data.attrs
      * @param {long}   data.mtime
      */
-    private void pushroommsg(Map data) {
+    public void pushroommsg(Map data) {
 
         if (data.containsKey("mid")) {
 
@@ -272,7 +252,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
      * @param {String} data.attrs
      * @param {long}   data.mtime
      */
-    private void pushbroadcastmsg(Map data) {
+    public void pushbroadcastmsg(Map data) {
 
         if (data.containsKey("mid")) {
 
@@ -296,7 +276,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
     /**
      * @param {Map} data
      */
-    private void ping(Map data) {
+    public void ping(Map data) {
 
         this._event.fireEvent(new EventData(this, RTMConfig.SERVER_PUSH.recvPing, data));
     }

@@ -2361,29 +2361,33 @@ public class RTMClient {
         this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
 
         final RTMClient self = this;
-        final int ftimeout = timeout;
-        FPEvent.IListener listener = new FPEvent.IListener() {
+
+        this._baseClient.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData event) {
 
-                switch (event.getType()) {
-                    case "connect":
-                        self.getEvent().fireEvent(new EventData(this, "connect"));
-                        break;
-                    case "close":
-                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
-                        break;
-                    case "error":
-                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
-                        break;
-                }
+                self.getEvent().fireEvent(new EventData(this, "connect"));
             }
-        };
+        });
 
-        this._baseClient.getEvent().addListener("connect", listener);
-        this._baseClient.getEvent().addListener("close", listener);
-        this._baseClient.getEvent().addListener("error", listener);
+        this._baseClient.getEvent().addListener("close", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
+            }
+        });
+
+        this._baseClient.getEvent().addListener("error", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
+            }
+        });
 
         this._baseClient.getProcessor().setProcessor(this._processor);
 
@@ -2541,34 +2545,36 @@ public class RTMClient {
 
         final RTMClient self = this;
         final int ftimeout = timeout;
-        FPEvent.IListener listener = new FPEvent.IListener() {
+
+        this._baseClient.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData event) {
 
-                switch (event.getType()) {
-                    case "connect":
-
-                        self.auth(ftimeout);
-                        break;
-                    case "close":
-
-                        self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
-
-                        self._endpoint = null;
-                        self.reConnect();
-                        break;
-                    case "error":
-
-                        self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
-                        break;
-                }
+                self.auth(ftimeout);
             }
-        };
+        });
 
-        this._baseClient.getEvent().addListener("connect", listener);
-        this._baseClient.getEvent().addListener("close", listener);
-        this._baseClient.getEvent().addListener("error", listener);
+        this._baseClient.getEvent().addListener("close", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
+
+                self._endpoint = null;
+                self.reConnect();
+            }
+        });
+
+        this._baseClient.getEvent().addListener("error", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
+            }
+        });
 
         this._baseClient.getProcessor().setProcessor(this._processor);
 
@@ -2681,24 +2687,24 @@ class DispatchClient extends BaseClient {
     protected void addListener() {
 
         final DispatchClient self = this;
-        FPEvent.IListener listener = new FPEvent.IListener() {
+
+        this.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData event) {
 
-                switch (event.getType()) {
-                    case "connect":
-                        self.onConnect();
-                        break;
-                    case "error":
-                        self.onException(event.getException());
-                        break;
-                }
+                self.onConnect();
             }
-        };
+        });
 
-        this.getEvent().addListener("connect", listener);
-        this.getEvent().addListener("error", listener);
+        this.getEvent().addListener("error", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.onException(event.getException());
+            }
+        });
     }
 
     public void which(Map payload, int timeout, FPCallback.ICallback callback) {
@@ -2756,27 +2762,33 @@ class FileClient extends BaseClient {
     protected void addListener() {
 
         final FileClient self = this;
-        FPEvent.IListener listener = new FPEvent.IListener() {
+
+        this.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData event) {
-                switch (event.getType()) {
-                    case "connect":
-                        self.onConnect();
-                        break;
-                    case "close":
-                        self.onClose();
-                        break;
-                    case "error":
-                        self.onException(event.getException());
-                        break;
-                }
-            }
-        };
 
-        this.getEvent().addListener("connect", listener);
-        this.getEvent().addListener("close", listener);
-        this.getEvent().addListener("error", listener);
+                self.onConnect();
+            }
+        });
+
+        this.getEvent().addListener("close", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.onClose();
+            }
+        });
+
+        this.getEvent().addListener("error", new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData event) {
+
+                self.onException(event.getException());
+            }
+        });
     }
 
     public void send(String method, byte[] fileBytes, String token, Map payload, int timeout, FPCallback.ICallback callback) {
