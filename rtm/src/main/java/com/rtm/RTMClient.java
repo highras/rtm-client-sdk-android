@@ -16,11 +16,7 @@ import com.rtm.msgpack.PayloadUnpacker;
 
 import java.io.IOException;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Formatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RTMClient {
 
@@ -30,24 +26,30 @@ public class RTMClient {
 
         static public synchronized long gen() {
 
+            long c = 0;
+
             if (++count >= 999) {
 
                 count = 0;
             }
 
-            String strFix = String.valueOf(count);
+            c = count;
 
-            if (count < 100) {
+            StringBuffer sb = new StringBuffer(String.valueOf(System.currentTimeMillis()));
 
-                strFix = "0".concat(strFix);
+            if (c < 100) {
+
+                sb.append("0");
             }
 
-            if (count < 10) {
+            if (c < 10) {
 
-                strFix = "0".concat(strFix);
+                sb.append("0");
             }
 
-            return Long.valueOf(String.valueOf(System.currentTimeMillis()).concat(strFix));
+            sb.append(String.valueOf(c));
+
+            return Long.valueOf(sb.toString());
         }
     }
 
@@ -139,11 +141,11 @@ public class RTMClient {
 
         if (this._baseClient != null) {
 
-            this._baseClient.sendQuest(data, this._baseClient.questCallback(callback), timeout);
+            this._baseClient.sendQuest(data, callback, timeout);
         }
     }
 
-    public CallbackData sendQuest(FPData data, int timeout) throws InterruptedException {
+    public CallbackData sendQuest(FPData data, int timeout) {
 
         if (this._baseClient != null) {
 
@@ -224,7 +226,7 @@ public class RTMClient {
         payload.put("addrType", this._ipv6 ? "ipv6" : "ipv4");
         payload.put("version", this._version);
 
-        this._dispatchClient.which(payload, this._timeout, this._dispatchClient.questCallback(new FPCallback.ICallback() {
+        this._dispatchClient.which(payload, this._timeout, new FPCallback.ICallback() {
 
             @Override
             public void callback(CallbackData cbd) {
@@ -243,7 +245,7 @@ public class RTMClient {
                     self.getEvent().fireEvent(new EventData(self, "error", ex));
                 }
             }
-        }));
+        });
     }
 
     /**
@@ -2387,10 +2389,10 @@ public class RTMClient {
 
         if (this._derKey != null && this._curve != null) {
 
-            this._baseClient.enableEncryptorByData(this._curve, this._derKey, false, false);
+            this._baseClient.connect(this._curve, this._derKey, false, false);
         } else {
 
-            this._baseClient.enableConnect();
+            this._baseClient.connect();
         }
     }
 
@@ -2572,10 +2574,10 @@ public class RTMClient {
 
         if (this._derKey != null && this._curve != null) {
 
-            this._baseClient.enableEncryptorByData(this._curve, this._derKey, false, false);
+            this._baseClient.connect(this._curve, this._derKey, false, false);
         } else {
 
-            this._baseClient.enableConnect();
+            this._baseClient.connect();
         }
     }
 
@@ -2724,7 +2726,7 @@ class DispatchClient extends BaseClient {
         }
 
         data.setPayload(bytes);
-        this.sendQuest(data, this.questCallback(callback), timeout);
+        this.sendQuest(data, callback, timeout);
     }
 
     private void onConnect() {
@@ -2825,7 +2827,7 @@ class FileClient extends BaseClient {
         final FileClient self = this;
         final long fmid = (long) payload.get("mid");
 
-        this.sendQuest(data, this.questCallback(new FPCallback.ICallback() {
+        this.sendQuest(data, new FPCallback.ICallback() {
 
             @Override
             public void callback(CallbackData cbd) {
@@ -2838,7 +2840,7 @@ class FileClient extends BaseClient {
                     cb.callback(cbd);
                 }
             }
-        }), timeout);
+        }, timeout);
     }
 
     private void onConnect() {
@@ -2884,11 +2886,38 @@ class BaseClient extends FPClient {
         this.addListener();
     }
 
+    @Override
+    public void sendQuest(FPData data, FPCallback.ICallback callback, int timeout) {
+
+        super.sendQuest(data, this.questCallback(callback), timeout);
+    }
+
+    @Override
+    public CallbackData sendQuest(FPData data, int timeout) {
+
+        CallbackData cbd = null;
+
+        try {
+
+            cbd = super.sendQuest(data, timeout);
+        }catch(Exception ex){
+
+            this.getEvent().fireEvent(new EventData(this, "error", ex));
+        }
+
+        if (cbd != null) {
+
+            this.checkFPCallback(cbd);
+        }
+
+        return cbd;
+    }
+
     protected void addListener() {
 
     }
 
-    public void enableEncryptorByData(String curve, byte[] derKey, boolean streamMode, boolean reinforce) {
+    public void connect(String curve, byte[] derKey, boolean streamMode, boolean reinforce) {
 
         if (derKey != null && derKey.length > 0) {
 
@@ -2931,11 +2960,6 @@ class BaseClient extends FPClient {
                 return;
             }
         }
-
-        this.enableConnect();
-    }
-
-    public void enableConnect() {
 
         this.connect();
     }
