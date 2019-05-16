@@ -195,20 +195,6 @@ public class TestHolder {
                             break;
                         }
                     }
-                } catch (InterruptedException e) {
-
-                    switch (act) {
-
-                        case 0:
-                            System.out.print('(');
-                            break;
-                        case 1:
-                            System.out.print('{');
-                            break;
-                        case 2:
-                            System.out.print('[');
-                            break;
-                    }
                 } catch (Exception e) {
 
                     switch (act) {

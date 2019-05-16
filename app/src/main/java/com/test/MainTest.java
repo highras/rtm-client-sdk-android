@@ -85,7 +85,7 @@ public class MainTest extends AppCompatActivity {
         client.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 System.out.println("\nconnect");
                 incConnectSuccess();
@@ -95,7 +95,7 @@ public class MainTest extends AppCompatActivity {
         client.getEvent().addListener("close", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 System.out.println("\nclose");
                 incConnectionClosed();
@@ -106,9 +106,9 @@ public class MainTest extends AppCompatActivity {
         client.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                event.getException().printStackTrace();
+                evd.getException().printStackTrace();
             }
         });
 

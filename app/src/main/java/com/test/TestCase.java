@@ -37,41 +37,43 @@ public class TestCase {
         this._client.getEvent().addListener("login", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                if (event.getException() != null) {
-                    self.onError(event.getException());
+                if (evd.getException() != null) {
+
+                    self.onError(evd.getException());
                     return;
                 }
-                self.onLogin(event.getPayload());
+
+                self.onLogin(evd.getPayload());
             }
         });
 
         this._client.getEvent().addListener("close", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                self.onClose(event.hasRetry());
+                self.onClose(evd.hasRetry());
             }
         });
 
         this._client.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                self.onError(event.getException());
+                self.onError(evd.getException());
             }
         });
 
         this._client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
-                System.out.println(event.getPayload().toString());
+                System.out.println("\n[PUSH] ".concat(evd.getType()).concat(":"));
+                System.out.println(evd.getPayload().toString());
             }
         });
 

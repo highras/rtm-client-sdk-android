@@ -47,9 +47,9 @@ RTMClient client = new RTMClient(
 client.getEvent().addListener("login", new FPEvent.IListener() {
 
     @Override
-    public void fpEvent(FPEvent event) {
+    public void fpEvent(EventData evd) {
 
-        if (event.getException() != null) {
+        if (evd.getException() != null) {
 
             System.out.println("Auth Fail!");
             return;
@@ -83,18 +83,18 @@ client.getEvent().addListener("login", new FPEvent.IListener() {
 client.getEvent().addListener("close", new FPEvent.IListener() {
 
     @Override
-    public void fpEvent(FPEvent event) {
+    public void fpEvent(EventData evd) {
 
-        System.out.println("Closed! retry:" + event.hasRetry());
+        System.out.println("Closed! retry:" + evd.hasRetry());
     }
 });
 
 client.getEvent().addListener("error", new FPEvent.IListener() {
 
     @Override
-    public void fpEvent(FPEvent event) {
+    public void fpEvent(EventData evd) {
 
-        event.getException().printStackTrace();
+        evd.getException().printStackTrace();
     }
 });
 
@@ -102,10 +102,10 @@ client.getEvent().addListener("error", new FPEvent.IListener() {
 client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
 
     @Override
-    public void fpEvent(FPEvent event) {
+    public void fpEvent(EventData evd) {
 
-        System.out.println("\n[PUSH] ".concat(event.getType()).concat(":"));
-        System.out.println(event.getPayload().toString());
+        System.out.println("\n[PUSH] ".concat(evd.getType()).concat(":"));
+        System.out.println(evd.getPayload().toString());
     }
 });
 

@@ -114,7 +114,7 @@ public class RTMClient {
         this._processor.getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self._isClose = true;
                 self._baseClient.close();
@@ -199,7 +199,7 @@ public class RTMClient {
             this._dispatchClient.getEvent().addListener("close", new FPEvent.IListener() {
 
                 @Override
-                public void fpEvent(EventData event) {
+                public void fpEvent(EventData evd) {
 
                     System.out.println("[DispatchClient] closed!");
 
@@ -2365,7 +2365,7 @@ public class RTMClient {
         this._baseClient.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.getEvent().fireEvent(new EventData(this, "connect"));
             }
@@ -2374,7 +2374,7 @@ public class RTMClient {
         this._baseClient.getEvent().addListener("close", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
             }
@@ -2383,9 +2383,9 @@ public class RTMClient {
         this._baseClient.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
+                self.getEvent().fireEvent(new EventData(this, "error", evd.getException()));
             }
         });
 
@@ -2549,7 +2549,7 @@ public class RTMClient {
         this._baseClient.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.auth(ftimeout);
             }
@@ -2558,7 +2558,7 @@ public class RTMClient {
         this._baseClient.getEvent().addListener("close", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
 
@@ -2570,9 +2570,9 @@ public class RTMClient {
         this._baseClient.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                self.getEvent().fireEvent(new EventData(this, "error", event.getException()));
+                self.getEvent().fireEvent(new EventData(this, "error", evd.getException()));
             }
         });
 
@@ -2691,7 +2691,7 @@ class DispatchClient extends BaseClient {
         this.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.onConnect();
             }
@@ -2700,9 +2700,9 @@ class DispatchClient extends BaseClient {
         this.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                self.onException(event.getException());
+                self.onException(evd.getException());
             }
         });
     }
@@ -2766,7 +2766,7 @@ class FileClient extends BaseClient {
         this.getEvent().addListener("connect", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.onConnect();
             }
@@ -2775,7 +2775,7 @@ class FileClient extends BaseClient {
         this.getEvent().addListener("close", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
                 self.onClose();
             }
@@ -2784,9 +2784,9 @@ class FileClient extends BaseClient {
         this.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
-            public void fpEvent(EventData event) {
+            public void fpEvent(EventData evd) {
 
-                self.onException(event.getException());
+                self.onException(evd.getException());
             }
         });
     }
