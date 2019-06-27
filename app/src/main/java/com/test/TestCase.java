@@ -24,7 +24,7 @@ public class TestCase {
                 "52.83.245.22:13325",
                 1000012,
                 654321,
-                "AC8C2D30D16DF61B434F319A0AD538E5",
+                "03F2F42AD6C5A1CB5B81996B2D6C598C",
                 null,
                 new HashMap<String, String>(),
                 true,
