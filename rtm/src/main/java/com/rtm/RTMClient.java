@@ -234,7 +234,6 @@ public class RTMClient {
             public void callback(CallbackData cbd) {
 
                 Map payload = (Map) cbd.getPayload();
-                Exception ex = cbd.getException();
 
                 if (payload != null) {
 
@@ -242,10 +241,7 @@ public class RTMClient {
                     self.login(endpoint, self._ipv6);
                 }
 
-                if (ex != null) {
-
-                    self.getEvent().fireEvent(new EventData(self, "error", ex));
-                }
+                self._dispatchClient.close(cbd.getException());
             }
         });
     }
