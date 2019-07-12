@@ -2,11 +2,26 @@ package com.rtm;
 
 public class RTMConfig {
 
-    public static final int MID_TTL = 5 * 1000;
+    public static final String VERSION = "1.0.0";
+
+    public static final int MID_TTL = 5 * 1000;                         //MID缓存超时时间(ms)
+    public static final int RECONN_COUNT_ONCE = 3;                      //一次重新连接流程中的尝试次数
+    public static final int CONNCT_INTERVAL = 40 * 1000;                //客户端尝试重新连接的时间间隔(ms)
+    public static final int RECV_PING_TIMEOUT = 40 * 1000;              //客户端收到Ping超时时间(ms)
+
+
+    public class FILE_TYPE {
+
+        public static final byte image = 40;        //图片
+        public static final byte audio = 41;        //语音
+        public static final byte video = 42;        //视频
+        public static final byte file = 50;         //泛指文件，服务器会修改此值（如果服务器可以判断出具体类型的话，仅在mtype=50的情况下）
+    }
+
+    public final static String KICKOUT = "kickout";
 
     public class SERVER_PUSH {
 
-        public static final String kickOut = "kickout";
         public static final String kickOutRoom = "kickoutroom";
         public static final String recvMessage = "pushmsg";
         public static final String recvGroupMessage = "pushgroupmsg";
@@ -23,14 +38,6 @@ public class RTMConfig {
 
         public static final String login = "login";
         public static final String logout = "logout";
-    }
-
-    public class FILE_TYPE {
-
-        public static final byte image = 40;        //图片
-        public static final byte audio = 41;        //语音
-        public static final byte video = 42;        //视频
-        public static final byte file = 50;         //泛指文件，服务器会修改此值（如果服务器可以判断出具体类型的话，仅在mtype=50的情况下）
     }
 
     public class ERROR_CODE {

@@ -1,14 +1,16 @@
 package com.rtm;
 
+import com.fpnn.ErrorRecorder;
 import com.fpnn.FPClient;
+import com.fpnn.FPConfig;
 import com.fpnn.FPData;
 import com.fpnn.FPPackage;
-import com.fpnn.FPProcessor;
 import com.fpnn.callback.CallbackData;
 import com.fpnn.callback.FPCallback;
 import com.fpnn.encryptor.FPEncryptor;
 import com.fpnn.event.EventData;
 import com.fpnn.event.FPEvent;
+import com.fpnn.nio.NIOCore;
 import com.fpnn.nio.ThreadPool;
 import com.rtm.json.JsonHelper;
 import com.rtm.msgpack.PayloadPacker;
@@ -55,31 +57,27 @@ public class RTMClient {
         }
     }
 
-    private FPEvent _event = new FPEvent();
-    private FPProcessor.IProcessor _processor = new RTMProcessor(_event);
-
-    public FPEvent getEvent() {
-
-        return this._event;
-    }
-
     private String _dispatch;
     private int _pid;
     private long _uid;
     private String _token;
     private String _version;
     private Map<String, String> _attrs;
-    private boolean _reconnect;
+    private boolean _reconn;
     private int _timeout;
     private boolean _startTimerThread;
 
     private String _endpoint;
-    private boolean _ipv6;
+    private String _switchGate;
 
     private String _curve;
     private byte[] _derKey;
 
     private boolean _isClose;
+
+    private FPEvent _event;
+    private RTMProcessor _processor;
+    private FPEvent.IListener _secondListener;
 
     private BaseClient _baseClient;
     private DispatchClient _dispatchClient;
@@ -97,34 +95,80 @@ public class RTMClient {
      */
     public RTMClient(String dispatch, int pid, long uid, String token, String version, Map<String, String> attrs, boolean reconnect, int timeout, boolean startTimerThread) {
 
+        System.out.println("Hello RTM! rtm@" + RTMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
+
         this._dispatch = dispatch;
         this._pid = pid;
         this._uid = uid;
         this._token = token;
         this._version = version;
         this._attrs = attrs;
-        this._reconnect = reconnect;
+        this._reconn = reconnect;
         this._timeout = timeout;
         this._startTimerThread = startTimerThread;
 
+        try {
+
+            ErrorRecorder.getInstance().setRecorder(new RTMErrorRecorder());
+        } catch (Exception ex) {
+
+            System.err.println(ex);
+        }
+
+        this._event = new FPEvent();
         this.initProcessor();
     }
 
     private void initProcessor() {
 
         final RTMClient self = this;
-        this._processor.getEvent().addListener(RTMConfig.SERVER_PUSH.kickOut, new FPEvent.IListener() {
+
+        this._processor = new RTMProcessor(_event);
+
+        this._processor.addPushService(RTMConfig.KICKOUT, new RTMProcessor.IService() {
 
             @Override
-            public void fpEvent(EventData evd) {
+            public void Service(Map<String, Object> data) {
 
                 self._isClose = true;
                 self._baseClient.close();
             }
         });
+
+        this._secondListener = new FPEvent.IListener() {
+
+            @Override
+            public void fpEvent(EventData evd) {
+
+                long lastPingTimestamp = 0;
+                long timestamp = evd.getTimestamp();
+
+                if (self._processor != null) {
+
+                    lastPingTimestamp = self._processor.getPingTimestamp();
+                }
+
+                if (lastPingTimestamp > 0 && self._baseClient != null && self._baseClient.isOpen()) {
+
+                    if (timestamp - lastPingTimestamp > RTMConfig.RECV_PING_TIMEOUT) {
+
+                        self._baseClient.close(new Exception("ping timeout"));
+                    }
+                }
+
+                self.delayConnect(timestamp);
+            }
+        };
+
+        NIOCore.getInstance().getEvent().addListener("second", this._secondListener);
     }
 
-    public FPProcessor.IProcessor getProcessor() {
+    public FPEvent getEvent() {
+
+        return this._event;
+    }
+
+    public RTMProcessor getProcessor() {
 
         return this._processor;
     }
@@ -161,6 +205,9 @@ public class RTMClient {
 
         this.close();
 
+        this._reconnCount = 0;
+        this._lastConnectTime = 0;
+
         if (this._baseClient != null) {
 
             this._baseClient.destroy();
@@ -173,17 +220,27 @@ public class RTMClient {
             this._dispatchClient = null;
         }
 
+        if (this._processor != null) {
+
+            this._processor.destroy();
+            this._processor = null;
+        }
+
         this._event.removeListener();
+
+        if (this._secondListener != null) {
+
+            NIOCore.getInstance().getEvent().removeListener("second", this._secondListener);
+            this._secondListener = null;
+        }
     }
 
     /**
      * @param {String}  endpoint
-     * @param {boolean} ipv6
      */
-    public void login(String endpoint, boolean ipv6) {
+    public void login(String endpoint) {
 
         this._endpoint = endpoint;
-        this._ipv6 = ipv6;
         this._isClose = false;
 
         if (this._endpoint != null && !this._endpoint.isEmpty()) {
@@ -214,36 +271,50 @@ public class RTMClient {
                     if (self._endpoint == null || self._endpoint.isEmpty()) {
 
                         self.getEvent().fireEvent(new EventData(self, "error", new Exception("dispatch client close with err!")));
-                        self.reConnect();
+                        self.reconnect();
                     }
                 }
             });
-        }
 
-        Map payload = new HashMap();
 
-        payload.put("pid", this._pid);
-        payload.put("uid", this._uid);
-        payload.put("what", "rtmGated");
-        payload.put("addrType", this._ipv6 ? "ipv6" : "ipv4");
-        payload.put("version", this._version);
+            this._dispatchClient.getEvent().addListener("connect", new FPEvent.IListener() {
 
-        this._dispatchClient.which(payload, this._timeout, new FPCallback.ICallback() {
+                @Override
+                public void fpEvent(EventData evd) {
 
-            @Override
-            public void callback(CallbackData cbd) {
+                    System.out.println("[DispatchClient] connected!");
 
-                Map payload = (Map) cbd.getPayload();
+                    Map payload = new HashMap();
 
-                if (payload != null) {
+                    payload.put("pid", self._pid);
+                    payload.put("uid", self._uid);
+                    payload.put("what", "rtmGated");
+                    payload.put("addrType", self._dispatchClient.isIPv6() ? "ipv6" : "ipv4");
+                    payload.put("version", self._version);
 
-                    String endpoint = (String) payload.get("endpoint");
-                    self.login(endpoint, self._ipv6);
+                    self._dispatchClient.which(payload, self._timeout, new FPCallback.ICallback() {
+
+                        @Override
+                        public void callback(CallbackData cbd) {
+
+                            Map payload = (Map) cbd.getPayload();
+
+                            if (payload != null) {
+
+                                self.login((String) payload.get("endpoint"));
+                            }
+
+                            if (self._dispatchClient != null) {
+
+                                self._dispatchClient.close(cbd.getException());
+                            }
+                        }
+                    });
                 }
+            });
 
-                self._dispatchClient.close(cbd.getException());
-            }
-        });
+            this._dispatchClient.connect();
+        }
     }
 
     /**
@@ -258,7 +329,7 @@ public class RTMClient {
         this._curve = curve;
         this._derKey = derKey;
 
-        this.login(endpoint, ipv6);
+        this.login(endpoint);
     }
 
     /**
@@ -311,7 +382,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -384,7 +455,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -457,7 +528,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -514,7 +585,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -555,7 +626,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -596,7 +667,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -672,7 +743,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -696,7 +767,7 @@ public class RTMClient {
 
                     for (int i = 0; i < list.size(); i++) {
 
-                        Map map = new HashMap();
+                        Map<String, Object> map = new HashMap<String, Object>();
                         List items = (ArrayList) list.get(i);
 
                         map.put("id", items.get(0));
@@ -789,7 +860,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -813,7 +884,7 @@ public class RTMClient {
 
                     for (int i = 0; i < list.size(); i++) {
 
-                        Map map = new HashMap();
+                        Map<String, Object> map = new HashMap<String, Object>();
                         List items = (ArrayList) list.get(i);
 
                         map.put("id", items.get(0));
@@ -904,7 +975,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -928,7 +999,7 @@ public class RTMClient {
 
                     for (int i = 0; i < list.size(); i++) {
 
-                        Map map = new HashMap();
+                        Map<String, Object> map = new HashMap<String, Object>();
                         List items = (ArrayList) list.get(i);
 
                         map.put("id", items.get(0));
@@ -1021,7 +1092,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1045,7 +1116,7 @@ public class RTMClient {
 
                     for (int i = 0; i < list.size(); i++) {
 
-                        Map map = new HashMap();
+                        Map<String, Object> map = new HashMap<String, Object>();
                         List items = (ArrayList) list.get(i);
 
                         map.put("id", items.get(0));
@@ -1142,7 +1213,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1194,7 +1265,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1240,7 +1311,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1285,7 +1356,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1330,7 +1401,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1373,7 +1444,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1416,7 +1487,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1467,7 +1538,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1510,7 +1581,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1553,7 +1624,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1593,7 +1664,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1661,7 +1732,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1706,7 +1777,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1749,7 +1820,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1811,7 +1882,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1876,7 +1947,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1919,7 +1990,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -1959,7 +2030,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2024,7 +2095,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2093,7 +2164,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2136,7 +2207,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2179,7 +2250,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2224,7 +2295,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2374,7 +2445,7 @@ public class RTMClient {
             @Override
             public void fpEvent(EventData evd) {
 
-                self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
+                self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconn));
             }
         });
 
@@ -2510,16 +2581,18 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
         this.sendQuest(data, callback, timeout);
     }
 
-    private void reConnect() {
+    private int _reconnCount = 0;
 
-        if (!this._reconnect) {
+    private void reconnect() {
+
+        if (!this._reconn) {
 
             return;
         }
@@ -2529,59 +2602,97 @@ public class RTMClient {
             return;
         }
 
-        this.login(this._endpoint, this._ipv6);
+        if (this._processor != null) {
+
+            this._processor.clearPingTimestamp();
+        }
+
+        if (++this._reconnCount < RTMConfig.RECONN_COUNT_ONCE) {
+
+            this.login(this._endpoint);
+            return;
+        }
+
+        this._lastConnectTime = System.currentTimeMillis();
+    }
+
+    private long _lastConnectTime = 0;
+
+    private void delayConnect(long timestamp) {
+
+        if (this._lastConnectTime == 0) {
+
+            return;
+        }
+
+        if (timestamp - this._lastConnectTime < RTMConfig.CONNCT_INTERVAL) {
+
+            return;
+        }
+
+        this._reconnCount = 0;
+        this._lastConnectTime = 0;
+
+        this.login(this._endpoint);
     }
 
     private void connectRTMGate(int timeout) {
 
-        if (this._baseClient != null) {
-
-            this._baseClient.destroy();
-        }
-
-        this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
-
         final RTMClient self = this;
         final int ftimeout = timeout;
 
-        this._baseClient.getEvent().addListener("connect", new FPEvent.IListener() {
+        if (this._baseClient == null) {
 
-            @Override
-            public void fpEvent(EventData evd) {
+            this._baseClient = new BaseClient(this._endpoint, false, timeout, this._startTimerThread);
 
-                self.auth(ftimeout);
+
+            this._baseClient.getEvent().addListener("connect", new FPEvent.IListener() {
+
+                @Override
+                public void fpEvent(EventData evd) {
+
+                    self.auth(ftimeout);
+                }
+            });
+
+            this._baseClient.getEvent().addListener("close", new FPEvent.IListener() {
+
+                @Override
+                public void fpEvent(EventData evd) {
+
+                    if (self._baseClient != null) {
+
+                        self._baseClient.destroy();
+                        self._baseClient = null;
+                    }
+
+                    self._endpoint = self._switchGate;
+                    self._switchGate = null;
+
+                    self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconn));
+                    self.reconnect();
+                }
+            });
+
+            this._baseClient.getEvent().addListener("error", new FPEvent.IListener() {
+
+                @Override
+                public void fpEvent(EventData evd) {
+
+                    self.getEvent().fireEvent(new EventData(this, "error", evd.getException()));
+                }
+            });
+
+            this._baseClient.getProcessor().setProcessor(this._processor);
+
+            if (this._derKey != null && this._curve != null) {
+
+                this._baseClient.connect(this._curve, this._derKey, false, false);
+            } else {
+
+                this._baseClient.connect();
             }
-        });
 
-        this._baseClient.getEvent().addListener("close", new FPEvent.IListener() {
-
-            @Override
-            public void fpEvent(EventData evd) {
-
-                self.getEvent().fireEvent(new EventData(this, "close", !self._isClose && self._reconnect));
-
-                self._endpoint = null;
-                self.reConnect();
-            }
-        });
-
-        this._baseClient.getEvent().addListener("error", new FPEvent.IListener() {
-
-            @Override
-            public void fpEvent(EventData evd) {
-
-                self.getEvent().fireEvent(new EventData(this, "error", evd.getException()));
-            }
-        });
-
-        this._baseClient.getProcessor().setProcessor(this._processor);
-
-        if (this._derKey != null && this._curve != null) {
-
-            this._baseClient.connect(this._curve, this._derKey, false, false);
-        } else {
-
-            this._baseClient.connect();
         }
     }
 
@@ -2614,7 +2725,7 @@ public class RTMClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2629,8 +2740,11 @@ public class RTMClient {
 
                 if (exception != null) {
 
-                    self.getEvent().fireEvent(new EventData(this, "error", exception));
-                    self.reConnect();
+                    if (self._baseClient != null) {
+
+                        self._baseClient.close(exception);
+                    }
+
                     return;
                 }
 
@@ -2643,16 +2757,27 @@ public class RTMClient {
 
                     if (ok) {
 
+                        if (self._processor != null) {
+
+                            self._processor.initPingTimestamp();
+                        }
+
+                        self._reconnCount = 0;
                         self.getEvent().fireEvent(new EventData(this, "login", self._endpoint));
                         return;
                     }
 
                     String gate = (String) payload.get("gate");
 
-                    if (gate != null) {
+                    if (gate != null && !gate.isEmpty()) {
 
-                        self._endpoint = gate;
-                        self.reConnect();
+                        self._switchGate = gate;
+
+                        if (self._baseClient != null) {
+
+                            self._baseClient.close();
+                        }
+
                         return;
                     }
 
@@ -2663,7 +2788,10 @@ public class RTMClient {
                     }
                 }
 
-                self.getEvent().fireEvent(new EventData(this, "error", new Exception(obj.toString())));
+                if (self._baseClient != null) {
+
+                    self._baseClient.close(new Exception("auth error!"));
+                }
             }
         }, timeout);
     }
@@ -2686,31 +2814,17 @@ class DispatchClient extends BaseClient {
 
         final DispatchClient self = this;
 
-        this.getEvent().addListener("connect", new FPEvent.IListener() {
-
-            @Override
-            public void fpEvent(EventData evd) {
-
-                self.onConnect();
-            }
-        });
-
         this.getEvent().addListener("error", new FPEvent.IListener() {
 
             @Override
             public void fpEvent(EventData evd) {
 
-                self.onException(evd.getException());
+                self.onError(evd.getException());
             }
         });
     }
 
     public void which(Map payload, int timeout, FPCallback.ICallback callback) {
-
-        if (!this.hasConnect()) {
-
-            this.connect();
-        }
 
         FPData data = new FPData();
         data.setFlag(0x1);
@@ -2726,7 +2840,7 @@ class DispatchClient extends BaseClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2738,9 +2852,9 @@ class DispatchClient extends BaseClient {
         System.out.println("[DispatchClient] connected!");
     }
 
-    private void onException(Exception ex) {
+    private void onError(Exception ex) {
 
-        ex.printStackTrace();
+        ErrorRecorder.getInstance().recordError(ex);
     }
 }
 
@@ -2784,7 +2898,7 @@ class FileClient extends BaseClient {
             @Override
             public void fpEvent(EventData evd) {
 
-                self.onException(evd.getException());
+                self.onError(evd.getException());
             }
         });
     }
@@ -2828,7 +2942,7 @@ class FileClient extends BaseClient {
             bytes = packer.toByteArray();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         data.setPayload(bytes);
@@ -2864,9 +2978,9 @@ class FileClient extends BaseClient {
         this.destroy();
     }
 
-    private void onException(Exception ex) {
+    private void onError(Exception ex) {
 
-        ex.printStackTrace();
+        ErrorRecorder.getInstance().recordError(ex);
     }
 }
 
@@ -2953,7 +3067,7 @@ class BaseClient extends FPClient {
                             bytes = packer.toByteArray();
                         } catch (Exception ex) {
 
-                            ex.printStackTrace();
+                            ErrorRecorder.getInstance().recordError(ex);
                         }
 
                         FPData data = new FPData();
@@ -2985,7 +3099,7 @@ class BaseClient extends FPClient {
             md5Binary = md5.digest();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
             return null;
         }
 
@@ -3005,7 +3119,7 @@ class BaseClient extends FPClient {
             md5Binary = md5.digest();
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
             return null;
         }
 
@@ -3051,7 +3165,7 @@ class BaseClient extends FPClient {
                     payload = unpacker.unpack();
                 } catch (Exception ex) {
 
-                    ex.printStackTrace();
+                    ErrorRecorder.getInstance().recordError(ex);
                 }
             }
 
@@ -3083,5 +3197,13 @@ class BaseClient extends FPClient {
                 cb.callback(cbd);
             }
         };
+    }
+}
+
+class RTMErrorRecorder implements ErrorRecorder.IErrorRecorder {
+
+    public void recordError(Exception ex) {
+
+        ex.printStackTrace();
     }
 }

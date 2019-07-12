@@ -6,6 +6,8 @@ import com.fpnn.event.EventData;
 import com.fpnn.event.FPEvent;
 import com.rtm.RTMClient;
 import com.rtm.RTMConfig;
+import com.rtm.RTMProcessor;
+import com.rtm.json.JsonHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,16 +23,104 @@ public class TestCase {
     public TestCase(byte[] derKey, byte[] fileBytes) {
 
         this._client = new RTMClient(
-                "52.83.245.22:13325",
-                1000012,
-                654321,
-                "03F2F42AD6C5A1CB5B81996B2D6C598C",
+//                "52.83.245.22:13325",
+//                1000012,
+//                654321,
+//                "03F2F42AD6C5A1CB5B81996B2D6C598C",
+
+                "rtm-intl-frontgate.funplus.com:13325",
+                11000002,
+                777779,
+                "BE3732174850E479209443BCCDF4747D",
+
                 null,
                 new HashMap<String, String>(),
                 true,
                 20 * 1000,
                 true
         );
+
+        RTMProcessor processor = this._client.getProcessor();
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvPing, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(true);
+                System.out.println("[PUSH] ping: " + JsonHelper.getInstance().getJson().toJSON(data));
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvGroupMessage, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvGroupMessage]: ");
+             }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvRoomMessage, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvRoomMessage]: ");
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvBroadcastMessage, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvBroadcastMessage]: ");
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvFile, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvFile]: ");
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvRoomFile, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvRoomFile]: ");
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvGroupFile, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvGroupFile]: ");
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvBroadcastFile, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvBroadcastFile]: ");
+            }
+        });
 
         final TestCase self = this;
 
@@ -45,7 +135,8 @@ public class TestCase {
                     return;
                 }
 
-                self.onLogin(evd.getPayload());
+                self.onLogin();
+//                self.onLogin(evd.getPayload());
             }
         });
 
@@ -67,30 +158,68 @@ public class TestCase {
             }
         });
 
-        this._client.getProcessor().getEvent().addListener(RTMConfig.SERVER_PUSH.recvPing, new FPEvent.IListener() {
-
-            @Override
-            public void fpEvent(EventData evd) {
-
-                System.out.println("\n[PUSH] ".concat(evd.getType()).concat(":"));
-                System.out.println(evd.getPayload().toString());
-            }
-        });
-
         if (derKey != null && derKey.length > 0) {
 
             this._client.login("secp256k1", derKey, null, false);
         } else {
 
-            this._client.login(null, false);
+            this._client.login(null);
         }
 
         this._fileBytes = fileBytes;
     }
 
+    private int _recvCount;
+    private long _traceTimestamp;
+
+    private synchronized void revcInc(boolean trace) {
+
+        this._recvCount++;
+
+        if (this._traceTimestamp <= 0) {
+
+            this._traceTimestamp = System.currentTimeMillis();
+        }
+
+        if (trace) {
+
+            int interval = (int)((System.currentTimeMillis() - this._traceTimestamp) / 1000);
+
+            if (interval > 0) {
+
+                System.out.println("TestCase revc qps: " + (int)(_recvCount / interval));
+
+                this._recvCount = 0;
+                this._traceTimestamp = System.currentTimeMillis();
+            }
+        }
+    }
+
+    private void onLogin() {
+
+        System.out.println("test start!");
+
+        this._client.enterRoom(987654321, 20 * 1000, new FPCallback.ICallback() {
+
+            @Override
+            public void callback(CallbackData cbd) {
+
+                Object obj = cbd.getPayload();
+
+                if (obj != null) {
+
+                    System.out.println("\n[DATA] enterRoom:" + JsonHelper.getInstance().getJson().toJSON((Map) obj));
+                } else {
+
+                    System.err.println("\n[ERR] enterRoom:" + cbd.getException());
+                }
+            }
+        });
+    }
+
     private void onLogin(Object obj) {
 
-        System.out.println("Login on ".concat(obj.toString()));
+        System.out.println("test start!");
 
         long to = 778899;
         long fuid = 778898;
@@ -130,7 +259,6 @@ public class TestCase {
         int timeout = 20 * 1000;
         int sleep = 1000;
 
-        System.out.println("\ntest start!");
         this.threadSleep(sleep);
 
         //rtmGate (2)

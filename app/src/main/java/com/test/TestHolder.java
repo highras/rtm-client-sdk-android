@@ -1,5 +1,6 @@
 package com.test;
 
+import com.fpnn.ErrorRecorder;
 import com.fpnn.FPData;
 import com.fpnn.callback.CallbackData;
 import com.fpnn.callback.FPCallback;
@@ -117,7 +118,7 @@ public class TestHolder {
                 bytes = packer.toByteArray();
             } catch (IOException ex) {
 
-                ex.printStackTrace();
+                ErrorRecorder.getInstance().recordError(ex);
             }
 
             data.setPayload(bytes);

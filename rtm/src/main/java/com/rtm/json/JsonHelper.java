@@ -1,5 +1,7 @@
 package com.rtm.json;
 
+import com.fpnn.ErrorRecorder;
+
 import org.json.JSONObject;
 
 import java.lang.reflect.Method;
@@ -77,7 +79,7 @@ class JsonOrg implements JsonHelper.IJson {
                 }
             } catch (Exception ex) {
 
-                ex.printStackTrace();
+                ErrorRecorder.getInstance().recordError(ex);
             }
         }
 
@@ -94,7 +96,7 @@ class JsonOrg implements JsonHelper.IJson {
             jsonObject = new JSONObject(jsonString);
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         Map result = null;
@@ -115,7 +117,7 @@ class JsonOrg implements JsonHelper.IJson {
                     value = jsonObject.getString(key);
                 } catch (Exception ex) {
 
-                    ex.printStackTrace();
+                    ErrorRecorder.getInstance().recordError(ex);
                 }
 
                 result.put(key, value);
@@ -157,7 +159,7 @@ class JsonOrg implements JsonHelper.IJson {
                 }
             } catch (Exception ex) {
 
-                ex.printStackTrace();
+                ErrorRecorder.getInstance().recordError(ex);
             }
         }
 
@@ -174,7 +176,7 @@ class JsonOrg implements JsonHelper.IJson {
             jsonObject = new JSONObject(jsonString);
         } catch (Exception ex) {
 
-            ex.printStackTrace();
+            ErrorRecorder.getInstance().recordError(ex);
         }
 
         if (jsonObject != null) {
