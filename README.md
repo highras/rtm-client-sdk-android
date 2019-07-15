@@ -276,11 +276,10 @@ baseTest();
 * `login(String endpoint)`: 连接并登陆
     * `endpoint`: **(String)** RTMGate服务地址, 由Dispatch服务获取, 或由RTM提供
 
-* `login(String curve, byte[] derKey, String endpoint, boolean ipv6)`: 连接并登陆(加密)
+* `login(String curve, byte[] derKey, String endpoint)`: 连接并登陆(加密)
     * `curve`: **(String)** 加密协议
     * `derKey`: **(byte[])** 加密公钥, 秘钥文件RTM提供
     * `endpoint`: **(String)** RTMGate服务地址, 由Dispatch服务获取, 或由RTM提供
-    * `ipv6`: **(boolean)** 是否为IPV6地址格式
 
 * `sendMessage(long to, byte mtype, String msg, String attrs, long mid, int timeout, FPCallback.ICallback callback)`: 发送消息
     * `to`: **(long)** 接收方uid

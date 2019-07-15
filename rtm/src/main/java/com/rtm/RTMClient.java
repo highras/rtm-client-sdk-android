@@ -321,10 +321,8 @@ public class RTMClient {
      * @param {String}  curve
      * @param {byte[]}  derKey
      * @param {String}  endpoint
-     * @param {boolean} ipv6
-     * @param {int}     timeout
      */
-    public void login(String curve, byte[] derKey, String endpoint, boolean ipv6) {
+    public void login(String curve, byte[] derKey, String endpoint) {
 
         this._curve = curve;
         this._derKey = derKey;
@@ -2692,7 +2690,6 @@ public class RTMClient {
 
                 this._baseClient.connect();
             }
-
         }
     }
 

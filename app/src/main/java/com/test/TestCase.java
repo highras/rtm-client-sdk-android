@@ -26,12 +26,12 @@ public class TestCase {
 //                "52.83.245.22:13325",
 //                1000012,
 //                654321,
-//                "03F2F42AD6C5A1CB5B81996B2D6C598C",
+//                "9199B7A163792590C0A2711949E335B7",
 
                 "rtm-intl-frontgate.funplus.com:13325",
                 11000002,
                 777779,
-                "BE3732174850E479209443BCCDF4747D",
+                "D2CEC5F283B0A9DE29D318B35F18F783",
 
                 null,
                 new HashMap<String, String>(),
@@ -49,6 +49,16 @@ public class TestCase {
 
                 revcInc(true);
                 System.out.println("[PUSH] ping: " + JsonHelper.getInstance().getJson().toJSON(data));
+            }
+        });
+
+        processor.addPushService(RTMConfig.SERVER_PUSH.recvMessage, new RTMProcessor.IService() {
+
+            @Override
+            public void Service(Map<String, Object> data) {
+
+                revcInc(false);
+                // System.out.println("[recvMessage]: ");
             }
         });
 

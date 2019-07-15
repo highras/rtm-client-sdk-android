@@ -39,8 +39,15 @@ public class RTMProcessor implements FPProcessor.IProcessor {
 
         this.clearPingTimestamp();
 
-        this._midMap.clear();
-        this._actionMap.clear();
+        synchronized (this._midMap) {
+
+            this._midMap.clear();
+        }
+
+        synchronized (this._actionMap) {
+
+            this._actionMap.clear();
+        }
     }
 
     @Override
@@ -139,7 +146,7 @@ public class RTMProcessor implements FPProcessor.IProcessor {
                 RTMProcessor.class.getMethod(data.getMethod(), Map.class).invoke(this, payload);
             } catch(Exception ex) {
 
-                this._event.fireEvent(new EventData(this, "error", ex));
+                ErrorRecorder.getInstance().recordError(ex);
             }
         }
     }
