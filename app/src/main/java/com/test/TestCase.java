@@ -170,7 +170,7 @@ public class TestCase {
 
         if (derKey != null && derKey.length > 0) {
 
-            this._client.login("secp256k1", derKey, null, false);
+            this._client.login("secp256k1", derKey, null);
         } else {
 
             this._client.login(null);
