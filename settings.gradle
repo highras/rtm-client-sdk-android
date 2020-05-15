@@ -1,1 +1,3 @@
-include ':app', ':rtm'
+include ':app'
+rootProject.name='fpnn-rtm-sdk'
+include ':rtmsdk'
