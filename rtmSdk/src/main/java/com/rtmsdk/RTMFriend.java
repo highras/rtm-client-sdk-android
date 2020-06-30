@@ -126,4 +126,122 @@ public class RTMFriend extends RTMGroup {
             RTMUtils.wantLongHashSet(answer,"uids", friends);
         return code;
     }
+
+
+    //===========================[ Add BlackList ]=========================//
+    public boolean addBlacklist(ErrorCodeCallback callback, HashSet<Long> uids) {
+        return addBlacklist(callback, uids, 0);
+    }
+
+    /**
+     * 添加黑名单 async
+     * @param callback ErrorCodeCallback回调(NoNull)
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public boolean addBlacklist(ErrorCodeCallback callback, HashSet<Long> uids, int timeout) {
+        Quest quest = new Quest("addblacks");
+        quest.param("blacks", uids);
+
+        return sendQuest(callback, quest, timeout);
+    }
+
+    public int addBlacklist(HashSet<Long> uids) {
+        return addBlacklist(uids, 0);
+    }
+
+    /**
+     * 添加黑名单 sync
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public int addBlacklist(HashSet<Long> uids, int timeout) {
+        Quest quest = new Quest("addblacks");
+        quest.param("blacks", uids);
+
+        return sendQuestCode(quest, timeout);
+    }
+
+    //===========================[ Delete Blacklist ]=========================//
+    public boolean delBlacklist(ErrorCodeCallback callback, HashSet<Long> uids) {
+        return delBlacklist(callback, uids, 0);
+    }
+
+    /**
+     * 删除黑名单用户 async
+     * @param callback ErrorCodeCallback回调(NoNull)
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public boolean delBlacklist(ErrorCodeCallback callback, HashSet<Long> uids, int timeout) {
+        Quest quest = new Quest("delblacks");
+        quest.param("blacks", uids);
+
+        return sendQuest(callback, quest, timeout);
+    }
+
+    public int delBlacklist(HashSet<Long> uids) {
+        return delBlacklist(uids, 0);
+    }
+
+    /**
+     * 删除黑名单用户 sync
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public int delBlacklist(HashSet<Long> uids, int timeout) {
+        Quest quest = new Quest("delblacks");
+        quest.param("blacks", uids);
+
+        return sendQuestCode(quest, timeout);
+    }
+
+    //===========================[ Get Blacklist ]=========================//
+    public boolean getBlacklist(final MembersCallback callback) {
+        return getBlacklist(callback, 0);
+    }
+
+    /**
+     * 查询黑名单 async
+     * @param callback MembersCallback回调(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public boolean getBlacklist(final MembersCallback callback, int timeout) {
+        Quest quest = new Quest("getblacks");
+
+        return sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                HashSet<Long> uids = new HashSet<>();
+                if (errorCode == ErrorCode.FPNN_EC_OK.value())
+                    RTMUtils.wantLongHashSet(answer,"uids", uids);
+                callback.call(uids, errorCode);
+            }
+        }, timeout);
+    }
+
+    public int getBlacklist(HashSet<Long> uids) {
+        return getBlacklist(uids, 0);
+    }
+
+    /**
+     * 查询黑名单 sync
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public int getBlacklist(HashSet<Long> uids, int timeout) {
+        Quest quest = new Quest("getblacks");
+
+        Answer answer = sendQuest(quest, timeout);
+        int code = checkAnswer(answer);
+        if (code == ErrorCode.FPNN_EC_OK.value())
+            RTMUtils.wantLongHashSet(answer,"uids", uids);
+        return code;
+    }
 }

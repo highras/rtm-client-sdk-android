@@ -191,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
                 //test for push another rtm-client//
                 Map<Long, String> users = new HashMap<Long, String>() {
                     {
-                        put(101L, "A8427907274E6A11771ED877D3EC5B73");
+                        put(101L, "ED3B74C47AF6EFC1791CB3E31F739CB5");
 //                        put(9529L, "96C96410CF447F68AFCD8A9045502493");
 //                        put(9530L, "5F1A33C5768E6A644100918D0B2D679C");
 //                        put(9531L, "1D297088A0C534199A25DDC49136C1A8");

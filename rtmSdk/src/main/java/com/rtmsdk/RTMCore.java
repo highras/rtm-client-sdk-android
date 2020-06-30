@@ -63,7 +63,7 @@ class RTMCore {
     }
 
     public void setErrorRecoder(com.fpnn.sdk.ErrorRecorder value){
-        if (errorRecorder == null)
+        if (value == null)
             return;
         synchronized (interLocker) {
             errorRecorder = value;
@@ -305,6 +305,7 @@ class RTMCore {
         qt.param("uid", uid);
         qt.param("token", token);
         qt.param("lang", lang);
+        qt.param("version", "Android-" + RTMConfig.SDKVersion);
         if (attr != null)
             qt.param("attrs", attr);
 
@@ -345,6 +346,7 @@ class RTMCore {
         qt.param("uid", uid);
         qt.param("token", token);
         qt.param("lang", lang);
+        qt.param("version", "Android-" + RTMConfig.SDKVersion);
         if (attr != null)
             qt.param("attrs", attr);
 

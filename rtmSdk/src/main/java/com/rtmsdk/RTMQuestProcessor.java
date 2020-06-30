@@ -1,5 +1,4 @@
 package com.rtmsdk;
-
 import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;

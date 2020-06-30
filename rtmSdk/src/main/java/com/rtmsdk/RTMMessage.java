@@ -49,15 +49,18 @@ class RTMMessage extends RTMMessageCore {
             Object obj = value.get(5);
             if (tmp.mtype == MessageMType_Audio)
             {
-                if (obj instanceof byte[])
-                    tmp.binaryMessage = (byte [])obj;
+                byte data[] = null;
+                if (obj instanceof byte[]) {
+                    data = (byte[]) obj;
+                }
                 else {
                     try {
-                        String.valueOf(obj).getBytes("iso8859-1");
+                        data = String.valueOf(obj).getBytes("iso8859-1");
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
                 }
+                tmp.binaryMessage = RTMAudio.unpackAudioData(data);
             }
             else {
                 if (obj instanceof byte[])

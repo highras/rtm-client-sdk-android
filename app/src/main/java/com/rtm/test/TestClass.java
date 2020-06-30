@@ -1,6 +1,7 @@
 package com.rtm.test;
 
 import com.fpnn.sdk.ErrorCode;
+import com.fpnn.sdk.TCPClient;
 import com.rtmsdk.RTMClient;
 import com.rtmsdk.RTMErrorCode;
 import com.rtmsdk.RTMStruct.*;
@@ -16,7 +17,7 @@ import java.util.Map;
 public class TestClass {
     public static long peerUid = 101;
     public static long roomId = 7788521;
-    public static long groupId = 7788621;
+    public static long groupId = 200;
     public static Map<Long, RTMClient> clients = new HashMap<Long, RTMClient>();
 
 //    public static long peerUid = 99;
@@ -109,6 +110,7 @@ public class TestClass {
     public static RTMClient loginRTM() {
         RTMClient testClient = new RTMClient(dispatchEndpoint, pid, loginUid, new RTMExampleQuestProcessor());
         testClient.setErrorRecoder(new TestErrorRecorder());
+        mylog.log("start login");
         lgonStatus = testClient.login(token);
         if (lgonStatus == ErrorCode.FPNN_EC_OK.value()) {
             mylog.log(" " + loginUid + " login RTM success");
@@ -245,13 +247,16 @@ class ChatCase implements CaseInterface {
             mylog.log("not available rtmclient");
             return;
         }
-        sendP2PChat();
+//        sendP2PChat();
+//        sendP2PCmd();
+        sendP2PChattestblack();
 
-        profanity();
-        translateTest(lang);
-        setTranslateLang(changeLang);
-        TestClass.mySleep(2);
-        translateTest(changeLang);
+
+//        profanity();
+//        translateTest(changeLang);
+//        translateTest(lang);
+//        setTranslateLang(changeLang);
+/*        TestClass.mySleep(2);
         sendGroupChat();
         sendP2PCmd();
         sendGroupCmd();
@@ -259,10 +264,10 @@ class ChatCase implements CaseInterface {
         if (TestClass.enterRoom()) {
             sendRoomChat();
             sendRoomCmd();
-        }
+        }*/
 
-        mylog.log("Wait 5 seonds for receiving server pushed Chat & Cmd if those are being demoed ...");
-        TestClass.mySleep(5);
+//        mylog.log("Wait 5 seonds for receiving server pushed Chat & Cmd if those are being demoed ...");
+//        TestClass.mySleep(5);
 //        ClientEngine.stop();
     }
 
@@ -324,6 +329,37 @@ class ChatCase implements CaseInterface {
         int errorCode = client.setTranslatedLanguage(lang);
         String beizhu = " " + changeLang;
         TestClass.outPutMsg(errorCode, method, beizhu);
+    }
+
+    void sendP2PChattestblack() {
+        final String beizhu = "to user 100";
+        final String method = "sendChat";
+        RTMClient client = TestClass.clients.get(101L);
+
+        boolean status = client.sendChat(new LongFunctionCallback() {
+            @Override
+            public void call(long mtime, int errorCode) {
+                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            }
+        }, 100, textMessage);
+        TestClass.asyncOutput(status, method);
+
+        int errorCode = client.sendChat(ret, 100, textMessage);
+        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+
+
+        final String method1 = "sendCmd";
+
+        boolean status1 = client.sendCmd(new LongFunctionCallback() {
+            @Override
+            public void call(long mtime, int errorCode) {
+                TestClass.outPutMsg(errorCode, method1, beizhu, mtime, false);
+            }
+        }, 100, textMessage);
+        TestClass.asyncOutput(status1, method1);
+
+        int errorCode1 = client.sendCmd(ret, 100, textMessage);
+        TestClass.outPutMsg(errorCode1, method1, beizhu, ret.mtime);
     }
 
     void sendP2PChat() {
@@ -519,13 +555,16 @@ class FriendCase implements CaseInterface {
             mylog.log("not available rtmclient");
             return;
         }
-        addFriends();
+/*        addFriends();
         getFriends();
         deleteFriends();
 
         TestClass.mySleep(2);   //-- Wait for server sync action.
 
-        getFriends();
+        getFriends();*/
+        addBlacks();
+//        getBlacks();
+////        delBlacks();
     }
 
     void addFriends() {
@@ -593,6 +632,64 @@ class FriendCase implements CaseInterface {
         int errorCode = client.getFriends(uids);
         TestClass.outPutMsg(errorCode, method, uids.toString());
     }
+
+
+    void addBlacks() {
+        final String method = "addblacks";
+        final HashSet<Long> uids = new HashSet<Long>() {{
+            add(101L);
+        }};
+
+        boolean status = client.addBlacklist(new ErrorCodeCallback() {
+            @Override
+            public void call(int errorCode) {
+                TestClass.outPutMsg(errorCode, method, uids.toString(), 0, false);
+            }
+        }, uids);
+        TestClass.asyncOutput(status, method);
+
+        int errorCode = client.addBlacklist(uids);
+        TestClass.outPutMsg(errorCode, method, uids.toString());
+
+    }
+
+    void delBlacks() {
+        final String method = "delblacks";
+        final HashSet<Long> deluids = new HashSet<Long>() {{
+            add(101L);
+        }};
+
+        boolean status = client.delBlacklist(new ErrorCodeCallback() {
+            @Override
+            public void call(int errorCode) {
+                TestClass.outPutMsg(errorCode, method, deluids.toString(), 0, false);
+            }
+        }, deluids);
+        TestClass.asyncOutput(status, method);
+
+
+        int errorCode = client.delBlacklist(deluids);
+        TestClass.outPutMsg(errorCode, method, deluids.toString());
+    }
+
+    void getBlacks() {
+        final String method = "getblacks";
+        HashSet<Long> uids = new HashSet<Long>();
+
+        boolean status = client.getBlacklist(new MembersCallback() {
+            @Override
+            public void call(HashSet<Long> uids, int errorCode) {
+                TestClass.outPutMsg(errorCode, method, uids.toString(), 0, false);
+
+            }
+        });
+        TestClass.asyncOutput(status, method);
+        uids.clear();
+
+        int errorCode = client.getBlacklist(uids);
+        TestClass.outPutMsg(errorCode, method, uids.toString());
+    }
+
 }
 
 class AudioCase implements CaseInterface {
@@ -1359,7 +1456,6 @@ class HistoryCase implements CaseInterface {
             mylog.log("not available rtmclient");
             return;
         }
-        getP2PMessage();
         if (true)
             return;
 

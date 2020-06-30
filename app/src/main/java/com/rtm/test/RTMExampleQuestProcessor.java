@@ -88,34 +88,6 @@ public class RTMExampleQuestProcessor implements IRTMQuestProcessor {
         }
     }
 
-    public void pushChat(long fromUid, long toUid, long mid, String message, String attrs, long mtime) {
-        synchronized (interlock) {
-            String msg = String.format("Receive pushChat: from %d, mid: %d, attrs: %s, message: %s", fromUid, mid, attrs, message);
-            mylog.log(msg);
-        }
-    }
-
-    public void pushGroupChat(long fromUid, long groupId, long mid, String message, String attrs, long mtime) {
-        synchronized (interlock) {
-            String msg = String.format("Receive pushGroupChat: from %d, in group: %d, mid: %d, attrs: %s, message: %s", fromUid, groupId, mid, attrs, message);
-            mylog.log(msg);
-        }
-    }
-
-    public void pushRoomChat(long fromUid, long roomId, long mid, String message, String attrs, long mtime) {
-        synchronized (interlock) {
-            String msg = String.format("Receive pushRoomChat: from %d, in roomId: %d, mid: %d, attrs: %s, message: %s", fromUid, roomId, mid, attrs, message);
-            mylog.log(msg);
-        }
-    }
-
-    public void pushBroadcastChat(long fromUid, long mid, String message, String attrs, long mtime) {
-        synchronized (interlock) {
-            String msg = String.format("Receive pushBroadcastChat: from %d, mid: %d, attrs: %s, message: %s", fromUid, mid, attrs, message);
-            mylog.log(msg);
-        }
-    }
-
     public void pushChat(long fromUid, long toUid, long mid, TranslatedMessage message, String attrs, long mtime) {
         synchronized (interlock) {
             String msg = String.format("Receive translated pushChat: from %d, mid: %d, attrs: %s, srcLang:%s, srcMsg:%s toLang:%s, toMsg:%s", fromUid, mid, attrs, message.source, message.sourceText, message.target, message.targetText);

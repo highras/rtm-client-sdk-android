@@ -2,6 +2,7 @@ package com.rtmsdk;
 
 import android.util.Log;
 
+import com.fpnn.sdk.ClientEngine;
 import com.fpnn.sdk.ConnectionConnectedCallback;
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.ErrorRecorder;
@@ -276,12 +277,12 @@ class RTMFile extends RTMSystem {
     }
 
     //===========================[ Real Send File ]=========================//
-    private boolean realSendFile(LongFunctionCallback callback, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+    private boolean realSendFile(final LongFunctionCallback callback, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
         if (mtype < MessageMType_FileStart || mtype > MessageMType_FileEnd) {
             if (errorRecorder != null)
                 errorRecorder.recordError("Send file require mtype between [40, 50], current mtype is " + mtype);
 
-            return false;
+                return false;
         }
 
         SendFileInfo info = new SendFileInfo();

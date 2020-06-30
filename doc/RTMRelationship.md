@@ -303,4 +303,54 @@
      * @return true(发送成功)  false(发送失败)
      */
     public int getFriends(HashSet<Long> friends, int timeout);
+    
+    
+    /**
+     * 添加黑名单 async
+     * @param callback ErrorCodeCallback回调(NoNull)
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public boolean addBlacklist(ErrorCodeCallback callback, HashSet<Long> uids, int timeout) 
+    /**
+     * 添加黑名单 sync
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public int addBlacklist(HashSet<Long> uids, int timeout)
+
+    /**
+     * 删除黑名单用户 async
+     * @param callback ErrorCodeCallback回调(NoNull)
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public boolean delBlacklist(ErrorCodeCallback callback, HashSet<Long> uids, int timeout)
+
+    /**
+     * 删除黑名单用户 sync
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public int delBlacklist(HashSet<Long> uids, int timeout) 
+
+    /**
+     * 查询黑名单 async
+     * @param callback MembersCallback回调(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public boolean getBlacklist(final MembersCallback callback, int timeout) 
+
+    /**
+     * 查询黑名单 sync
+     * @param uids   用户id集合(NoNull)
+     * @param timeout  超时时间(秒)
+     * @return true(发送成功)  false(发送失败)
+     */
+    public int getBlacklist(HashSet<Long> uids, int timeout)
 ~~~

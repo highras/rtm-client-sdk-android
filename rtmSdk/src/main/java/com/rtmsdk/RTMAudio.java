@@ -286,6 +286,8 @@ public class RTMAudio {
     }
 
     public static byte[] unpackAudioData(byte[] audioDta) {
+        if (audioDta == null)
+            return null;
 //        byte[] data = Arrays.copyOfRange(audioDta, 3, audioDta.length);//刨除前3字节
         int pos = 4;
 

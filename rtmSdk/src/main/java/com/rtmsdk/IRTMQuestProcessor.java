@@ -19,11 +19,6 @@ public interface IRTMQuestProcessor
     void pushGroupMessage(long fromUid, long groupId, byte mtype, long mid, byte[] message, String attrs, long mtime);
     void pushRoomMessage(long fromUid, long roomId, byte mtype, long mid, byte[] message, String attrs, long mtime);
     void pushBroadcastMessage(long fromUid, byte mtype, long mid, byte[] message, String attrs, long mtime);
-//
-//    void pushChat(long fromUid, long toUid, long mid, String message, String attrs, long mtime);
-//    void pushGroupChat(long fromUid, long groupId, long mid, String message, String attrs, long mtime);
-//    void pushRoomChat(long fromUid, long roomId, long mid, String message, String attrs, long mtime);
-//    void pushBroadcastChat(long fromUid, long mid, String message, String attrs, long mtime);
 
     void pushChat(long fromUid, long toUid, long mid, TranslatedMessage message, String attrs, long mtime);
     void pushGroupChat(long fromUid, long groupId, long mid, TranslatedMessage message, String attrs, long mtime);
