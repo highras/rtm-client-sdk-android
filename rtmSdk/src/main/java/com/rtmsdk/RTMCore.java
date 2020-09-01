@@ -674,8 +674,8 @@ class RTMCore  implements INetEvent{
 
     RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
         this.lang = lang.equals("") ? Locale.getDefault().getLanguage() : lang;
+        this.lang = "en";
         this.token =  token;
-        this.lang = lang;
         this.loginAddresType = addressType;
         this.loginAttrs = attr;
         closedCase = CloseType.None;

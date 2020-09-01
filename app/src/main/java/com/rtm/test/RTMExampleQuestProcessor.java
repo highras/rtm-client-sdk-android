@@ -1,10 +1,9 @@
 package com.rtm.test;
 
-import com.rtmsdk.IRTMQuestProcessor;
-import com.rtmsdk.RTMAudio;
-import com.rtmsdk.RTMStruct.*;
+import com.rtmsdk.RTMPushProcessor;
+import com.rtmsdk.RTMStruct.RTMMessage;
 
-public class RTMExampleQuestProcessor implements IRTMQuestProcessor {
+public class RTMExampleQuestProcessor extends RTMPushProcessor {
     private Object interlock;
 
     public RTMExampleQuestProcessor() {

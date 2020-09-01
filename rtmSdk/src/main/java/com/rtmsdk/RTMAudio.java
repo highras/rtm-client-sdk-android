@@ -239,6 +239,15 @@ public class RTMAudio {
         recordFile = file;
     }
 
+
+    public void setLang(TranscribeLang lang){
+        this.lang = lang;
+    }
+
+    public String getLang(){
+        return lang.getName();
+    }
+
     private int getAudioTime(File file) {
         int length;
         MediaPlayer tmp = new MediaPlayer();

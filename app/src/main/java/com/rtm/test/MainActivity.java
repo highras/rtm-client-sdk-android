@@ -1,13 +1,8 @@
 package com.rtm.test;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -19,13 +14,12 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.fpnn.sdk.ErrorCode;
-import com.rtmsdk.NetStateReceiver;
-import com.rtmsdk.NetUtils;
 import com.rtmsdk.RTMAudio;
 import com.rtmsdk.RTMClient;
 import com.rtmsdk.RTMStruct;
+import com.rtmsdk.TranscribeLang;
 import com.rtmsdk.UserInterface;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 
 public class MainActivity extends AppCompatActivity {
@@ -213,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
         }
 */
 
-        RTMAudio.getInstance().init("zh-cn",null);
+        RTMAudio.getInstance().init(getExternalCacheDir(), TranscribeLang.ZH_CN,null);
         byte[] audioData = null;
         try {
             InputStream inputStream=getAssets().open("AudioDemo");
@@ -229,25 +222,13 @@ public class MainActivity extends AppCompatActivity {
         ceshi.loginRTM();
     }
 
-    class netchange extends BroadcastReceiver{
-        @Override
-            public void onReceive(Context context, Intent intent) {
-                if (Objects.equals(intent.getAction(), ConnectivityManager.CONNECTIVITY_ACTION)) {
-                    int netWorkState = NetUtils.getNetWorkState(context);
-                    Toast.makeText(mycontext,"net change " + netWorkState,Toast.LENGTH_LONG).show();
-                }
-        }
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
         if (Build.VERSION.SDK_INT >= 23) {
-            String[] permissions = {Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+            String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE};
             //验证是否许可权限
             for (String str : permissions) {
                 if (this.checkSelfPermission(str) != PackageManager.PERMISSION_GRANTED) {
@@ -257,12 +238,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+
 //        IntentFilter intentFilter = new IntentFilter();
 //        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
 //        NetStateReceiver stateReceiver = new NetStateReceiver();
 //        this.registerReceiver(new netchange(),intentFilter);
 
-        audioManage.init("en-US", null);
+        audioManage.init(getExternalCacheDir(),TranscribeLang.EN_US, null);
         TestButtonListener testButtonListener = new TestButtonListener();
         AudioButtonListener audioButtonListener = new AudioButtonListener();
 
@@ -299,7 +281,11 @@ public class MainActivity extends AppCompatActivity {
         final String token = properties.getProperty("usertoken");
         final String endpoint = properties.getProperty("endpoint");
         final long pid = Long.parseLong(properties.getProperty("pid"));
-        startTestCase(pid, uid, token, endpoint);
-//        jiamitest();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                startTestCase(pid, uid, token, endpoint);
+            }
+        }).start();
     }
 }

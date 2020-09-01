@@ -30,7 +30,7 @@ public class RTMClient extends RTMChat {
         RTMInit(endpoint, pid, uid, serverPushProcessor);
     }
 
-    void init(RTMConfig config){
+    void config(RTMConfig config){
         RTMConfig.Config(config);
     }
 

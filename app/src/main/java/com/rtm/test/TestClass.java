@@ -3,6 +3,8 @@ package com.rtm.test;
 import com.fpnn.sdk.ErrorCode;
 import com.rtmsdk.RTMClient;
 import com.rtmsdk.RTMStruct.*;
+import com.rtmsdk.TranscribeLang;
+import com.rtmsdk.TranslateLang;
 import com.rtmsdk.UserInterface;
 import com.rtmsdk.UserInterface.IRTMCallback;
 import com.rtmsdk.UserInterface.IRTMEmptyCallback;
@@ -106,34 +108,30 @@ public class TestClass {
                 put("audio", new AudioCase());
             }
         };
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                TestErrorRecorder mylogRecoder = new TestErrorRecorder();
-                client.setErrorRecoder(mylogRecoder);
-                RTMAnswer answer = client.login(token);
-                lgonStatus = answer.errorCode;
-                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
-                    mylog.log(" " + loginUid + " login RTM success");
-                else
-                    mylog.log(" " + loginUid + " login RTM error:" + answer.getErrInfo());
 
-                for (final long uid : pushClients.keySet()){
-                    RTMClient loginClient = pushClients.get(uid);
-                    loginClient.setErrorRecoder(mylogRecoder);
+        TestErrorRecorder mylogRecoder = new TestErrorRecorder();
+        client.setErrorRecoder(mylogRecoder);
+        RTMAnswer answer = client.login(token);
+        lgonStatus = answer.errorCode;
+        if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+            mylog.log(" " + loginUid + " login RTM success");
+        else
+            mylog.log(" " + loginUid + " login RTM error:" + answer.getErrInfo());
 
-                    loginClient.login(new UserInterface.IRTMEmptyCallback() {
-                        @Override
-                        public void onResult(RTMAnswer answer) {
-                            if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
-                                mylog.log("user " + uid + " login result " + answer.getErrInfo());
-                            else
-                                mylog.log("user " + uid + " login result " + answer.getErrInfo());
-                        }
-                    },pushUserTokens.get(uid));
+        for (final long uid : pushClients.keySet()){
+            RTMClient loginClient = pushClients.get(uid);
+            loginClient.setErrorRecoder(mylogRecoder);
+
+            loginClient.login(new UserInterface.IRTMEmptyCallback() {
+                @Override
+                public void onResult(RTMAnswer answer) {
+                    if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                        mylog.log("user " + uid + " login result " + answer.getErrInfo());
+                    else
+                        mylog.log("user " + uid + " login result " + answer.getErrInfo());
                 }
-            }
-        }).start();
+            },pushUserTokens.get(uid));
+        }
     }
 
     public static void mySleep(int second) {
@@ -221,7 +219,7 @@ class AudioCase implements CaseInterface
 class ChatCase implements CaseInterface {
     RTMClient client = TestClass.client;
     public static String textMessage = "{\"user\":{\"name\":\"alex\",\"age\":\"18\",\"isMan\":true}}";
-    String changeLang = "fr";
+    TranslateLang changeLang = TranslateLang.AR;
     String lang = "en";
 
     private String transMessage = "我今天很高兴";
@@ -244,7 +242,17 @@ class ChatCase implements CaseInterface {
 
     //------------------------[ Chat Demo ]-------------------------//
     void syncChatTest(){
-            TranscribeStruct transcribeinfo1 = client.transcribe(TestClass.audioFile);
+
+
+        TranslatedInfo transInfo = client.translate(transMessage, lang);
+        String beizhu = "sourceText:" + transInfo.sourceText + " sourceLang:" + transInfo.source + " target:" + transInfo.targetText + " targetLang:" + transInfo.target;;
+        mylog.log("translate result is:" + beizhu);
+
+        TranscribeStruct transcribeinfo = client.transcribe(TestClass.audioFile);
+        mylog.log("transcribe resultText:" + transcribeinfo.resultText + " resultLang:" + transcribeinfo.resultLang);
+
+
+        /*    TranscribeStruct transcribeinfo1 = client.transcribe(TestClass.audioFile);
             mylog.log("transcribe resultText:" + transcribeinfo1.resultText + " resultLang:" + transcribeinfo1.resultLang);
 
             ModifyTimeStruct answer = client.sendChat(TestClass.peerUid, textMessage);
@@ -294,7 +302,7 @@ class ChatCase implements CaseInterface {
             mylog.log("translate result is:" + beizhu);
 
             TranscribeStruct transcribeinfo = client.transcribe(TestClass.audioFile);
-            mylog.log("transcribe resultText:" + transcribeinfo.resultText + " resultLang:" + transcribeinfo.resultLang);
+            mylog.log("transcribe resultText:" + transcribeinfo.resultText + " resultLang:" + transcribeinfo.resultLang);*/
     }
 
     void asyncChatTest(){

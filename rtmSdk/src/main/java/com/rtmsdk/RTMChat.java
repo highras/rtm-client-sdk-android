@@ -149,7 +149,7 @@ class RTMChat extends RTMRoom {
         return getSession(0);
     }
 
-    public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage) {
+    public void setTranslatedLanguage(IRTMEmptyCallback callback, TranslateLang targetLanguage) {
         setTranslatedLanguage(callback, targetLanguage, 0);
     }
 
@@ -692,9 +692,9 @@ class RTMChat extends RTMRoom {
      * @param targetLanguage    目标语言(NoNull)
      * @param timeout   超时时间(秒)
      */
-    public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage, int timeout) {
+    public void setTranslatedLanguage(IRTMEmptyCallback callback, TranslateLang targetLanguage, int timeout) {
         Quest quest = new Quest("setlang");
-        quest.param("lang", targetLanguage);
+        quest.param("lang", targetLanguage.getName());
         sendQuestEmptyCallback(callback, quest, timeout);
     }
 
