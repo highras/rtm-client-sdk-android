@@ -5,20 +5,19 @@ import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.DuplicatedMessageFilter.MessageCategories;
-import com.rtmsdk.RTMStruct.LongMtime;
-import com.rtmsdk.UserInterface.LongFunctionCallback;
+import com.rtmsdk.UserInterface.IRTMCallback;
+import com.rtmsdk.RTMStruct.*;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 class RTMMessageCore extends RTMCore {
-    static final byte MessageMType_Chat = 30;
-    static final byte MessageMType_Audio = 31;
-    static final byte MessageMType_Cmd = 32;
-    static final byte MessageMType_FileStart = 40;
-    static final byte MessageMType_FileEnd = 50;
-
     //======================[ String message version ]================================//
-    private int sendMsgSync(long id, byte mtype, Object message, Object attrs, int timeout, MessageCategories type, LongMtime mtime) {
+    private ModifyTimeStruct sendMsgSync(long id, byte mtype, Object message, Object attrs, int timeout, MessageCategories type) {
         String method = "", toWhere = "";
-        mtime.mtime = 0;
         switch (type) {
             case GroupMessage:
                 method = "sendgroupmsg";
@@ -42,13 +41,36 @@ class RTMMessageCore extends RTMCore {
         quest.param("attrs", attrs);
 
         Answer answer = sendQuest(quest, timeout);
-        int code = checkAnswer(answer);
-        if (code == ErrorCode.FPNN_EC_OK.value())
-            mtime.mtime = answer.wantLong("mtime");
-        return code;
+        if (answer == null)
+            return genModifyAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
+        else if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value())
+            return genModifyAnswer(answer);
+        return genModifyAnswer(answer,answer.wantLong("mtime"));
     }
 
-    private boolean sendMsgAsync(final LongFunctionCallback callback, long id, byte mtype, Object message, String attrs, int timeout, MessageCategories type) {
+    private ModifyTimeStruct genModifyAnswer(int code){
+        ModifyTimeStruct tmp = new ModifyTimeStruct();
+        tmp.errorCode = code;
+        tmp.errorMsg = RTMErrorCode.getMsg(code);
+        tmp.modifyTime = 0;
+        if (code == ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value())
+            tmp.errorMsg = "invalid connection";
+        return tmp;
+    }
+
+    private ModifyTimeStruct genModifyAnswer(Answer anser, long time){
+        ModifyTimeStruct tmp = new ModifyTimeStruct();
+        tmp.errorCode = anser.getErrorCode();
+        tmp.errorMsg = anser.getErrorMessage();
+        tmp.modifyTime = time;
+        return tmp;
+    }
+
+    private ModifyTimeStruct genModifyAnswer(Answer anser){
+        return genModifyAnswer(anser,0);
+    }
+
+    private void sendMsgAsync(final IRTMCallback<Long> callback, long id, byte mtype, Object message, String attrs, int timeout, MessageCategories type) {
         String method = "", toWhere = "";
         switch (type) {
             case GroupMessage:
@@ -72,65 +94,235 @@ class RTMMessageCore extends RTMCore {
         quest.param("msg", message);
         quest.param("attrs", attrs);
 
-        return sendQuest(quest, new FunctionalAnswerCallback() {
+        sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 long mtime = 0;
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     mtime = answer.wantLong("mtime");
-                callback.call(mtime, errorCode);
+                callback.onResult(mtime, genRTMAnswer(answer,errorCode));
             }
         }, timeout);
     }
 
+
+    private HistoryMessageResult buildHistoryMessageResult(Answer answer) {
+        HistoryMessageResult result = new HistoryMessageResult();
+        if(answer == null)
+            return result;
+        result.count = answer.wantInt("num");
+        result.lastId = answer.wantLong("lastid");
+        result.beginMsec = answer.wantLong("begin");
+        result.endMsec = answer.wantLong("end");
+        result.messages = new ArrayList<>();
+
+        ArrayList<List<Object>> messages = (ArrayList<List<Object>>) answer.want("msgs");
+        for (List<Object> value : messages) {
+            boolean delete = (boolean)(value.get(4));
+            if (delete)
+                continue;
+
+            RTMStruct.HistoryMessage tmp = new RTMStruct.HistoryMessage();
+            tmp.cursorId = RTMUtils.wantLong(value.get(0));
+            tmp.fromUid = RTMUtils.wantLong(value.get(1));
+            tmp.messageType = (byte)RTMUtils.wantInt(value.get(2));
+            tmp.messageId = RTMUtils.wantLong(value.get(3));
+            Object obj = value.get(5);
+            if (tmp.messageType == RTMStruct.MessageType.AUDIO) {
+                RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
+                try {
+                    JSONObject kk = new JSONObject(String.valueOf(obj));
+                    audioTmp.duration = kk.getInt("du");
+                    audioTmp.sourceLanguage = kk.getString("sl");
+                    audioTmp.recognizedLanguage = kk.getString("rl");
+                    audioTmp.recognizedText = kk.getString("rt");
+                    tmp.audioInfo = audioTmp;
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                if (obj instanceof byte[])
+                    tmp.binaryMessage = (byte [])obj;
+                else
+                    tmp.stringMessage = String.valueOf(obj);
+            }
+
+            tmp.attrs = String.valueOf(value.get(6));
+            tmp.modifiedTime = RTMUtils.wantLong(value.get(7));
+            result.messages.add(tmp);
+        }
+        result.count = result.messages.size();
+        return result;
+    }
+
+    private Quest genGetMessageQuest(long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, MessageCategories type)
+    {
+        String method = "", toWhere = "";
+        switch (type) {
+            case GroupMessage:
+                method = "getgroupmsg";
+                toWhere = "gid";
+                break;
+            case RoomMessage:
+                method = "getroommsg";
+                toWhere = "rid";
+                break;
+            case P2PMessage:
+                method = "getp2pmsg";
+                toWhere = "ouid";
+                break;
+            case BroadcastMessage:
+                method = "getbroadcastmsg";
+                toWhere = "";
+                break;
+        }
+
+        Quest quest = new Quest(method);
+        if (!toWhere.equals(""))
+            quest.param(toWhere, id);
+        quest.param("desc", desc);
+        quest.param("num", count);
+
+        quest.param("begin", beginMsec);
+        quest.param("end", endMsec);
+        quest.param("lastid", lastId);
+
+        if (mtypes != null && mtypes.size() > 0)
+            quest.param("mtypes", mtypes);
+        return quest;
+    }
+
+    private void adjustHistoryMessageResultForP2PMessage(long fromUid, HistoryMessageResult result) {
+        for (RTMStruct.HistoryMessage hm : result.messages) {
+            if (hm.fromUid == 1)
+                hm.fromUid = getUid();
+            else
+                hm.fromUid = fromUid;
+        }
+    }
+
+    void getHistoryMessage(final IRTMCallback<HistoryMessageResult> callback, final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout, final MessageCategories type) {
+        Quest quest = genGetMessageQuest(id, desc, count, beginMsec, endMsec, lastId, mtypes, type);
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                HistoryMessageResult result = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    result = buildHistoryMessageResult(answer);
+                    if (type == DuplicatedMessageFilter.MessageCategories.P2PMessage)
+                        adjustHistoryMessageResultForP2PMessage(id, result);
+                }
+                callback.onResult(result, genRTMAnswer(answer,errorCode));
+            }
+        }, timeout);
+    }
+
+    HistoryMessageResult getHistoryMessage(final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout, MessageCategories type){
+        Quest quest = genGetMessageQuest(id, desc, count, beginMsec, endMsec, lastId, mtypes, type);
+        Answer answer = sendQuest(quest, timeout);
+        HistoryMessageResult ret = new HistoryMessageResult();
+        if (answer == null){
+            ret.errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
+            ret.errorMsg = "invalid connection";
+        }
+        else if (answer.getErrorCode() == ErrorCode.FPNN_EC_OK.value()){
+            ret = buildHistoryMessageResult(answer);
+        }
+        ret.errorCode = answer.getErrorCode();
+        ret.errorMsg = answer.getErrorMessage();
+        return ret;
+    }
+
+    private SingleMessage buildSingleMessage(Answer answer) {
+        SingleMessage message = new SingleMessage();
+        if (answer ==null || answer.getErrorCode() != RTMErrorCode.RTM_EC_OK.value())
+            return message;
+        message.messageId = answer.wantLong("id");
+        message.messageType = (byte) answer.wantInt("mtype");
+        message.attrs = answer.wantString("attrs");
+        message.modifiedTime = answer.wantLong("mtime");
+        Object obj = answer.want("msg");
+
+        if (obj instanceof byte[])
+            message.binaryMessage = (byte[]) obj;
+        else
+            message.stringMessage = String.valueOf(obj);
+        return message;
+    }
+
+    void getMessage(final IRTMCallback<SingleMessage> callback, long fromUid, long xid, long messageId, int type, int timeout) {
+        Quest quest = new Quest("getmsg");
+        quest.param("mid", messageId);
+        quest.param("xid", xid);
+        quest.param("from", fromUid);
+        quest.param("type", type);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                SingleMessage SingleMessage = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value())
+                    SingleMessage = buildSingleMessage(answer);
+                callback.onResult(SingleMessage, genRTMAnswer(answer,errorCode));
+            }
+        }, timeout);
+    }
+
+    SingleMessage getMessage(long fromUid, long xid, long messageId, int type, int timeout){
+        Quest quest = new Quest("getmsg");
+        quest.param("mid", messageId);
+        quest.param("xid", xid);
+        quest.param("from", fromUid);
+        quest.param("type", type);
+
+        Answer answer = sendQuest(quest, timeout);
+        RTMAnswer result = genRTMAnswer(answer);
+
+        return buildSingleMessage(answer);
+    }
+
+    void delMessage(UserInterface.IRTMEmptyCallback callback, long fromUid, long xid, long messageId, int type, int timeout) {
+        Quest quest = new Quest("delmsg");
+        quest.param("mid", messageId);
+        quest.param("xid", xid);
+        quest.param("from", fromUid);
+        quest.param("type", type);
+
+        sendQuestEmptyCallback(callback,quest,timeout);
+    }
+
+    RTMAnswer delMessage(long fromUid, long xid, long messageId, int type, int timeout){
+        Quest quest = new Quest("delmsg");
+        quest.param("mid", messageId);
+        quest.param("xid", xid);
+        quest.param("from", fromUid);
+        quest.param("type", type);
+
+        return sendQuestEmptyResult(quest,timeout);
+    }
+
     //======================[ String message version ]================================//
-    protected boolean internalSendMessage(final LongFunctionCallback callback, long uid, byte mtype, String message, String attrs, int timeout) {
-        return sendMsgAsync(callback, uid, mtype, message, attrs, timeout, MessageCategories.P2PMessage);
+    void internalSendMessage(IRTMCallback<Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
+        if (mtype <= MessageType.NORMALFILE){
+            callback.onResult(0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value()));
+            return;
+        }
+        sendMsgAsync(callback, toid, mtype, message, attrs, timeout, msgType);
     }
 
-    protected int internalSendMessage(LongMtime mtime, long uid, byte mtype, String message, String attrs, int timeout) {
-        return sendMsgSync(uid, mtype, message, attrs, timeout, MessageCategories.P2PMessage, mtime);
+    ModifyTimeStruct internalSendMessage(long toid, byte mtype, Object message, String attrs, int timeout,MessageCategories msgType) {
+        if (mtype <= MessageType.NORMALFILE)
+            return genModifyAnswer(RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value());
+        return sendMsgSync(toid, mtype, message, attrs, timeout, msgType);
     }
 
-    protected boolean internalSendGroupMessage(final LongFunctionCallback callback, long groupId, byte mtype, String message, String attrs, int timeout) {
-        return sendMsgAsync(callback, groupId, mtype, message, attrs, timeout, MessageCategories.GroupMessage);
+    void internalSendChat(IRTMCallback<Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
+        sendMsgAsync(callback, toid, mtype, message, attrs, timeout, msgType);
     }
 
-    protected int internalSendGroupMessage(LongMtime mtime, long groupId, byte mtype, String message, String attrs, int timeout) {
-        return sendMsgSync(groupId, mtype, message, attrs, timeout, MessageCategories.GroupMessage, mtime);
-    }
-
-    protected boolean internalSendRoomMessage(final LongFunctionCallback callback, long roomId, byte mtype, String message, String attrs, int timeout) {
-        return sendMsgAsync(callback, roomId, mtype, message, attrs, timeout, MessageCategories.RoomMessage);
-    }
-
-    protected int internalSendRoomMessage(LongMtime mtime, long roomId, byte mtype, String message, String attrs, int timeout) {
-        return sendMsgSync(roomId, mtype, message, attrs, timeout, MessageCategories.RoomMessage, mtime);
-    }
-
-    //======================[ binary message version ]================================//
-    protected boolean internalSendMessage(final LongFunctionCallback callback, long uid, byte mtype, byte[] message, String attrs, int timeout) {
-        return sendMsgAsync(callback, uid, mtype, message, attrs, timeout, MessageCategories.P2PMessage);
-    }
-
-    protected int internalSendMessage(LongMtime mtime, long uid, byte mtype, byte[] message, String attrs, int timeout) {
-        return sendMsgSync(uid, mtype, message, attrs, timeout, MessageCategories.P2PMessage, mtime);
-    }
-
-    protected boolean internalSendGroupMessage(LongFunctionCallback callback, long groupId, byte mtype, byte[] message, String attrs, int timeout) {
-        return sendMsgAsync(callback, groupId, mtype, message, attrs, timeout, MessageCategories.GroupMessage);
-    }
-
-    protected int internalSendGroupMessage(LongMtime mtime, long groupId, byte mtype, byte[] message, String attrs, int timeout) {
-        return sendMsgSync(groupId, mtype, message, attrs, timeout, MessageCategories.GroupMessage, mtime);
-    }
-
-    protected boolean internalSendRoomMessage(LongFunctionCallback callback, long roomId, byte mtype, byte[] message, String attrs, int timeout) {
-        return sendMsgAsync(callback, roomId, mtype, message, attrs, timeout, MessageCategories.RoomMessage);
-    }
-
-    protected int internalSendRoomMessage(LongMtime mtime, long roomId, byte mtype, byte[] message, String attrs, int timeout) {
-        return sendMsgSync(roomId, mtype, message, attrs, timeout, MessageCategories.RoomMessage, mtime);
+    ModifyTimeStruct internalSendChat(long toid, byte mtype, Object message, String attrs, int timeout,MessageCategories msgType) {
+        return sendMsgSync(toid, mtype, message, attrs, timeout, msgType);
     }
 }
 

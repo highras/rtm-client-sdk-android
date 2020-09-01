@@ -1,63 +1,34 @@
 package com.rtmsdk;
 
-import com.rtmsdk.RTMStruct.HistoryMessage;
-import com.rtmsdk.RTMStruct.RetrievedMessage;
-import com.rtmsdk.RTMStruct.TranslatedMessage;
+import com.rtmsdk.RTMStruct.*;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 public class UserInterface {
-    //接口状态码的回调
-    public interface ErrorCodeCallback {
-        void call(int errorCode);
+
+    //重连开始接口 每次重连都会判断reloginWillStart 返回值 若返回false则中断重连
+    //reloginWillStart 参数说明 uid-用户id  answer本次重连的结果  reloginCount重连次数
+    public interface  IReloginStart{
+        boolean reloginWillStart(long uid, RTMAnswer answer, int reloginCount);
     }
 
-    //返回
-    public interface LongFunctionCallback {
-        void call(long mtime, int errorCode);
+    //重连完成
+    public interface  IReloginCompleted{
+        void   reloginCompleted(long uid, boolean successfulm, RTMAnswer answer, int reloginCount);
     }
 
-    //
-    public interface UserAttrsCallback {
-        void call(Map<String, String> attrs, int errorCode);
+    //返回空结果的回调接口
+    public interface IRTMEmptyCallback {
+        void onResult(RTMAnswer answer);
     }
 
-    //属性值回调
-    public interface AttrsCallback {
-        void call(List<Map<String, String>> attrs, int errorCode);
+    //泛型接口 带有一个返回值的回调函数
+    public interface IRTMCallback<T> {
+        void onResult(T t, RTMAnswer answer);
     }
 
-    public interface  HistoryMessageCallback{
-        void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode);
-    }
-
-    public interface  UnreadCallback{
-        void call(List<Long> p2p_uids, List<Long> groupIds, int errorCode);
-    }
-
-    public interface RetrievedMessageCallback{
-        void call(RetrievedMessage message, int errorCode);
-    }
-
-    public interface TranslateCallback{
-        void call(TranslatedMessage message, int errorCode);
-    }
-
-    public interface MessageCallback{
-        void call(String message, int errorCode);
-    }
-
-    public interface  ProfanityCallback{
-        void call(String resultText, List<String> classification, int errorCode);
-    }
-
-    public interface DoubleStringCallback{
-        void call(String str1, String str2, int errorCode);
-    }
-
-    public interface MembersCallback{
-        void call(HashSet<Long> uids, int errorCode);
+    interface DoubleStringCallback{
+        void onResult(String str1, String str2, int errorCode);
     }
 }

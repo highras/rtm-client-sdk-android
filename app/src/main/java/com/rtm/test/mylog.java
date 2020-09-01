@@ -2,8 +2,10 @@ package com.rtm.test;
 
 import android.util.Log;
 
-public class mylog {
-    public static void log(String msg){
-        Log.i("sdktest",msg);
+import com.fpnn.sdk.ErrorRecorder;
+
+public class mylog extends ErrorRecorder{
+    public static void log(String msg) {
+        Log.i("sdktest", msg);
     }
 }

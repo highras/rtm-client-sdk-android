@@ -10,21 +10,19 @@
 ~~~
 
 #### API
-//path 存储录音文件路径 可空
+public void broadAduio(byte[] amrData) {
 public void startRecord(String path);
-public void stopRecord()
+public File stopRecord()
 
 
 #### 使用
-    RTMAudio audioManage = new RTMAudio();
-    audioManage.init(String lang, IAudioAction action) //lang, action可空
+    RTMAudio audioManage = RTMAudio.getinstance();
+    public void init(File file, String lang, IAudioAction audioAction) { //lang, action可空
     audioManage.startRecord(); //开始录音
     audioManage.stopRecord();  //结束录音
-    byte[] data = audioManage.genAudioData()  //获取录音文件
-    得到音频数据然后发送给用户/群组/房间
-    RTMClient.sendAudio(....,data...);
+    rtmclient.sendaudio/sendgroupaudio/sendroomaudio()
     
-    当用户实现自定义pushAudio函数后 收到语音流data 可以使用如下方法播放
+    当用户实现自定义pushAudio函数后 收到语音消息后 可以使用getmsg获取实际语音数据 然后调用播放
     audioManage.broadAduio(data)
 
 

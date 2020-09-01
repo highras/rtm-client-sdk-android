@@ -6,6 +6,7 @@ import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.util.Log;
 
 import com.fpnn.sdk.proto.MessagePayloadPacker;
 import com.livedata.audioConvert.AudioConvert;
@@ -112,7 +113,8 @@ class AmrBroad implements Runnable {
     }
 
     public void stop() {
-        mDecodeThread.interrupt();
+        if (mDecodeThread != null)
+            mDecodeThread.interrupt();
 //        isRunning = false;
     }
 
@@ -147,8 +149,10 @@ class AmrBroad implements Runnable {
 }
 
 public class RTMAudio {
+    private static RTMAudio instance = null;
+
     private IAudioAction audioAction = null;
-    private String lang = "zh-CN";
+    private TranscribeLang lang = TranscribeLang.EN_US;
     //    private AudioTrack mPlayer;
     private MediaRecorder mRecorder = null;
     private String audioDir = "";
@@ -158,6 +162,18 @@ public class RTMAudio {
     private int defaultBitRate = 16000;
     private int audioChannel = 1;
     private AmrBroad play = new AmrBroad();
+
+    public static RTMAudio getInstance() {
+        if (instance == null) {
+            synchronized (RTMAudio.class) {
+                if (instance == null) {
+                    instance = new RTMAudio();
+                }
+            }
+        }
+        return instance;
+    }
+
 
     public short[] getRawData(byte[] amrSrc) {
         if (amrSrc == null)
@@ -196,8 +212,8 @@ public class RTMAudio {
         return (short) ((0xff & firstByte) | (0xff00 & (secondByte << 8)));
     }
 
-    public String getRecordPath(){
-        return recordFile.getAbsolutePath();
+    public File getRecordFile(){
+        return recordFile;
     }
 
     public interface IAudioAction {
@@ -210,29 +226,20 @@ public class RTMAudio {
         void broadFinish();
     }
 
-    public void init(String lang, IAudioAction audioAction) {
+    /**
+     *
+     * @param file 录音文件默认存储的地址
+     * @param lang 语言见
+     * @param audioAction 用户自定义的开始 和录音结束的回调
+     */
+    public void init(File file, TranscribeLang lang, IAudioAction audioAction) {
         this.audioAction = audioAction;
         this.lang = lang;
 
-        audioDir = Environment.getExternalStorageDirectory().getPath() + "/rtmCache/";
-
-        File dir = new File(audioDir);
-        if (!dir.exists())
-            if (!dir.mkdirs()) {
-                audioDir = "";
-                return;
-            }
-        recordFile = new File(dir.getPath() + "/recoderAudio");
+        recordFile = file;
     }
 
-    //    public static RTMAudio getInstance() {
-//        return RTMAudioClassHolder.instance;
-//    }
-//
-//    private static class RTMAudioClassHolder {
-//        private static final RTMAudio instance = new RTMAudio();
-//    }
-    private int getAudioTime() {
+    private int getAudioTime(File file) {
         int length;
         MediaPlayer tmp = new MediaPlayer();
         try {
@@ -248,26 +255,34 @@ public class RTMAudio {
         return length;
     }
 
-    public byte[] genAudioData() throws IOException {
-        byte[] audio = fileToByteArray();
-        if (audio == null)
-            return null;
-        final int audioDur = getAudioTime();
+    public byte[] genAudioData(){
+        return genAudioData(recordFile);
+    }
 
-        RTMAudioHeader tt = new RTMAudioHeader(lang, audioDur, minSampleRate);
-        byte[] header = tt.headerArray();
-
+    public byte[] genAudioData(File file) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        os.write(header);        //附加信息内容 msgpack后
-        os.write(audio);      //语音内容
+        try{
+            byte[] audio = fileToByteArray(file);
+            if (audio == null)
+                return null;
+            final int audioDur = getAudioTime(file);
 
+            RTMAudioHeader tt = new RTMAudioHeader(lang.getName(), audioDur, minSampleRate);
+            byte[] header = tt.headerArray();
+
+            os.write(header);        //附加信息内容 msgpack后
+            os.write(audio);      //语音内容
+        }
+        catch (IOException ex){
+            Log.e("rtmaduio","genAudioData error " + ex.getMessage());
+        }
         return os.toByteArray();
     }
 
-    private byte[] fileToByteArray() {
+    private byte[] fileToByteArray(File file) {
         byte[] data;
         try {
-            FileInputStream fis = new FileInputStream(recordFile);
+            FileInputStream fis = new FileInputStream(file);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
             int len;
@@ -279,13 +294,13 @@ public class RTMAudio {
             fis.close();
             baos.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("rtmaudio","fileToByteArray error " + e.getMessage());
             return null;
         }
         return data;
     }
 
-    public static byte[] unpackAudioData(byte[] audioDta) {
+    static byte[] unpackAudioData(byte[] audioDta) {
         if (audioDta == null)
             return null;
 //        byte[] data = Arrays.copyOfRange(audioDta, 3, audioDta.length);//刨除前3字节
@@ -344,24 +359,24 @@ public class RTMAudio {
             if (audioAction != null)
                 audioAction.startRecord();
         } catch (Exception e) {
-            e.printStackTrace();
+            Log.e("rtmaudio","startRecord error " + e.getMessage());
         }
     }
 
-    public void stopRecord() {
+    public File stopRecord() {
         if (mRecorder == null)
-            return;
+            return null;
         try {
             mRecorder.stop();
-            if (audioAction != null)
-                audioAction.startRecord();
         } catch (IllegalStateException e) {
+            Log.e("rtmaudio","stopRecord error " + e.getMessage());
         }
 
         mRecorder.release();
         mRecorder = null;
         if (audioAction != null)
             audioAction.stopRecord();
+        return recordFile;
 //        audioDur = System.currentTimeMillis() - audioDur;
     }
 
@@ -387,7 +402,11 @@ public class RTMAudio {
     }
 
     public void broadAduio() {
-        broadAduio(fileToByteArray());
+        broadAduio(recordFile);
+    }
+
+    public void broadAduio(File file) {
+        broadAduio(fileToByteArray(file));
     }
 
     public void stopAduio() {

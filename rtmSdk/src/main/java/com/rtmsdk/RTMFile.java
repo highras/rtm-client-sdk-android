@@ -1,8 +1,5 @@
 package com.rtmsdk;
 
-import android.util.Log;
-
-import com.fpnn.sdk.ClientEngine;
 import com.fpnn.sdk.ConnectionConnectedCallback;
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.ErrorRecorder;
@@ -10,10 +7,9 @@ import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
-import com.rtmsdk.RTMStruct.LongMtime;
-import com.rtmsdk.RTMStruct.TimeOutStruct;
+import com.rtmsdk.RTMStruct.*;
 import com.rtmsdk.UserInterface.DoubleStringCallback;
-import com.rtmsdk.UserInterface.LongFunctionCallback;
+import com.rtmsdk.UserInterface.IRTMCallback;
 
 import java.net.InetSocketAddress;
 
@@ -37,16 +33,41 @@ class RTMFile extends RTMSystem {
         public String endpoint;
         public int remainTimeout;
         public long lastActionTimestamp;
-        public LongFunctionCallback callback;
+        public UserInterface.IRTMCallback<Long> callback;
     }
+
+    //重载
+    public void sendFile(IRTMCallback<Long> callback, long peerUid, byte mtype, byte[] fileContent, String filename) {
+        sendFile(callback, peerUid, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
+    }
+
+    public ModifyTimeStruct sendFile(long peerUid, byte mtype, byte[] fileContent, String filename){
+        return sendFile(peerUid, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
+    }
+
+    public void sendGroupFile(IRTMCallback<Long> callback, long groupId, byte mtype, byte[] fileContent, String filename) {
+        sendGroupFile(callback, groupId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
+    }
+
+    public ModifyTimeStruct sendGroupFile(long groupId, byte mtype, byte[] fileContent, String filename){
+        return sendGroupFile(groupId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
+    }
+
+    public void  sendRoomFile(IRTMCallback<Long> callback, long roomId, byte mtype, byte[] fileContent, String filename) {
+        sendRoomFile(callback, roomId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
+    }
+
+    public ModifyTimeStruct sendRoomFile(long roomId, byte mtype, byte[] fileContent, String filename){
+        return sendRoomFile(roomId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
+    }
+    //重载end
 
     //===========================[ File Token ]=========================//
-    //-- Action<token, endpoint, errorCode>
-    private boolean fileToken(final DoubleStringCallback callback, fileTokenType tokenType, long xid) {
-        return fileToken(callback, tokenType, xid, 0);
+    private void fileToken(final DoubleStringCallback callback, fileTokenType tokenType, long xid) {
+        fileToken(callback, tokenType, xid, 0);
     }
 
-    private boolean fileToken(final DoubleStringCallback callback, fileTokenType tokenType, long xid, int timeout) {
+    private void fileToken(final DoubleStringCallback callback, fileTokenType tokenType, long xid, int timeout) {
         Quest quest = new Quest("filetoken");
         switch (tokenType) {
             case P2P:
@@ -63,7 +84,7 @@ class RTMFile extends RTMSystem {
                 break;
         }
 
-        return sendQuest(quest, new FunctionalAnswerCallback() {
+        sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 String token = "" ,endpoint = "";
@@ -71,7 +92,7 @@ class RTMFile extends RTMSystem {
                     token = answer.wantString("token");
                     endpoint = answer.wantString("endpoint");
                 }
-                callback.call(token, endpoint, errorCode);
+                callback.onResult(token, endpoint, errorCode);
             }
         }, timeout);
     }
@@ -100,7 +121,9 @@ class RTMFile extends RTMSystem {
         }
 
         Answer answer = sendQuest(quest, timeout);
-        int code = checkAnswer(answer);
+        int code = 0;
+        if (answer == null)
+            code = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
         if (code == ErrorCode.FPNN_EC_OK.value()) {
             token.append(answer.wantString("token"));
             endpoint.append(answer.wantString("endpoint"));
@@ -197,13 +220,14 @@ class RTMFile extends RTMSystem {
             return ErrorCode.FPNN_EC_CORE_TIMEOUT.value();
 
         Quest quest = buildSendFileQuest(info);
-        boolean success = client.sendQuest(quest, new FunctionalAnswerCallback() {
+
+        client.sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     try {
                         long mtime = answer.wantLong("mtime");
-                        info.callback.call(mtime, ErrorCode.FPNN_EC_OK.value());
+                        info.callback.onResult(mtime, genRTMAnswer(ErrorCode.FPNN_EC_OK.value()));
 
                         activeFileGateClient(info.endpoint, client);
                         return;
@@ -211,14 +235,11 @@ class RTMFile extends RTMSystem {
                         errorCode = ErrorCode.FPNN_EC_CORE_INVALID_PACKAGE.value();
                     }
                 }
-                info.callback.call(0, errorCode);
+                info.callback.onResult(0L, genRTMAnswer(answer,errorCode));
             }
         }, info.remainTimeout);
 
-        if (success)
-            return ErrorCode.FPNN_EC_OK.value();
-        else
-            return ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
+        return ErrorCode.FPNN_EC_OK.value();
     }
 
     private int sendFileWithoutClient(final SendFileInfo info){
@@ -233,17 +254,17 @@ class RTMFile extends RTMSystem {
 
         client.setConnectedCallback(new ConnectionConnectedCallback() {
             @Override
-            public void connectResult(InetSocketAddress peerAddress, boolean connected) {
+            public void connectResult(InetSocketAddress peerAddress, int connectionId, boolean connected) {
                 int errorCode;
                 if (connected) {
                     activeFileGateClient(info.endpoint, client);
                     errorCode = sendFileWithClient(info, client);
                 }
                 else
-                    errorCode = RTMErrorCode.RTM_EC_FILEGATE_FAILED.value();
+                    errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
 
                 if (errorCode != ErrorCode.FPNN_EC_OK.value())
-                    info.callback.call(0, errorCode);
+                    info.callback.onResult(0L, genRTMAnswer(errorCode));
             }
         });
         try {
@@ -273,16 +294,14 @@ class RTMFile extends RTMSystem {
             else
                 ErrorRecorder.getInstance().recordError("send file error");
         } else
-            info.callback.call(0, errorCode);
+            info.callback.onResult(0L, genRTMAnswer(errorCode));
     }
 
     //===========================[ Real Send File ]=========================//
-    private boolean realSendFile(final LongFunctionCallback callback, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        if (mtype < MessageMType_FileStart || mtype > MessageMType_FileEnd) {
-            if (errorRecorder != null)
-                errorRecorder.recordError("Send file require mtype between [40, 50], current mtype is " + mtype);
-
-                return false;
+    private void realSendFile(final IRTMCallback<Long> callback, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+        if (mtype < MessageType.IMAGEFILE || mtype > MessageType.NORMALFILE) {
+            callback.onResult(0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_MTYPE.value()));
+            return ;
         }
 
         SendFileInfo info = new SendFileInfo();
@@ -296,9 +315,9 @@ class RTMFile extends RTMSystem {
         info.lastActionTimestamp = RTMUtils.getCurrentMilliseconds();
         info.callback = callback;
         final SendFileInfo inFile = info;
-        return fileToken(new DoubleStringCallback() {
+        fileToken(new DoubleStringCallback() {
             @Override
-            public void call(String token, String endpoint, int errorCode) {
+            public void onResult(String token, String endpoint, int errorCode) {
                 try {
                     getFileTokenCallback(inFile, token, endpoint, errorCode);
                 } catch (InterruptedException e) {
@@ -309,13 +328,10 @@ class RTMFile extends RTMSystem {
         }, tokenType, info.xid, timeout);
     }
 
-    private int realSendFile(LongMtime mtime, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+    private int realSendFile(fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout, StringBuilder mtime){
         //----------[ 1. check mtype ]---------------//
-        if (mtype < MessageMType_FileStart || mtype > MessageMType_FileEnd) {
-            if (errorRecorder != null)
-                errorRecorder.recordError("Send file require mtype between [40, 50], current mtype is " + mtype);
-
-            return RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value();
+        if (mtype < MessageType.IMAGEFILE || mtype > MessageType.NORMALFILE) {
+            return RTMErrorCode.RTM_EC_INVALID_MTYPE.value();
         }
 
         //----------[ 2. Get File Token ]---------------//
@@ -347,7 +363,7 @@ class RTMFile extends RTMSystem {
                     activeFileGateClient(realEndpoint, fileClient);
                 } else {
                     //----------[ 3.1 check timeout ]---------------//
-                    return RTMErrorCode.RTM_EC_FILEGATE_FAILED.value();
+                    return ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
                 }
             }
 
@@ -376,7 +392,7 @@ class RTMFile extends RTMSystem {
 
             activeFileGateClient(realEndpoint, fileClient);
 
-            mtime.mtime = answer.wantLong("mtime");
+            mtime.append(answer.wantLong("mtime"));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return ErrorCode.FPNN_EC_PROTO_UNKNOWN_ERROR.value();
@@ -384,146 +400,103 @@ class RTMFile extends RTMSystem {
         return ErrorCode.FPNN_EC_OK.value();
     }
 
-    //===========================[ Sned P2P File ]=========================//
-    public boolean sendFile(LongFunctionCallback callback, long peerUid, byte mtype, byte[] fileContent, String filename) {
-        return sendFile(callback, peerUid, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
-    public boolean sendFile(LongFunctionCallback callback, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension) {
-        return sendFile(callback, peerUid, mtype, fileContent, filename, fileExtension, RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
     /**
      * 发送p2p文件 async
-     * @param callback  LongFunctionCallback接口回调(NoNull)
+     * @param callback  IRTMCallback<Long>接口回调(NoNull)
      * @param peerUid   目标uid(NoNull)
      * @param mtype     消息类型(NoNull)
      * @param fileContent   文件内容(NoNull)
      * @param filename      文件名字(NoNull)
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
-     * @return  true(发送成功)  false(发送失败)
      */
-    public boolean sendFile(LongFunctionCallback callback, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        return realSendFile(callback, fileTokenType.P2P, peerUid, mtype, fileContent, filename, fileExtension, timeout);
-    }
-
-    public int sendFile(LongMtime mytime, long peerUid, byte mtype, byte[] fileContent, String filename) {
-        return sendFile(mytime, peerUid, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
-    public int sendFile(LongMtime mytime, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension) {
-        return sendFile(mytime, peerUid, mtype, fileContent, filename, fileExtension, RTMConfig.globalFileQuestTimeoutSeconds);
+    public void sendFile(IRTMCallback<Long> callback, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+        realSendFile(callback, fileTokenType.P2P, peerUid, mtype, fileContent, filename, fileExtension, timeout);
     }
 
     /**
      * 发送p2p文件 sync
-     * @param mytime  LongMtime对象(NoNull)
      * @param peerUid   目标uid(NoNull)
      * @param mtype     消息类型(NoNull)
      * @param fileContent   文件内容(NoNull)
      * @param filename      文件名字(NoNull)
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
-     * @return  errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
      */
-    public int sendFile(LongMtime mytime, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        return realSendFile(mytime, fileTokenType.P2P, peerUid, mtype, fileContent, filename, fileExtension, timeout);
-    }
-
-    //===========================[ Sned Group File ]=========================//
-    public boolean sendGroupFile(LongFunctionCallback callback, long groupId, byte mtype, byte[] fileContent, String filename) {
-        return sendGroupFile(callback, groupId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
-    public boolean sendGroupFile(LongFunctionCallback callback, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension) {
-        return sendGroupFile(callback, groupId, mtype, fileContent, filename,  fileExtension, RTMConfig.globalFileQuestTimeoutSeconds);
+    public ModifyTimeStruct sendFile(long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout){
+        StringBuilder mtim = new StringBuilder();
+        int errcode = realSendFile(fileTokenType.P2P, peerUid, mtype, fileContent, filename, fileExtension, timeout, mtim);
+        ModifyTimeStruct ret = new ModifyTimeStruct();
+        ret.errorCode = errcode;
+        ret.errorMsg = "";
+        ret.modifyTime = Long.parseLong(mtim.toString());
+        return ret;
     }
 
     /**
      * 发送群组文件 async
-     * @param callback  LongFunctionCallback接口回调(NoNull)
+     * @param callback  IRTMCallback<Long>接口回调(NoNull)
      * @param groupId   群组id(NoNull)
      * @param mtype     消息类型(NoNull)
      * @param fileContent   文件内容(NoNull)
      * @param filename      文件名字(NoNull)
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
-     * @return  true(发送成功)  false(发送失败)
      */
-    public boolean sendGroupFile(LongFunctionCallback callback, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        return realSendFile(callback, fileTokenType.Group, groupId, mtype, fileContent, filename, fileExtension, timeout);
-    }
-
-
-    public int sendGroupFile(LongMtime mtime, long groupId, byte mtype, byte[] fileContent, String filename) {
-        return sendGroupFile(mtime, groupId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
-    public int sendGroupFile(LongMtime mtime, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension) {
-        return sendGroupFile(mtime, groupId, mtype, fileContent, filename, fileExtension, RTMConfig.globalFileQuestTimeoutSeconds);
+    public void  sendGroupFile(IRTMCallback<Long> callback, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+        realSendFile(callback, fileTokenType.Group, groupId, mtype, fileContent, filename, fileExtension, timeout);
     }
 
     /**
      * 发送群组文件 sync
-     * @param mtime  LongMtime对象(NoNull)
      * @param groupId   群组id(NoNull)
      * @param mtype     消息类型(NoNull)
      * @param fileContent   文件内容(NoNull)
      * @param filename      文件名字(NoNull)
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
-     * @return  errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
      */
-    public int sendGroupFile(LongMtime mtime, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        return realSendFile(mtime, fileTokenType.Group, groupId, mtype, fileContent, filename, fileExtension, timeout);
-    }
-
-    //===========================[ Sned Room File ]=========================//
-    public boolean sendRoomFile(LongFunctionCallback callback, long roomId, byte mtype, byte[] fileContent, String filename) {
-        return sendRoomFile(callback, roomId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
-    public boolean sendRoomFile(LongFunctionCallback callback, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension) {
-        return sendRoomFile(callback,  roomId, mtype, fileContent, filename, fileExtension, RTMConfig.globalFileQuestTimeoutSeconds);
+    public ModifyTimeStruct sendGroupFile(long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout){
+        StringBuilder mtim = new StringBuilder();
+        int errcode = realSendFile(fileTokenType.Group, groupId, mtype, fileContent, filename, fileExtension, timeout, mtim);
+        ModifyTimeStruct ret = new ModifyTimeStruct();
+        ret.errorCode = errcode;
+        ret.errorMsg = "";
+        ret.modifyTime = Long.parseLong(mtim.toString());
+        return ret;
     }
 
     /**
      * 发送房间文件 async
-     * @param callback  LongFunctionCallback接口回调(NoNull)
+     * @param callback  IRTMCallback<Long>接口回调(NoNull)
      * @param roomId   房间id(NoNull)
      * @param mtype     消息类型(NoNull)
      * @param fileContent   文件内容(NoNull)
      * @param filename      文件名字(NoNull)
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
-     * @return  true(发送成功)  false(发送失败)
      */
-    public boolean sendRoomFile(LongFunctionCallback callback, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        return realSendFile(callback, fileTokenType.Room, roomId, mtype, fileContent, filename, fileExtension, timeout);
-    }
-
-    public int sendRoomFile(LongMtime mtime, long roomId, byte mtype, byte[] fileContent, String filename) {
-        return sendRoomFile(mtime, roomId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
-    }
-
-    public int sendRoomFile(LongMtime mtime, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension) {
-        return sendRoomFile(mtime, roomId, mtype, fileContent, filename, fileExtension, RTMConfig.globalFileQuestTimeoutSeconds);
+    public void  sendRoomFile(IRTMCallback<Long> callback, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+        realSendFile(callback, fileTokenType.Room, roomId, mtype, fileContent, filename, fileExtension, timeout);
     }
 
     /**
      * 发送房间文件 sync
-     * @param mtime  LongMtime对象(NoNull)
      * @param roomId   房间id(NoNull)
      * @param mtype     消息类型(NoNull)
      * @param fileContent   文件内容(NoNull)
      * @param filename      文件名字(NoNull)
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
-     * @return  errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
      */
-    public int sendRoomFile(LongMtime mtime, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
-        return realSendFile(mtime, fileTokenType.Room, roomId, mtype, fileContent, filename, fileExtension, timeout);
+    public ModifyTimeStruct sendRoomFile(long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout){
+        StringBuilder mtim = new StringBuilder();
+        int errcode = realSendFile(fileTokenType.Group, roomId, mtype, fileContent, filename, fileExtension, timeout, mtim);
+        ModifyTimeStruct ret = new ModifyTimeStruct();
+        ret.errorCode = errcode;
+        ret.errorMsg = "";
+        ret.modifyTime = Long.parseLong(mtim.toString());
+        return ret;
     }
 }
 

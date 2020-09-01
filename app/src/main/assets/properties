@@ -1,6 +1,14 @@
 uid = 100
-usertoken = 329D9373063C24450555D1128EA3F259
+usertoken = 4ED609739D6A57C330C782450BB5284E
 
 --测试环境--
-pid =  90000017
+pid =  90000033
 endpoint = 161.189.171.91:13325
+
+--宁夏--
+#endpoint = rtm-nx-front.ilivedata.com:13325
+#pid = 60000033
+
+--国际环境--
+#pid =  11000002
+#endpoint = rtm-intl-frontgate.ilivedata.com:13325

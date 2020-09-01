@@ -6,10 +6,18 @@ import java.util.Map;
 
 class DuplicatedMessageFilter {
     public enum MessageCategories {
-        P2PMessage,
-        GroupMessage,
-        RoomMessage,
-        BroadcastMessage,
+        P2PMessage          (1),
+        GroupMessage        (2),
+        RoomMessage         (3),
+        BroadcastMessage    (4);
+        private int value;
+
+        MessageCategories (int value) {
+            this.value = value;
+        }
+        public int value() {
+            return value;
+        }
     }
 
     private static class MessageIdUnit {

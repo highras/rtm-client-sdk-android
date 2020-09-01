@@ -4,6 +4,7 @@ import com.fpnn.sdk.proto.Message;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,15 +19,15 @@ public class RTMUtils {
         return id + orderId.incrementAndGet();
     }
 
-    public static long getCurrentSeconds() {
+    static long getCurrentSeconds() {
         return System.currentTimeMillis() / 1000;
     }
 
-    public static long getCurrentMilliseconds() {
+    static long getCurrentMilliseconds() {
         return System.currentTimeMillis();
     }
 
-    public static byte[] intToByteArray(int value) {
+    static byte[] intToByteArray(int value) {
         byte[] byteArray = new byte[4];
         byteArray[0] = (byte) (value & 0xFF);
         byteArray[1] = (byte) (value >> 8 & 0xFF);
@@ -35,7 +36,7 @@ public class RTMUtils {
         return byteArray;
     }
 
-    public static int byteArrayToInt(byte[] byteArray){
+    static int byteArrayToInt(byte[] byteArray){
         if(byteArray.length != 4){
             return 0;
         }
@@ -46,13 +47,19 @@ public class RTMUtils {
         return value;
     }
 
-    public static void wantStringMap(Message message,String key, Map<String, String> map) {
-        Map<String, String> ret = (Map<String, String>) message.want(key);
-        for (String value : ret.keySet())
-            map.put(value, ret.get(key));
+    static Map<String, String>  wantStringMap(Message message,String key) {
+        Map<String, String> map = new HashMap<>();
+        if (message != null){
+            Map<String, String> ret = (Map<String, String>) message.want(key);
+            for (String value : ret.keySet())
+                map.put(value, ret.get(key));
+        }
+        return map;
     }
 
-    public static void wantLongList(Message message,String key, List<Long> list) {
+    static void wantLongList(Message message,String key, List<Long> list) {
+        if (message == null)
+            return;
         List<Object> attrsList = (List<Object>)message.want(key);
         for (Object value : attrsList) {
             if (value instanceof Integer)
@@ -66,13 +73,16 @@ public class RTMUtils {
         }
     }
 
-    public static void wantListHashMap(Message message, String key, List<Map<String, String>> attributes) {
+    static List<Map<String, String>> wantListHashMap(Message message, String key) {
+        List<Map<String, String>> attributes = new ArrayList<>();
         List<Object> attrsList = (List<Object>)message.want(key);
         for (Object value : attrsList)
             attributes.add(new HashMap<>((Map<String, String>) value));
+        return attributes;
     }
 
-    public static void wantLongHashSet(Message message, String key, HashSet<Long> uids) {
+    static HashSet<Long> wantLongHashSet(Message message, String key) {
+        HashSet<Long> uids = new HashSet<Long>();
         List<Object> list = (List<Object>)message.want(key);
         for (Object value : list) {
             if (value instanceof Integer)
@@ -84,9 +94,10 @@ public class RTMUtils {
             else
                 uids.add(Long.valueOf(String.valueOf(value)));
         }
+        return uids;
     }
 
-    public static long wantLong(Object obj) {
+    static long wantLong(Object obj) {
         long value = -1;
         if (obj instanceof Integer)
             value = ((Integer) obj).longValue();
@@ -103,7 +114,7 @@ public class RTMUtils {
         return value;
     }
 
-    public static int wantInt(Object obj) {
+    static int wantInt(Object obj) {
         int value = -1;
         if (obj instanceof Integer)
             value = (Integer) obj;
@@ -126,19 +137,19 @@ public class RTMUtils {
 class MD5Utils {
     private static final String[] hexDigIts = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"};
 
-    public static String getMd5(byte[] origin, boolean upper) {
+    static String getMd5(byte[] origin, boolean upper) {
         return getMd5(new String(origin), upper, "utf-8");
     }
 
-    public static String getMd5(String origin, boolean upper) {
+    static String getMd5(String origin, boolean upper) {
         return getMd5(origin, upper, "utf-8");
     }
 
-    public static String getMd5(byte[] origin, boolean upper, String charsetname) {
+    static String getMd5(byte[] origin, boolean upper, String charsetname) {
         return getMd5(new String(origin), upper, charsetname);
     }
 
-    public static String getMd5(String origin, boolean upper, String charsetname) {
+    static String getMd5(String origin, boolean upper, String charsetname) {
         String resultString = null;
         try {
             resultString = origin;
@@ -156,14 +167,14 @@ class MD5Utils {
         return resultString;
     }
 
-    public static String byteArrayToHexString(byte[] b) {
+    static String byteArrayToHexString(byte[] b) {
         StringBuilder resultSb = new StringBuilder();
         for (byte i: b)
             resultSb.append(byteToHexString(i));
         return resultSb.toString();
     }
 
-    public static String byteToHexString(byte b) {
+    static String byteToHexString(byte b) {
         int n = b;
         if (n < 0) {
             n += 256;

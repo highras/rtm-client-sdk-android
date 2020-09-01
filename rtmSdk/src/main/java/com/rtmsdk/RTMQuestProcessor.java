@@ -1,9 +1,14 @@
 package com.rtmsdk;
+import android.util.Log;
+
 import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
-import com.rtmsdk.RTMStruct.TranslatedMessage;
+import com.rtmsdk.RTMStruct.*;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -11,14 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.rtmsdk.RTMMessageCore.MessageMType_Audio;
-import static com.rtmsdk.RTMMessageCore.MessageMType_Chat;
-import static com.rtmsdk.RTMMessageCore.MessageMType_Cmd;
-import static com.rtmsdk.RTMMessageCore.MessageMType_FileEnd;
-import static com.rtmsdk.RTMMessageCore.MessageMType_FileStart;
-
 class RTMQuestProcessor {
-    private IRTMQuestProcessor questProcessor;
+    private RTMPushProcessor questProcessor;
     private DuplicatedMessageFilter duplicatedFilter;
     private ErrorRecorder errorRecorder;
     private AtomicLong lastPingTime;
@@ -29,19 +28,27 @@ class RTMQuestProcessor {
         lastPingTime = new AtomicLong();
     }
 
-    public void setAnswerTCPclient(TCPClient client) {
+    void setAnswerTCPclient(TCPClient client) {
         refRtmGate = client;
     }
 
-    public void SetProcessor(IRTMQuestProcessor processor) {
+    void SetProcessor(RTMPushProcessor processor) {
         questProcessor = processor;
     }
 
-    public void SetErrorRecorder(ErrorRecorder recorder) {
+    void SetErrorRecorder(ErrorRecorder recorder) {
         errorRecorder = recorder;
     }
 
-    public boolean ConnectionIsAlive() {
+    synchronized void setLastPingTime(long time){
+        lastPingTime.set(time);
+    }
+
+    synchronized long getLastPingTime(){
+        return lastPingTime.get();
+    }
+
+    boolean ConnectionIsAlive() {
         long lastPingSec = lastPingTime.get();
         boolean ret = true;
 
@@ -51,26 +58,26 @@ class RTMQuestProcessor {
         return ret;
     }
 
-    public void sessionClosed(int ClosedByErrorCode) {
+    void sessionClosed(int ClosedByErrorCode) {
         if (questProcessor != null)
             questProcessor.sessionClosed(ClosedByErrorCode);
     }
 
     //----------------------[ RTM Operations ]-------------------//
-    public Answer ping(Quest quest, InetSocketAddress peer) {
+    Answer ping(Quest quest, InetSocketAddress peer) {
         long now = RTMUtils.getCurrentSeconds();
         lastPingTime.set(now);
         return new Answer(quest);
     }
 
-    public Answer kickout(Quest quest, InetSocketAddress peer) {
+    Answer kickout(Quest quest, InetSocketAddress peer) {
         refRtmGate.close();
         if (questProcessor != null)
             questProcessor.kickout();
         return null;
     }
 
-    public Answer kickoutRoom(Quest quest, InetSocketAddress peer) {
+    Answer kickoutRoom(Quest quest, InetSocketAddress peer) {
         if (questProcessor != null) {
             long roomId = (long) quest.get("rid");
             questProcessor.kickoutRoom(roomId);
@@ -92,10 +99,10 @@ class RTMQuestProcessor {
     }
 
     //----------------------[ RTM Messagess Utilities ]-------------------//
-    private TranslatedMessage processChatMessage(Quest quest, StringBuilder message) {
+    private TranslatedInfo processChatMessage(Quest quest, StringBuilder message) {
         Object ret = quest.want("msg");
         Map<String, String> msg = new HashMap<>((Map<String, String>) ret);
-        TranslatedMessage tm = new TranslatedMessage();
+        TranslatedInfo tm = new TranslatedInfo();
         tm.source = msg.get("source");
         tm.target = msg.get("target");
         tm.sourceText = msg.get("sourceText");
@@ -117,7 +124,7 @@ class RTMQuestProcessor {
     }
 
     //----------------------[ RTM Messagess ]-------------------//
-    public Answer pushmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushmsg(Quest quest, InetSocketAddress peer){
         refRtmGate.sendAnswer(new Answer(quest));
         if (questProcessor == null)
             return null;
@@ -130,41 +137,64 @@ class RTMQuestProcessor {
             return null;
 
         byte mtype = (byte) quest.wantInt("mtype");
+
         String attrs = quest.wantString("attrs");
         long mtime = quest.wantLong("mtime");
 
-        if (mtype == MessageMType_Chat) {
+        RTMMessage userMsg = new RTMMessage();
+        userMsg.attrs = attrs;
+        userMsg.fromUid = from;
+        userMsg.modifiedTime = mtime;
+        userMsg.messageType = mtype;
+        userMsg.messageId = mid;
+        userMsg.toId = to;
+
+        if (mtype == MessageType.CHAT) {
             StringBuilder orginialMessage = new StringBuilder();
-            TranslatedMessage tm = processChatMessage(quest, orginialMessage);
-            questProcessor.pushChat(from, to, mid, tm, attrs, mtime);
+            userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+            questProcessor.pushChat(userMsg);
             return null;
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageMType_Audio) {
-            byte[] audioData = messageInfo.binaryData;
-            if (!messageInfo.isBinary)
-                audioData = (messageInfo.message).getBytes("iso8859-1");
-            byte[] data = RTMAudio.unpackAudioData(audioData);
-
-            questProcessor.pushAudio(from, to, mid, data, attrs, mtime);
+        if (mtype == MessageType.AUDIO) {
+            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
+            try {
+                JSONObject hh = new JSONObject(messageInfo.message);
+                audioTmp.duration = hh.getInt("du");
+                audioTmp.recognizedText = hh.getString("rt");
+                audioTmp.sourceLanguage = hh.getString("sl");
+                audioTmp.recognizedLanguage = hh.getString("rl");
+                userMsg.audioInfo = audioTmp;
+            } catch (JSONException e) {
+                if (errorRecorder != null)
+                    errorRecorder.recordError(e);
+            }
+            questProcessor.pushAudio(userMsg);
             return null;
         }
 
-        if (mtype == MessageMType_Cmd)
-            questProcessor.pushCmd(from, to, mid, messageInfo.message, attrs, mtime);
-        else if (mtype >= MessageMType_FileStart && mtype <= MessageMType_FileStart)
-            questProcessor.pushFile(from, to, mtype, mid, messageInfo.message, attrs, mtime);
+        if (mtype == MessageType.CMD) {
+            userMsg.stringMessage = messageInfo.message;
+            questProcessor.pushCmd(userMsg);
+        } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            userMsg.stringMessage = messageInfo.message;
+            questProcessor.pushFile(userMsg);
+        }
         else {
-            if (messageInfo.isBinary)
-                questProcessor.pushMessage(from, to, mtype, mid, messageInfo.binaryData, attrs, mtime);
-            else
-                questProcessor.pushMessage(from, to, mtype, mid, messageInfo.message, attrs, mtime);
+            if (messageInfo.isBinary) {
+                userMsg.binaryMessage = messageInfo.binaryData;
+                questProcessor.pushMessage(userMsg);
+            }
+            else {
+                userMsg.stringMessage = messageInfo.message;
+                questProcessor.pushMessage(userMsg);
+            }
         }
         return null;
     }
 
-    public Answer pushgroupmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushgroupmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
         refRtmGate.sendAnswer(new Answer(quest));
 
         if (questProcessor == null)
@@ -181,39 +211,57 @@ class RTMQuestProcessor {
         String attrs = quest.wantString("attrs");
         long mtime = quest.wantLong("mtime");
 
-        if (mtype == MessageMType_Chat) {
+        RTMMessage userMsg = new RTMMessage();
+        userMsg.attrs = attrs;
+        userMsg.fromUid = from;
+        userMsg.modifiedTime = mtime;
+        userMsg.messageType = mtype;
+        userMsg.messageId = mid;
+        userMsg.toId = groupId;
+
+        if (mtype == MessageType.CHAT) {
             StringBuilder orginialMessage = new StringBuilder();
-            TranslatedMessage tm = processChatMessage(quest, orginialMessage);
-            questProcessor.pushGroupChat(from, groupId, mid, tm, attrs, mtime);
+            userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+            questProcessor.pushGroupChat(userMsg);
             return null;
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageMType_Audio) {
-            byte[] audioData = messageInfo.binaryData;
-            if (!messageInfo.isBinary)
-                audioData = (messageInfo.message).getBytes("iso8859-1");
-            byte[] data = RTMAudio.unpackAudioData(audioData);
-
-            questProcessor.pushGroupAudio(from, groupId, mid, data, attrs, mtime);
+        if (mtype == MessageType.AUDIO) {
+            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
+            try {
+                JSONObject hh = new JSONObject(messageInfo.message);
+                audioTmp.duration = hh.getInt("du");
+                audioTmp.recognizedText = hh.getString("rt");
+                audioTmp.sourceLanguage = hh.getString("sl");
+                audioTmp.recognizedLanguage = hh.getString("rl");
+                userMsg.audioInfo = audioTmp;
+            } catch (JSONException e) {
+                if (errorRecorder != null)
+                    errorRecorder.recordError(e);
+            }
+            questProcessor.pushGroupAudio(userMsg);
             return null;
         }
 
-        if (mtype == MessageMType_Cmd) {
-            questProcessor.pushGroupCmd(from, groupId, mid, messageInfo.message, attrs, mtime);
-        } else if (mtype >= MessageMType_FileStart && mtype <= MessageMType_FileEnd) {
-            questProcessor.pushGroupFile(from, groupId, mtype, mid, messageInfo.message, attrs, mtime);
+        userMsg.stringMessage = messageInfo.message;
+        if (mtype == MessageType.CMD) {
+            questProcessor.pushGroupCmd(userMsg);
+        } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            questProcessor.pushGroupFile(userMsg);
         } else {
-            if (messageInfo.isBinary)
-                questProcessor.pushGroupMessage(from, groupId, mtype, mid, messageInfo.binaryData, attrs, mtime);
+            if (messageInfo.isBinary) {
+                userMsg.binaryMessage = messageInfo.binaryData;
+                questProcessor.pushGroupMessage(userMsg);
+            }
             else
-                questProcessor.pushGroupMessage(from, groupId, mtype, mid, messageInfo.message, attrs, mtime);
+                questProcessor.pushGroupMessage(userMsg);
         }
 
         return null;
     }
 
-    public Answer pushroommsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushroommsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
         refRtmGate.sendAnswer(new Answer(quest));
 
         if (questProcessor == null)
@@ -230,39 +278,57 @@ class RTMQuestProcessor {
         String attrs = quest.wantString("attrs");
         long mtime = quest.wantLong("mtime");
 
-        if (mtype == MessageMType_Chat) {
+        RTMMessage userMsg = new RTMMessage();
+        userMsg.attrs = attrs;
+        userMsg.fromUid = from;
+        userMsg.modifiedTime = mtime;
+        userMsg.messageType = mtype;
+        userMsg.messageId = mid;
+        userMsg.toId = roomId;
+
+        if (mtype == MessageType.CHAT) {
             StringBuilder orginialMessage = new StringBuilder();
-            TranslatedMessage tm = processChatMessage(quest, orginialMessage);
-            questProcessor.pushRoomChat(from, roomId, mid, tm, attrs, mtime);
+            userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+            questProcessor.pushRoomChat(userMsg);
             return null;
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageMType_Audio) {
-            byte[] audioData = messageInfo.binaryData;
-            if (!messageInfo.isBinary)
-                audioData = (messageInfo.message).getBytes("iso8859-1");
-            byte[] data = RTMAudio.unpackAudioData(audioData);
-
-            questProcessor.pushRoomAudio(from, roomId, mid, data, attrs, mtime);
+        if (mtype == MessageType.AUDIO) {
+            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
+            try {
+                JSONObject hh = new JSONObject(messageInfo.message);
+                audioTmp.duration = hh.getInt("du");
+                audioTmp.recognizedText = hh.getString("rt");
+                audioTmp.sourceLanguage = hh.getString("sl");
+                audioTmp.recognizedLanguage = hh.getString("rl");
+                userMsg.audioInfo = audioTmp;
+            } catch (JSONException e) {
+                if (errorRecorder != null)
+                    errorRecorder.recordError(e);
+            }
+            questProcessor.pushRoomAudio(userMsg);
             return null;
         }
 
-        if (mtype == MessageMType_Cmd) {
-            questProcessor.pushRoomCmd(from, roomId, mid, messageInfo.message, attrs, mtime);
-        } else if (mtype >= MessageMType_FileStart && mtype <= MessageMType_FileEnd) {
-            questProcessor.pushRoomFile(from, roomId, mtype, mid, messageInfo.message, attrs, mtime);
+        userMsg.stringMessage = messageInfo.message;
+        if (mtype == MessageType.CMD) {
+            questProcessor.pushRoomCmd(userMsg);
+        } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            questProcessor.pushRoomFile(userMsg);
         } else {
-            if (messageInfo.isBinary)
-                questProcessor.pushRoomMessage(from, roomId, mtype, mid, messageInfo.binaryData, attrs, mtime);
+            if (messageInfo.isBinary) {
+                userMsg.binaryMessage = messageInfo.binaryData;
+                questProcessor.pushRoomMessage(userMsg);
+            }
             else
-                questProcessor.pushRoomMessage(from, roomId, mtype, mid, messageInfo.message, attrs, mtime);
+                questProcessor.pushRoomMessage(userMsg);
         }
 
         return null;
     }
 
-    public Answer pushbroadcastmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushbroadcastmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
         refRtmGate.sendAnswer(new Answer(quest));
 
         if (questProcessor == null)
@@ -278,34 +344,51 @@ class RTMQuestProcessor {
         String attrs = quest.wantString("attrs");
         long mtime = quest.wantLong("mtime");
 
-        if (mtype == MessageMType_Chat) {
+        RTMMessage userMsg = new RTMMessage();
+        userMsg.attrs = attrs;
+        userMsg.fromUid = from;
+        userMsg.modifiedTime = mtime;
+        userMsg.messageType = mtype;
+        userMsg.messageId = mid;
+
+        if (mtype == MessageType.CHAT) {
             StringBuilder orginialMessage = new StringBuilder();
-            TranslatedMessage tm = processChatMessage(quest, orginialMessage);
-            questProcessor.pushBroadcastChat(from, mid, tm, attrs, mtime);
+            userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+            questProcessor.pushBroadcastChat(userMsg);
             return null;
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageMType_Audio) {
-            byte[] audioData = messageInfo.binaryData;
-            if (!messageInfo.isBinary)
-                audioData = (messageInfo.message).getBytes("iso8859-1");
-            byte[] data = RTMAudio.unpackAudioData(audioData);
-
-            questProcessor.pushBroadcastAudio(from, mid, data, attrs, mtime);
+        if (mtype == MessageType.AUDIO) {
+            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
+            try {
+                JSONObject hh = new JSONObject(messageInfo.message);
+                audioTmp.duration = hh.getInt("du");
+                audioTmp.recognizedText = hh.getString("rt");
+                audioTmp.sourceLanguage = hh.getString("sl");
+                audioTmp.recognizedLanguage = hh.getString("rl");
+                userMsg.audioInfo = audioTmp;
+            } catch (JSONException e) {
+                if (errorRecorder != null)
+                    errorRecorder.recordError(e);
+            }
+            questProcessor.pushBroadcastAudio(userMsg);
 
             return null;
         }
 
-        if (mtype == MessageMType_Cmd) {
-            questProcessor.pushBroadcastCmd(from, mid, messageInfo.message, attrs, mtime);
-        } else if (mtype >= MessageMType_FileStart && mtype <= MessageMType_FileEnd) {
-            questProcessor.pushBroadcastFile(from, mtype, mid, messageInfo.message, attrs, mtime);
+        userMsg.stringMessage = messageInfo.message;
+        if (mtype == MessageType.CMD) {
+            questProcessor.pushBroadcastCmd(userMsg);
+        } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            questProcessor.pushBroadcastFile(userMsg);
         } else {
-            if (messageInfo.isBinary)
-                questProcessor.pushBroadcastMessage(from, mtype, mid, messageInfo.binaryData, attrs, mtime);
+            if (messageInfo.isBinary) {
+                userMsg.binaryMessage =  messageInfo.binaryData;
+                questProcessor.pushBroadcastMessage(userMsg);
+            }
             else
-                questProcessor.pushBroadcastMessage(from, mtype, mid, messageInfo.message, attrs, mtime);
+                questProcessor.pushBroadcastMessage(userMsg);
         }
         return null;
     }

@@ -1,7 +1,13 @@
 package com.rtm.test;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
+import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -14,15 +20,20 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.fpnn.sdk.ErrorCode;
+import com.rtmsdk.NetStateReceiver;
+import com.rtmsdk.NetUtils;
 import com.rtmsdk.RTMAudio;
 import com.rtmsdk.RTMClient;
+import com.rtmsdk.RTMStruct;
 import com.rtmsdk.UserInterface;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 public class MainActivity extends AppCompatActivity {
@@ -31,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     Chronometer timer;
+    Context mycontext = this;
     int REQUEST_CODE_CONTACT = 101;
     File recordFile;
     //    RTMUtils.audioUtils1 audioManage = RTMUtils.audioUtils1.getInstance();
@@ -59,7 +71,8 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     if (ceshi != null) {
                         if (name == "stress")
-                            ceshi.startStress();
+                            ;
+//                           ceshi.startStress();
                         else
                             ceshi.startCase(name);
                     }
@@ -100,11 +113,11 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.stopAudio:
                     timer.stop();
                     audioManage.stopRecord();
-                    try {
-                        testAduio(audioManage.genAudioData());
-                    } catch (Exception e) {
-                        mylog.log("hehe:" + e.getMessage());
-                    }
+//                    try {
+//                        testAduio(audioManage.genAudioData());
+//                    } catch (Exception e) {
+//                        mylog.log("hehe:" + e.getMessage());
+//                    }
                     break;
                 case R.id.broadAudio:
                     timer.stop();
@@ -117,6 +130,21 @@ public class MainActivity extends AppCompatActivity {
                     audioManage.stopAduio();
                     break;
             }
+        }
+    }
+
+    class reloginStartFunc implements UserInterface.IReloginStart{
+        @Override
+        public boolean reloginWillStart(long uid, RTMStruct.RTMAnswer answer, int reloginCount) {
+            mylog.log("重连第 " + reloginCount + "次, 结果 :" + answer.getErrInfo() );
+            return true;
+        }
+    }
+
+    class reloginCompleteFunc implements UserInterface.IReloginCompleted{
+        @Override
+        public void reloginCompleted(long uid, boolean successfulm, RTMStruct.RTMAnswer answer, int reloginCount) {
+            mylog.log("重连结束 结果 " + answer.getErrInfo() + " 重连次数 "+ reloginCount);
         }
     }
 
@@ -166,55 +194,57 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void startTestCase(final long pid, final long uid, final String token, final String endpoint) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ceshi = new TestClass(pid, uid, token, endpoint);
-                if (ceshi.client == null) {
-                    mylog.log("TestClass prepare error:");
-                    return;
-                }
+    void startTestCase(final long pid, final long uid, final String token, final String endpoint) {
+        ceshi = new TestClass(pid,uid,token,endpoint);
+        ceshi.client  = new RTMClient(endpoint, pid, uid, new RTMExampleQuestProcessor());
+        ceshi.client.setAutoConnect(this,new reloginStartFunc(), new reloginCompleteFunc());
 
-                class CodeCallback implements UserInterface.ErrorCodeCallback {
-                    @Override
-                    public void call(int errorCode) {
-                        if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                            mylog.log("rtmUser login RTM success");
-                        else
-                            mylog.log("rtmUser login RTM error:" + errorCode);
-                    }
-                }
-                RTMExampleQuestProcessor processorTest = new RTMExampleQuestProcessor();
-                CodeCallback callbackTest = new CodeCallback();
-
-                //test for push another rtm-client//
-                Map<Long, String> users = new HashMap<Long, String>() {
-                    {
-                        put(101L, "ED3B74C47AF6EFC1791CB3E31F739CB5");
-//                        put(9529L, "96C96410CF447F68AFCD8A9045502493");
-//                        put(9530L, "5F1A33C5768E6A644100918D0B2D679C");
-//                        put(9531L, "1D297088A0C534199A25DDC49136C1A8");
-//                        put(9532L, "3E6D527567F35CB12ED42048819D832E");
-                    }
-                };
-
-                for (long uid : users.keySet()) {
-                    RTMClient rtmUser = new RTMClient(endpoint, pid, uid, new RTMExampleQuestProcessor());
-                    boolean lgonStatus = rtmUser.login(callbackTest, users.get(uid));
-                    if (!lgonStatus)
-                        mylog.log("rtmUser login RTM error");
-                    ceshi.addClients(uid, rtmUser);
-                }
+        //test for push another rtm-client//
+/*
+        ceshi.pushUserTokens = new HashMap<Long, String>() {
+            {
+                put(101L, "80E21F51FF13AABBCEE821096ED402E4");
             }
-            //test for push another rtm-client//
-        }).start();
+        };
+        for (final long testuid : ceshi.pushUserTokens.keySet()) {
+            RTMClient rtmUser = new RTMClient(endpoint, pid, testuid, new RTMExampleQuestProcessor());
+            rtmUser.setAutoConnect(this,new reloginStartFunc(), new reloginCompleteFunc());
+            ceshi.addClients(testuid, rtmUser);
+        }
+*/
+
+        RTMAudio.getInstance().init("zh-cn",null);
+        byte[] audioData = null;
+        try {
+            InputStream inputStream=getAssets().open("AudioDemo");
+            FileOutputStream outfile = new FileOutputStream(RTMAudio.getInstance().getRecordFile());
+            audioData = toByteArray(inputStream);
+            outfile.write(audioData);
+            outfile.close();
+            inputStream.close();
+            ceshi.audioFile = RTMAudio.getInstance().getRecordFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ceshi.loginRTM();
+    }
+
+    class netchange extends BroadcastReceiver{
+        @Override
+            public void onReceive(Context context, Intent intent) {
+                if (Objects.equals(intent.getAction(), ConnectivityManager.CONNECTIVITY_ACTION)) {
+                    int netWorkState = NetUtils.getNetWorkState(context);
+                    Toast.makeText(mycontext,"net change " + netWorkState,Toast.LENGTH_LONG).show();
+                }
+        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
         if (Build.VERSION.SDK_INT >= 23) {
             String[] permissions = {Manifest.permission.RECORD_AUDIO,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
@@ -227,11 +257,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-//        jiamitest();
-//        if (true)
-//            return;
+//        IntentFilter intentFilter = new IntentFilter();
+//        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+//        NetStateReceiver stateReceiver = new NetStateReceiver();
+//        this.registerReceiver(new netchange(),intentFilter);
 
-        audioManage.init("zh-CN", null);
+        audioManage.init("en-US", null);
         TestButtonListener testButtonListener = new TestButtonListener();
         AudioButtonListener audioButtonListener = new AudioButtonListener();
 

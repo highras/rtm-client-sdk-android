@@ -1,13 +1,13 @@
 package com.rtm.test;
 
 import com.fpnn.sdk.ErrorCode;
-import com.fpnn.sdk.TCPClient;
 import com.rtmsdk.RTMClient;
-import com.rtmsdk.RTMErrorCode;
 import com.rtmsdk.RTMStruct.*;
-import com.rtmsdk.UserInterface.*;
-import org.json.JSONObject;
+import com.rtmsdk.UserInterface;
+import com.rtmsdk.UserInterface.IRTMCallback;
+import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,14 +16,16 @@ import java.util.Map;
 
 public class TestClass {
     public static long peerUid = 101;
-    public static long roomId = 7788521;
+    public static long roomId = 200;
     public static long groupId = 200;
-    public static Map<Long, RTMClient> clients = new HashMap<Long, RTMClient>();
+    public static byte sendMessgeType = 66;
+    public static String setLang = "no";
+    public static Map<Long, RTMClient> pushClients = new HashMap<>();
+    public Map<Long, String> pushUserTokens;
 
 //    public static long peerUid = 99;
 //    public static long roomId = 7788521;
 //    public static long groupId = 50;
-
 
     public static long pid = 90000017;
     public static long loginUid = 9527;
@@ -31,7 +33,13 @@ public class TestClass {
     public static String dispatchEndpoint = "52.82.27.68:13325";
     public static RTMClient client = null;
     public static int lgonStatus = -1;
+
     public static Map<String, CaseInterface> testMap;
+    public static String roomBeizhu = "to room " + roomId;
+    public static String groupBeizhu = "to group " + roomId;
+    public static String userBeizhu = "to user " + peerUid;
+//    public static byte[] audioData = null;
+    public static File audioFile = null;
 
     public enum MsgType {
         P2P,
@@ -55,31 +63,7 @@ public class TestClass {
     }*/
 
     public void addClients(long uid, RTMClient client){
-        clients.put(uid, client);
-    }
-
-    public void startStress(){
-        for (int i = 0; i< 100; i ++)
-            for (long uid: clients.keySet())
-                sendP2PChat(uid,clients.get(uid));
-    }
-
-    private void sendP2PChat(long uid, RTMClient client) {
-        final String beizhu = "to user " + uid;
-        final String method = "sendChat";
-        final String textMessage = "strss test";
-        LongMtime ret = new LongMtime();
-
-        boolean status = client.sendChat(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-//                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, loginUid, textMessage);
-//        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendChat(ret, loginUid, textMessage);
-//        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+        pushClients.put(uid, client);
     }
 
     public void startCase(String type) throws InterruptedException {
@@ -94,12 +78,12 @@ public class TestClass {
     }
 
     public void startAudioTest(byte[] data) {
-        if (testMap == null) {
-            mylog.log("rtmclient init error");
-            return;
-        }
-        AudioCase hh = (AudioCase) testMap.get("audio");
-        hh.sendAudio(data);
+//        if (testMap == null) {
+//            mylog.log("rtmclient init error");
+//            return;
+//        }
+//        AudioCase hh = (AudioCase) testMap.get("audio");
+//        hh.sendAudio(data);
     }
 
     public void startCase() throws InterruptedException {
@@ -107,18 +91,49 @@ public class TestClass {
             key.start();
     }
 
-    public static RTMClient loginRTM() {
-        RTMClient testClient = new RTMClient(dispatchEndpoint, pid, loginUid, new RTMExampleQuestProcessor());
-        testClient.setErrorRecoder(new TestErrorRecorder());
-        mylog.log("start login");
-        lgonStatus = testClient.login(token);
-        if (lgonStatus == ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log(" " + loginUid + " login RTM success");
-            return testClient;
-        } else {
-            mylog.log(" " + loginUid + " login RTM error:" + lgonStatus);
-            return null;
-        }
+    public void loginRTM() {
+        testMap = new HashMap<String, CaseInterface>() {
+            {
+                put("chat", new ChatCase());
+                put("data", new DataCase());
+                put("group", new GroupCase());
+                put("friend", new FriendCase());
+                put("room", new RoomCase());
+                put("file", new FileCase());
+                put("system", new SystemCase());
+                put("user", new UserCase());
+                put("history", new HistoryCase());
+                put("audio", new AudioCase());
+            }
+        };
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                TestErrorRecorder mylogRecoder = new TestErrorRecorder();
+                client.setErrorRecoder(mylogRecoder);
+                RTMAnswer answer = client.login(token);
+                lgonStatus = answer.errorCode;
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    mylog.log(" " + loginUid + " login RTM success");
+                else
+                    mylog.log(" " + loginUid + " login RTM error:" + answer.getErrInfo());
+
+                for (final long uid : pushClients.keySet()){
+                    RTMClient loginClient = pushClients.get(uid);
+                    loginClient.setErrorRecoder(mylogRecoder);
+
+                    loginClient.login(new UserInterface.IRTMEmptyCallback() {
+                        @Override
+                        public void onResult(RTMAnswer answer) {
+                            if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                                mylog.log("user " + uid + " login result " + answer.getErrInfo());
+                            else
+                                mylog.log("user " + uid + " login result " + answer.getErrInfo());
+                        }
+                    },pushUserTokens.get(uid));
+                }
+            }
+        }).start();
     }
 
     public static void mySleep(int second) {
@@ -134,49 +149,21 @@ public class TestClass {
     }
 
 
-    public TestClass(RTMClient client)
-    {
-
-    }
-
     public TestClass(long pid, long uid, String token, String dispatchEndpoint) {
         this.pid = pid;
         this.loginUid = uid;
         this.token = token;
         this.dispatchEndpoint = dispatchEndpoint;
-
-//        mylog.log("start login:" + RTMUtils.getCurrentSeconds());
-        client = loginRTM();
-        if (client == null) {
-            mylog.log("init TestClass error");
-            return;
-        }
-        testMap = new HashMap<String, CaseInterface>() {
-            {
-                put("chat", new ChatCase());
-                put("data", new DataCase());
-                put("group", new GroupCase());
-                put("friend", new FriendCase());
-                put("room", new RoomCase());
-                put("file", new FileCase());
-                put("system", new SystemCase());
-                put("user", new UserCase());
-                put("history", new HistoryCase());
-                put("message", new MessageCase());
-                put("audio", new AudioCase());
-            }
-        };
-//        mylog.log("end login:" + RTMUtils.getCurrentSeconds());
     }
 
 
-    public static boolean enterRoom() {
-        int errorCode = client.enterRoom(roomId);
-        if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log("Enter room " + TestClass.roomId + " in sync failed.");
-            return false;
-        }
-        return true;
+    public static void enterRoom() {
+            RTMAnswer answer = client.enterRoom(roomId);
+            TestClass.outPutMsg(answer,"enterroom","uid is " + loginUid);
+            for (long uid:pushClients.keySet()) {
+                answer = pushClients.get(uid).enterRoom(roomId);
+                TestClass.outPutMsg(answer,"enterroom","uid is " + uid);
+            }
     }
 
     public static boolean checkStatus() {
@@ -187,58 +174,55 @@ public class TestClass {
         return true;
     }
 
-    public static void asyncOutput(boolean ret, String method) {
-        asyncOutput(ret, method, 0);
+    public static void asyncOutPutMsg(RTMAnswer answer, String method) {
+        TestClass.outPutMsg(answer, method, "", 0, false);
     }
 
-    public static void asyncOutput(boolean ret, String method, int second) {
-        if (!ret)
-            mylog.log(method + " in async failed.");
-        else
-            TestClass.mySleep(second);   //-- Waiting callback desipay result info
+    public static void asyncOutPutMsg(RTMAnswer answer, String method, String beizhu) {
+        TestClass.outPutMsg(answer, method, beizhu, 0, false);
     }
 
-    public static void outPutMsg(int errorCode, String method) {
-        TestClass.outPutMsg(errorCode, method, "", 0, true);
+    public static void outPutMsg(RTMAnswer answer, String method) {
+        TestClass.outPutMsg(answer, method, "", 0, true);
     }
 
-    public static void outPutMsg(int errorCode, String method, String beizhu) {
-        TestClass.outPutMsg(errorCode, method, beizhu, 0, true);
+    public static void outPutMsg(RTMAnswer answer ,String method, String beizhu) {
+        TestClass.outPutMsg(answer, method, beizhu, 0, true);
     }
 
-    public static void outPutMsg(int errorCode, String method, String beizhu, long mtime) {
-        TestClass.outPutMsg(errorCode, method, beizhu, mtime, true);
+    public static void outPutMsg(RTMAnswer answer, String method, String beizhu, long mtime) {
+        TestClass.outPutMsg(answer, method, beizhu, mtime, true);
     }
 
-    public static void outPutMsg(int errorCode, String method, String beizhu, long mtime, boolean sync) {
+    public static void outPutMsg(RTMAnswer answer, String method, String beizhu, long mtime, boolean sync) {
         String syncType = "sync", msg = "";
         long xid = 0;
         if (!sync)
             syncType = "async";
 
-        if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+        if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value()) {
             if (mtime > 0)
                 msg = String.format("%s %s in %s successed, mtime is:%d", method, beizhu, syncType, mtime);
             else
                 msg = String.format("%s %s in %s successed", method, beizhu, syncType);
         } else
-            msg = String.format("%s %s in %s failed, errordes:%s", method, beizhu, syncType, errorCode + "-" + RTMErrorCode.getMsg(errorCode));
+            msg = String.format("%s %s in %s failed, errordes:%s", method, beizhu, syncType, answer.getErrInfo());
         mylog.log(msg);
-//        mySleep(2);
+    }
+}
+
+class AudioCase implements CaseInterface
+{
+    public void start(){
+
     }
 }
 
 class ChatCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
     public static String textMessage = "{\"user\":{\"name\":\"alex\",\"age\":\"18\",\"isMan\":true}}";
     String changeLang = "fr";
-    String lang = "no";
-//    public static String textMessage = "      ";
-
-    //    private String textMessage = "Hello, RTM!";
-    JSONObject js = new JSONObject();
-
+    String lang = "en";
 
     private String transMessage = "我今天很高兴";
 
@@ -247,216 +231,237 @@ class ChatCase implements CaseInterface {
             mylog.log("not available rtmclient");
             return;
         }
-//        sendP2PChat();
-//        sendP2PCmd();
-        sendP2PChattestblack();
+        mylog.log("start chat case\n");
+        TestClass.enterRoom();
+        syncChatTest();
+//        asyncChatTest();
 
+        //黑名单发送测试
+//        blackListSendTest();
 
-//        profanity();
-//        translateTest(changeLang);
-//        translateTest(lang);
-//        setTranslateLang(changeLang);
-/*        TestClass.mySleep(2);
-        sendGroupChat();
-        sendP2PCmd();
-        sendGroupCmd();
-
-        if (TestClass.enterRoom()) {
-            sendRoomChat();
-            sendRoomCmd();
-        }*/
-
-//        mylog.log("Wait 5 seonds for receiving server pushed Chat & Cmd if those are being demoed ...");
-//        TestClass.mySleep(5);
-//        ClientEngine.stop();
+        mylog.log("end chat case");
     }
 
     //------------------------[ Chat Demo ]-------------------------//
+    void syncChatTest(){
+            TranscribeStruct transcribeinfo1 = client.transcribe(TestClass.audioFile);
+            mylog.log("transcribe resultText:" + transcribeinfo1.resultText + " resultLang:" + transcribeinfo1.resultLang);
 
-    void profanity() {
-        final String method = "profanity";
-        boolean status = client.profanity(new ProfanityCallback() {
-            @Override
-            public void call(String resultText, List<String> classification, int errorCode) {
-                String beizhu = "";
-                if (classification != null)
-                    beizhu = resultText + " " + classification.toString();
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+            ModifyTimeStruct answer = client.sendChat(TestClass.peerUid, textMessage);
+            TestClass.outPutMsg(answer, "sendChat", TestClass.userBeizhu, answer.modifyTime);
 
-            }
-        }, "i am fuck happy");
-        TestClass.asyncOutput(status, method);
+            answer = client.sendGroupChat(TestClass.groupId, textMessage);
+            TestClass.outPutMsg(answer, "sendGroupChat", TestClass.groupBeizhu, answer.modifyTime);
 
-        StringBuilder jk = new StringBuilder();
-        List<String> classification = new ArrayList<>();
+            answer = client.sendRoomChat(TestClass.roomId, textMessage);
+            TestClass.outPutMsg(answer, "sendRoomChat", TestClass.roomBeizhu, answer.modifyTime);
 
-        int errorCode = client.profanity("i am fuck happy",jk,true, classification);
-        String beizhu = jk.toString() + " " + classification.toString();
-        TestClass.outPutMsg(errorCode, method, beizhu);
+            answer = client.sendCmd(TestClass.peerUid, textMessage);
+            TestClass.outPutMsg(answer, "sendCmd", TestClass.userBeizhu, answer.modifyTime);
+
+            answer = client.sendGroupCmd(TestClass.groupId, textMessage);
+            TestClass.outPutMsg(answer, "sendGroupCmd", TestClass.groupBeizhu, answer.modifyTime);
+
+            answer = client.sendRoomCmd(TestClass.roomId, textMessage);
+            TestClass.outPutMsg(answer, "sendRoomCmd", TestClass.roomBeizhu, answer.modifyTime);
+
+            answer = client.sendAudio(TestClass.peerUid, TestClass.audioFile);
+            TestClass.outPutMsg(answer, "sendAudio", TestClass.userBeizhu, answer.modifyTime);
+
+            answer = client.sendGroupAudio(TestClass.groupId, TestClass.audioFile);
+            TestClass.outPutMsg(answer, "sendGroupAudio", TestClass.groupBeizhu, answer.modifyTime);
+
+            answer = client.sendRoomAudio(TestClass.roomId, TestClass.audioFile);
+            TestClass.outPutMsg(answer, "sendRoomAudio", TestClass.roomBeizhu, answer.modifyTime);
+
+            //增值服务测试
+            StringBuilder jk = new StringBuilder();
+            List<String> classification = new ArrayList<>();
+
+            ProfanityStruct ret = client.profanity("i am fuck happy",true,0);
+            if (ret.errorCode == 0)
+                mylog.log("profanity result is:" +  "text: " + ret.text!=null?ret.text:" " + " classification :" + ret.classification!=null?ret.classification.toString():"");
+
+            TranslatedInfo transInfo = client.translate(transMessage, lang);
+            String beizhu = "sourceText:" + transInfo.sourceText + " sourceLang:" + transInfo.source + " target:" + transInfo.targetText + " targetLang:" + transInfo.target;;
+            mylog.log("translate result is:" + beizhu);
+
+            client.setTranslatedLanguage(TestClass.setLang);
+            mylog.log("setTranslatedLanguage :" + lang + "ok");
+
+            transInfo = client.translate(transMessage, lang);
+            beizhu = "sourceText:" + transInfo.sourceText + " sourceLang:" + transInfo.source + " target:" + transInfo.targetText + " targetLang:" + transInfo.target;;
+            mylog.log("translate result is:" + beizhu);
+
+            TranscribeStruct transcribeinfo = client.transcribe(TestClass.audioFile);
+            mylog.log("transcribe resultText:" + transcribeinfo.resultText + " resultLang:" + transcribeinfo.resultLang);
     }
 
-    void translateTest(String lang) {
-        final String method = "translate";
-        TranslatedMessage tr = new TranslatedMessage();
-        boolean status = client.translate(new TranslateCallback() {
+    void asyncChatTest(){
+        client.sendChat(new IRTMCallback<Long>() {
             @Override
-            public void call(TranslatedMessage message, int errorCode) {
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendchat", TestClass.userBeizhu, mtime, false);
+            }
+        }, TestClass.peerUid, textMessage);
+
+        client.sendGroupChat(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendGroupChat", TestClass.groupBeizhu, mtime, false);
+            }
+        }, TestClass.groupId, textMessage);
+
+        client.sendRoomChat(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendRoomChat", TestClass.groupBeizhu, mtime, false);
+            }
+        }, TestClass.roomId, textMessage);
+
+        client.sendCmd(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendCmd", TestClass.userBeizhu, mtime, false);
+            }
+        }, TestClass.peerUid, textMessage);
+
+        client.sendGroupCmd(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendGroupCmd", TestClass.groupBeizhu, mtime, false);
+            }
+        }, TestClass.groupId, textMessage);
+
+        client.sendRoomCmd(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendRoomCmd", TestClass.roomBeizhu, mtime, false);
+            }
+        }, TestClass.roomId, textMessage);
+
+
+        client.sendAudio(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendAudio", TestClass.userBeizhu, mtime, false);
+            }
+        }, TestClass.peerUid, TestClass.audioFile);
+
+        client.sendGroupAudio(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendGroupAudio", TestClass.groupBeizhu, mtime, false);
+            }
+        }, TestClass.groupId, TestClass.audioFile);
+
+        client.sendRoomAudio(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendRoomAudio", TestClass.roomBeizhu, mtime, false);
+            }
+        }, TestClass.roomId, TestClass.audioFile);
+
+
+        client.sendMessage(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendMessage", TestClass.userBeizhu, mtime, false);
+            }
+        }, TestClass.peerUid, TestClass.sendMessgeType, textMessage);
+
+        client.sendGroupMessage(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendGroupMessage", TestClass.groupBeizhu, mtime, false);
+            }
+        }, TestClass.groupId, TestClass.sendMessgeType, textMessage);
+
+        client.sendRoomMessage(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendRoomMessage", TestClass.roomBeizhu, mtime, false);
+            }
+        }, TestClass.roomId, TestClass.sendMessgeType, textMessage);
+
+        TestClass.mySleep(3);
+
+        //增值服务测试
+        client.profanity(new IRTMCallback<ProfanityStruct>() {
+            @Override
+            public void onResult(ProfanityStruct ret, RTMAnswer answer) {
                 String beizhu = "";
-                if (message != null)
-                    beizhu = "transResult source:" + message.sourceText + " target:" + message.targetText;
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    beizhu = ret.text + " " + ret.classification!=null?ret.classification.toString():"";
+                TestClass.outPutMsg(answer, "profanity", beizhu, 0, false);
+
+            }
+        }, "i am fuck happy today");
+
+
+        client.translate(new IRTMCallback<TranslatedInfo>() {
+            @Override
+            public void onResult(TranslatedInfo transInfo, RTMAnswer answer) {
+                String beizhu = "";
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    beizhu = "sourceText:" + transInfo.sourceText + " sourceLang:" + transInfo.source + " target:" + transInfo.targetText + " targetLang:" + transInfo.target;;
+                TestClass.outPutMsg(answer, "translate", beizhu, 0, false);
             }
         }, transMessage, lang);
-        TestClass.asyncOutput(status, method);
 
-
-        int errorCode = client.translate(tr, transMessage, lang);
-        String beizhu = "transResult source:" + tr.sourceText + " target:" + tr.targetText;
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void setTranslateLang(final String lang) {
-        final String method = "setTranslatedLanguage";
-
-        boolean status = client.setTranslatedLanguage(new ErrorCodeCallback() {
+        client.setTranslatedLanguage(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, lang, 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "setTranslatedLanguage", TestClass.setLang, 0, false);
             }
         }, changeLang);
-        TestClass.asyncOutput(status, method);
+        TestClass.mySleep(2);
 
-        int errorCode = client.setTranslatedLanguage(lang);
-        String beizhu = " " + changeLang;
-        TestClass.outPutMsg(errorCode, method, beizhu);
+        client.translate(new IRTMCallback<TranslatedInfo>() {
+            @Override
+            public void onResult(TranslatedInfo transInfo, RTMAnswer answer) {
+                String beizhu = "";
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    beizhu = "sourceText:" + transInfo.sourceText + " sourceLang:" + transInfo.source + " target:" + transInfo.targetText + " targetLang:" + transInfo.target;;
+                TestClass.outPutMsg(answer, "translate", beizhu, 0, false);
+            }
+        }, transMessage, lang);
+        TestClass.mySleep(2);
     }
 
-    void sendP2PChattestblack() {
-        final String beizhu = "to user 100";
-        final String method = "sendChat";
-        RTMClient client = TestClass.clients.get(101L);
-
-        boolean status = client.sendChat(new LongFunctionCallback() {
+    void blackListSendTest() {
+        final String beizhu = "to user " + TestClass.loginUid;
+        long toUid = TestClass.loginUid;
+        RTMClient client = TestClass.pushClients.get(TestClass.peerUid);
+        client.sendChat(new IRTMCallback<Long>() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendchat", beizhu, mtime, false);
             }
-        }, 100, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendChat(ret, 100, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+        }, toUid, textMessage);
 
 
-        final String method1 = "sendCmd";
-
-        boolean status1 = client.sendCmd(new LongFunctionCallback() {
+        client.sendCmd(new IRTMCallback<Long>() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method1, beizhu, mtime, false);
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendCmd", beizhu, mtime, false);
             }
-        }, 100, textMessage);
-        TestClass.asyncOutput(status1, method1);
+        }, toUid, textMessage);
 
-        int errorCode1 = client.sendCmd(ret, 100, textMessage);
-        TestClass.outPutMsg(errorCode1, method1, beizhu, ret.mtime);
-    }
-
-    void sendP2PChat() {
-        final String beizhu = "to user " + TestClass.peerUid;
-        final String method = "sendChat";
-
-        boolean status = client.sendChat(new LongFunctionCallback() {
+        client.sendMessage(new IRTMCallback<Long>() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendMessage", beizhu, mtime, false);
             }
-        }, TestClass.peerUid, textMessage);
-        TestClass.asyncOutput(status, method);
+        }, toUid, TestClass.sendMessgeType, textMessage);
 
-        int errorCode = client.sendChat(ret, TestClass.peerUid, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-    }
 
-    void sendGroupChat() {
-        final String beizhu = "to group " + TestClass.groupId;
-        final String method = "sendGroupChat";
-
-        boolean status = client.sendGroupChat(new LongFunctionCallback() {
+        client.sendAudio(new IRTMCallback<Long>() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            public void onResult(Long mtime, RTMAnswer answer) {
+                TestClass.outPutMsg(answer, "sendAudio", beizhu, mtime, false);
             }
-        }, TestClass.groupId, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendGroupChat(ret, TestClass.groupId, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-    }
-
-    void sendRoomChat() {
-        final String beizhu = "to room " + TestClass.roomId;
-        final String method = "sendRoomChat";
-
-        boolean status = client.sendRoomChat(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.roomId, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendRoomChat(ret, TestClass.roomId, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-    }
-
-    //------------------------[ Cmd Demo ]-------------------------//
-    void sendP2PCmd() {
-        final String beizhu = "to user " + TestClass.peerUid;
-        final String method = "sendCmd";
-
-        boolean status = client.sendCmd(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.peerUid, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendCmd(ret, TestClass.peerUid, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-    }
-
-    void sendGroupCmd() {
-        final String beizhu = "to group " + TestClass.groupId;
-        final String method = "sendGroupCmd";
-
-        boolean status = client.sendGroupCmd(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.groupId, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendGroupCmd(ret, TestClass.groupId, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-    }
-
-    void sendRoomCmd() {
-        final String beizhu = "to room " + TestClass.roomId;
-        final String method = "sendRoomCmd";
-
-        boolean status = client.sendRoomCmd(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.roomId, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendRoomCmd(ret, TestClass.roomId, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+        }, toUid, TestClass.audioFile);
     }
 }
 
@@ -465,589 +470,399 @@ interface CaseInterface {
 }
 
 class DataCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
 
-    public void start() throws InterruptedException {
+    public void start() {
+        IRTMEmptyCallback codeback = new IRTMEmptyCallback() {
+            @Override
+            public void onResult(RTMAnswer answer) {
+                mylog.log("answer");
+            }
+        };
         if (client == null) {
             mylog.log("not available rtmclient");
             return;
         }
 
-        mylog.log("=========== Begin set user data ===========");
+            mylog.log("=========== Begin set user data ===========");
 
-        Setdata("key 1", "value 1");
-        TestClass.mySleep(1);
-        Setdata("key 2", "value 2");
+            Setdata("key 1", "value 1");
+            mylog.log("=========== Begin get user data ===========");
+            getData("key 1");
+            TestClass.mySleep(1);
+            getData("key 2");
 
-        mylog.log("=========== Begin get user data ===========");
+            mylog.log("=========== Begin delete one of user data ===========");
 
-        getData("key 1");
-        TestClass.mySleep(1);
-        getData("key 2");
+            deleteData("key 2");
 
-        mylog.log("=========== Begin delete one of user data ===========");
+            mylog.log("=========== Begin get user data after delete action ===========");
 
-        deleteData("key 2");
+            getData("key 1");
+            TestClass.mySleep(1);
+            getData("key 2");
 
-        mylog.log("=========== Begin get user data after delete action ===========");
+            mylog.log("=========== User logout ===========");
 
-        getData("key 1");
-        TestClass.mySleep(1);
-        getData("key 2");
+            client.bye();
 
-        mylog.log("=========== User logout ===========");
+            mylog.log("=========== User relogin ===========");
+            TestClass.mySleep(1);
 
-        client.bye();
+            client.login(TestClass.token);
 
-        mylog.log("=========== User relogin ===========");
-        TestClass.mySleep(1);
+            mylog.log("=========== Begin get user data after relogin ===========");
 
-        int errcode = client.login(TestClass.token);
-        if (errcode != ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log("relogin error-" + errcode);
-            return;
-        }
-
-        mylog.log("=========== Begin get user data after relogin ===========");
-
-        getData("key 1");
-        TestClass.mySleep(1);
-        getData("key 2");
+            getData("key 1");
+            TestClass.mySleep(1);
+            getData("key 2");
     }
 
 
-    void Setdata(String key, String value) {
-        int errorCode = client.dataSet(key, value);
+    void Setdata(String key, String value){
+        RTMAnswer answer = client.dataSet(key, value);
+        TestClass.outPutMsg(answer, "dataSet", TestClass.userBeizhu);
 
-        if (errorCode != ErrorCode.FPNN_EC_OK.value())
-            mylog.log("dataSet with key:" + key + " in sync failed, error code is: " + errorCode);
-        else
-            mylog.log("dataSet with key: " + key + " in sync success.");
+        client.dataSet(new IRTMEmptyCallback() {
+            @Override
+            public void onResult(RTMAnswer answer) {
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    mylog.log("dataSet async success ");
+                else
+                    mylog.log("dataSet async failed answer:" + answer.getErrInfo());
+            }
+        },key, value);
+        TestClass.mySleep(1);
     }
 
-    void getData(String key) {
-        StringBuilder value = new StringBuilder();
-        int errorCode = client.dataGet(value, key);
+    void getData(String key){
 
-        if (errorCode != ErrorCode.FPNN_EC_OK.value())
-            mylog.log("dataget with key:" + key + " in sync failed, error code is:" + errorCode);
-        else
-            mylog.log("dataget with key:" + key + " in sync success, value is:" + value.toString());
+        RTMAnswer answer = client.dataGet(key);
+        TestClass.outPutMsg(answer, "dataGet", TestClass.userBeizhu);
+
+        client.dataGet(new IRTMCallback<String>() {
+            @Override
+            public void onResult(String value, RTMAnswer answer) {
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    mylog.log("dataGet async success value is:" + value);
+                else
+                    mylog.log("dataGet async failed answer:" + answer.getErrInfo());
+            }
+        },key);
     }
 
-    void deleteData(String key) {
-        int errorCode = client.dataDelete(key);
-
-        if (errorCode != ErrorCode.FPNN_EC_OK.value())
-            mylog.log("dataDelete with key:" + key + " in sync failed.");
-        else
-            mylog.log("dataDelete with key:" + key + " in sync success.");
+    void deleteData(String key){
+        RTMAnswer answer = client.dataDelete(key);
+        TestClass.outPutMsg(answer, "dataDelete", TestClass.userBeizhu);
+        client.dataDelete(key, new IRTMEmptyCallback() {
+            @Override
+            public void onResult(RTMAnswer answer) {
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    mylog.log("dataDelete async success ");
+                else
+                    mylog.log("dataDelete async failed answer:" + answer.getErrInfo());
+            }
+        });
     }
 }
 
 class FriendCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
+    HashSet<Long> uids = new HashSet<Long>() {{
+        add(123456L);
+        add(234567L);
+    }};
+
+    final HashSet<Long> blacks = new HashSet<Long>() {{
+        add(101L);
+    }};
 
     public void start() {
         if (client == null) {
             mylog.log("not available rtmclient");
             return;
         }
-/*        addFriends();
-        getFriends();
-        deleteFriends();
 
-        TestClass.mySleep(2);   //-- Wait for server sync action.
+        mylog.log("start friend case\n");
+        syncFriendTest();
+        asyncFriendTest();
+        mylog.log("end friend case\n");
 
-        getFriends();*/
-        addBlacks();
-//        getBlacks();
-////        delBlacks();
     }
 
-    void addFriends() {
-        final String method = "addFriends";
-        HashSet<Long> uids = new HashSet<Long>() {{
-            add(123456L);
-            add(234567L);
-        }};
+    void syncFriendTest(){
+            RTMAnswer answer = client.addFriends(uids);
+            TestClass.outPutMsg(answer, "addFriends", uids.toString());
 
-        final HashSet<Long> uids1 = new HashSet<Long>() {{
-            add(34567L);
-            add(45678L);
-        }};
+            MembersStruct answer1 = client.getFriends();
+            TestClass.outPutMsg(answer, "getFriends", answer1.toString());
 
-        boolean status = client.addFriends(new ErrorCodeCallback() {
+            answer = client.deleteFriends(uids);
+            TestClass.outPutMsg(answer, "deleteFriends", uids.toString());
+
+            answer1 = client.getFriends();
+            TestClass.outPutMsg(answer, "getFriends", answer1.toString());
+
+            //黑名单
+            answer = client.addBlacklist(blacks);
+            TestClass.outPutMsg(answer, "addBlacklist", blacks.toString());
+
+            answer1 = client.getBlacklist();
+            TestClass.outPutMsg(answer, "getBlacklist", answer1.toString());
+
+            answer = client.delBlacklist(blacks);
+            TestClass.outPutMsg(answer, "delBlacklist", blacks.toString());
+
+            answer1 = client.getBlacklist();
+            TestClass.outPutMsg(answer, "getBlacklist", answer1.toString());
+    }
+
+    void asyncFriendTest(){
+        client.addFriends(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, uids1.toString(), 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "addFriends", uids.toString());
             }
-        }, uids1);
-        TestClass.asyncOutput(status, method);
+        },uids);
 
-        int errorCode = client.addFriends(uids);
-        TestClass.outPutMsg(errorCode, method, uids.toString());
-
-    }
-
-    void deleteFriends() {
-        final String method = "deleteFriends";
-        HashSet<Long> deluids = new HashSet<Long>() {{
-            add(123456L);
-        }};
-
-        final HashSet<Long> deluids1 = new HashSet<Long>() {{
-            add(234567L);
-        }};
-
-        boolean status = client.deleteFriends(new ErrorCodeCallback() {
+        client.getFriends(new IRTMCallback<HashSet<Long>>() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, deluids1.toString(), 0, false);
-            }
-        }, deluids1);
-        TestClass.asyncOutput(status, method);
-
-
-        int errorCode = client.deleteFriends(deluids);
-        TestClass.outPutMsg(errorCode, method, deluids.toString());
-    }
-
-    void getFriends() {
-        final String method = "getFriends";
-        HashSet<Long> uids = new HashSet<Long>();
-
-        boolean status = client.getFriends(new MembersCallback() {
-            @Override
-            public void call(HashSet<Long> uids, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, uids.toString(), 0, false);
-
+            public void onResult(HashSet<Long> longs, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "getFriends", longs!=null?longs.toString():"");
             }
         });
-        TestClass.asyncOutput(status, method);
-        uids.clear();
 
-        int errorCode = client.getFriends(uids);
-        TestClass.outPutMsg(errorCode, method, uids.toString());
-    }
-
-
-    void addBlacks() {
-        final String method = "addblacks";
-        final HashSet<Long> uids = new HashSet<Long>() {{
-            add(101L);
-        }};
-
-        boolean status = client.addBlacklist(new ErrorCodeCallback() {
+        client.deleteFriends(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, uids.toString(), 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "deleteFriends", uids.toString());
             }
-        }, uids);
-        TestClass.asyncOutput(status, method);
+        },uids);
 
-        int errorCode = client.addBlacklist(uids);
-        TestClass.outPutMsg(errorCode, method, uids.toString());
-
-    }
-
-    void delBlacks() {
-        final String method = "delblacks";
-        final HashSet<Long> deluids = new HashSet<Long>() {{
-            add(101L);
-        }};
-
-        boolean status = client.delBlacklist(new ErrorCodeCallback() {
+        client.getFriends(new IRTMCallback<HashSet<Long>>() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, deluids.toString(), 0, false);
-            }
-        }, deluids);
-        TestClass.asyncOutput(status, method);
-
-
-        int errorCode = client.delBlacklist(deluids);
-        TestClass.outPutMsg(errorCode, method, deluids.toString());
-    }
-
-    void getBlacks() {
-        final String method = "getblacks";
-        HashSet<Long> uids = new HashSet<Long>();
-
-        boolean status = client.getBlacklist(new MembersCallback() {
-            @Override
-            public void call(HashSet<Long> uids, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, uids.toString(), 0, false);
-
+            public void onResult(HashSet<Long> longs, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "getFriends", longs!=null?longs.toString():"");
             }
         });
-        TestClass.asyncOutput(status, method);
-        uids.clear();
 
-        int errorCode = client.getBlacklist(uids);
-        TestClass.outPutMsg(errorCode, method, uids.toString());
-    }
-
-}
-
-class AudioCase implements CaseInterface {
-    RTMClient client = TestClass.client;
-    LongMtime ret = new LongMtime();
-
-    public void start() throws InterruptedException {
-
-    }
-
-    public void sendAudio(byte[] audioData) {
-        final String beizhu = "to user " + TestClass.peerUid;
-        final String method = "sendAudio";
-
-        boolean status = client.sendAudio(new LongFunctionCallback() {
+        //黑名单
+        client.addBlacklist(new IRTMEmptyCallback() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "addBlacklist", blacks.toString());
             }
-        }, TestClass.peerUid, audioData);
-        TestClass.asyncOutput(status, method);
+        },blacks);
 
-//        int errorCode = client.sendAudio(ret, TestClass.peerUid, audioData);
-//        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+        client.getBlacklist(new IRTMCallback<HashSet<Long>>() {
+            @Override
+            public void onResult(HashSet<Long> longs, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "getBlacklist", longs!=null?longs.toString():"");
+            }
+        });
+
+        client.delBlacklist(new IRTMEmptyCallback() {
+            @Override
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "delBlacklist", blacks.toString());
+            }
+        },blacks);
+        TestClass.mySleep(3);
+
+        client.getBlacklist(new IRTMCallback<HashSet<Long>>() {
+            @Override
+            public void onResult(HashSet<Long> longs, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer, "getBlacklist", longs!=null?longs.toString():"");
+            }
+        });
     }
 }
 
 class GroupCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
+    long groupId = TestClass.groupId;
+    final HashSet<Long> uids = new HashSet<Long>() {{
+        add(9988678L);
+        add(9988789L);
+    }};
 
     public void start() {
         if (client == null) {
             mylog.log("not available rtmclient");
             return;
         }
-        mylog.log("======== get group members =========");
-        getGroupMembers();
-
-        mylog.log("======== add group members =========");
-        addGroupMembers();
-        TestClass.mySleep(2);
-
-        mylog.log("======== get group members =========");
-        getGroupMembers();
-
-        mylog.log("======== delete group members =========");
-        deleteGroupMembers();
-        TestClass.mySleep(2);
-
-        mylog.log("======== get group members =========");
-        getGroupMembers();
-
-        mylog.log("======== get self groups =========");
-        getSelfGroups();
-
-        mylog.log("======== set group infos =========");
-        setGroupInfos("This is public info", "This is private info");
-
-        TestClass.mySleep(2);
-        getGroupInfos();
-
-        mylog.log("======== change group infos =========");
-
-        setGroupInfos("", "This is private info");
-        TestClass.mySleep(2);
-        getGroupInfos();
-
-        mylog.log("======== change group infos =========");
-
-        setGroupInfos("This is public info", "");
-        TestClass.mySleep(2);
-        getGroupInfos();
-
-        mylog.log("======== only change the private infos =========");
-
-        setGroupInfos(null, "balabala");
-        TestClass.mySleep(2);
-        getGroupInfos();
-
-        setGroupInfos("This is public info", "This is private info");
-        TestClass.mySleep(2);
-        client.bye();
-        TestClass.mySleep(1);
-
-        mylog.log("======== user relogin =========");
-        int errcode = client.login(TestClass.token);
-        if (errcode != ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log("relogin error-" + errcode);
-            return;
-        }
-        getGroupInfos();
+        mylog.log("Begin group test case\n");
+        syncGroupTest();
+        asyncGroupTest();
+        TestClass.mySleep(5);
+        mylog.log("End group test case\n");
     }
 
-    void addGroupMembers() {
-        final String method = "addGroupMembers";
-        final HashSet<Long> uids = new HashSet<Long>() {{
-            add(9988678L);
-            add(9988789L);
-        }};
+    void syncGroupTest(){
+            MembersStruct answer = client.getGroupMembers(groupId);
+            TestClass.outPutMsg(answer, "getGroupMembers", answer.toString());
 
-        HashSet<Long> uids1 = new HashSet<Long>() {{
-            add(9988900L);
-            add(9988901L);
-        }};
+            RTMAnswer ret = client.addGroupMembers(groupId, uids);
+            TestClass.outPutMsg(ret, "addGroupMembers");
 
-        boolean status = client.addGroupMembers(new ErrorCodeCallback() {
+            ret = client.deleteGroupMembers(groupId, uids);
+            TestClass.outPutMsg(ret, "deleteGroupMembers");
+
+            DataInfo info = client.getGroupPublicInfo(groupId);
+            TestClass.outPutMsg(info, "getGroupPublicInfo", info.toString());
+
+            ret = client.setGroupInfo(groupId, "hehe", "haha");
+            TestClass.outPutMsg(ret, "setGroupInfo");
+
+            GroupInfoStruct groupInfo = client.getGroupInfo(groupId);
+            TestClass.outPutMsg(groupInfo, "getGroupInfo", groupInfo.toString());
+
+            answer = client.getUserGroups();
+            TestClass.outPutMsg(answer, "getUserGroups", answer.toString());
+    }
+
+    void asyncGroupTest(){
+        client.getGroupMembers(new IRTMCallback<HashSet<Long>>() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, uids.toString(), 0, false);
+            public void onResult(HashSet<Long> uids, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getGroupMembers",uids!=null?uids.toString():"");
             }
-        }, TestClass.groupId, uids);
-        TestClass.asyncOutput(status, method);
+        },groupId);
 
-        int errorCode = client.addGroupMembers(TestClass.groupId, uids1);
-        TestClass.outPutMsg(errorCode, method, uids1.toString());
-    }
-
-    void deleteGroupMembers() {
-        final String method = "deleteGroupMembers";
-        HashSet<Long> deluids = new HashSet<Long>() {{
-            add(9988900L);
-            add(9988123L);
-        }};
-
-        final HashSet<Long> deluids1 = new HashSet<Long>() {{
-            add(9988901L);
-            add(9988234L);
-        }};
-
-        boolean status = client.deleteGroupMembers(new ErrorCodeCallback() {
+        client.addGroupMembers(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, deluids1.toString(), 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"addGroupMembers");
             }
-        }, TestClass.groupId, deluids1);
-        TestClass.asyncOutput(status, method);
+        },groupId,uids);
 
-        int errorCode = client.deleteGroupMembers(TestClass.groupId, deluids);
-        TestClass.outPutMsg(errorCode, method, deluids.toString());
-    }
 
-    void getGroupMembers() {
-        final String method = "getGroupMembers";
-        HashSet<Long> groupIds = new HashSet<Long>();
-
-        boolean status = client.getGroupMembers(new MembersCallback() {
+        client.deleteGroupMembers(new IRTMEmptyCallback() {
             @Override
-            public void call(HashSet<Long> groupIds, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, groupIds.toString(), 0, false);
-
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"deleteGroupMembers");
             }
-        }, TestClass.groupId);
-        TestClass.asyncOutput(status, method);
-        groupIds.clear();
+        },groupId,uids);
 
-        int errorCode = client.getGroupMembers(groupIds, TestClass.groupId);
-        TestClass.outPutMsg(errorCode, method, groupIds.toString());
-    }
 
-    void getSelfGroups() {
-        final String method = "getUserGroups";
-        HashSet<Long> groupIds = new HashSet<Long>();
-
-        boolean status = client.getUserGroups(new MembersCallback() {
+        client.getGroupPublicInfo(new IRTMCallback<String>() {
             @Override
-            public void call(HashSet<Long> groupIds, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, groupIds.toString(), 0, false);
+            public void onResult(String s, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getGroupPublicInfo",s);
+            }
+        },groupId);
 
+
+        client.setGroupInfo(new IRTMEmptyCallback() {
+            @Override
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"setGroupInfo");
+            }
+        },groupId,"hehe","haa");
+
+        client.getGroupInfo(new IRTMCallback<GroupInfoStruct>() {
+            @Override
+            public void onResult(GroupInfoStruct groupInfoStruct, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getGroupInfo", groupInfoStruct!=null?groupInfoStruct.toString():"");
+            }
+        },groupId);
+
+        client.getUserGroups(new IRTMCallback<HashSet<Long>>() {
+            @Override
+            public void onResult(HashSet<Long> longs, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getUserGroups");
             }
         });
-        TestClass.asyncOutput(status, method);
-        groupIds.clear();
-
-        int errorCode = client.getUserGroups(groupIds);
-        TestClass.outPutMsg(errorCode, method, groupIds.toString());
-    }
-
-    void setGroupInfos(String publicInfos, String privateInfos) {
-        final String method = "setGroupInfo";
-        final String beizhu = "publicInfos:" + publicInfos + " privateInfos:" + privateInfos;
-
-        boolean status = client.setGroupInfo(new ErrorCodeCallback() {
-            @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
-            }
-        }, TestClass.groupId, publicInfos, privateInfos);
-        TestClass.asyncOutput(status, method);
-
-
-        int errorCode = client.setGroupInfo(TestClass.groupId, publicInfos, privateInfos);
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void getGroupInfos() {
-        StringBuilder publicInfos = new StringBuilder();
-        StringBuilder privateInfos = new StringBuilder();
-
-        final String method = "getGroupInfo";
-
-        boolean status = client.getGroupInfo(new DoubleStringCallback() {
-            @Override
-            public void call(String str1, String str2, int errorCode) {
-                String beizhu = "publicInfos:" + str1 + " privateInfos:" + str2;
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
-            }
-        }, TestClass.groupId);
-        TestClass.asyncOutput(status, method);
-
-
-        int errorCode = client.getGroupInfo(publicInfos, privateInfos, TestClass.groupId);
-        String beizhu = "publicInfos:" + publicInfos + " privateInfos:" + privateInfos;
-        TestClass.outPutMsg(errorCode, method, beizhu);
     }
 }
 
 class RoomCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
+    long roomId = TestClass.roomId;
 
     public void start() {
         if (client == null) {
             mylog.log("not available rtmclient");
             return;
         }
-        mylog.log("======== enter room =========");
         TestClass.enterRoom();
+        mylog.log("======== Begin room test case =========\n");
+        syncRoomTest();
+        asyncRoomTest();
+        mylog.log("======== End room test case =========\n");
 
-        TestClass.mySleep(1);
-        mylog.log("======== get self rooms =========");
-        getSelfRooms();
-
-        TestClass.mySleep(1);
-        mylog.log("======== leave room =========");
-        leaveRoom();
-        TestClass.mySleep(1);
-
-        mylog.log("======== get self rooms =========");
-        getSelfRooms();
-
-        TestClass.mySleep(1);
-        mylog.log("======== enter room =========");
-        TestClass.enterRoom();
-
-        mylog.log("======== set room infos =========");
-
-        setRoomInfos("This is public info", "This is private info");
-
-        TestClass.mySleep(1);
-
-        getRoomInfos();
-
-        mylog.log("======== change room infos =========");
-
-        setRoomInfos("", "This is private info");
-        TestClass.mySleep(1);
-        getRoomInfos();
-
-        mylog.log("======== change room infos =========");
-
-        setRoomInfos("This is public info", "");
-        TestClass.mySleep(1);
-        getRoomInfos();
-
-        mylog.log("======== only change the private infos =========");
-
-        setRoomInfos(null, "balabala");
-        TestClass.mySleep(1);
-        getRoomInfos();
-
-        setRoomInfos("This is public info", "This is private info");
-        client.bye();
-        TestClass.mySleep(1);
-        mylog.log("======== user relogin =========");
-
-        int errcode = client.login(TestClass.token);
-        if (errcode != ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log("relogin error-" + errcode);
-            return;
-        }
-        mylog.log("======== enter room =========");
-        TestClass.enterRoom();
-
-        getRoomInfos();
     }
 
-    void leaveRoom() {
-        final String method = "leaveRoom";
-        boolean status = client.leaveRoom(new ErrorCodeCallback() {
+    void syncRoomTest(){
+            client.leaveRoom(roomId);
+
+            MembersStruct answer = client.getUserRooms();
+            TestClass.outPutMsg(answer, "getUserRooms", answer.toString());
+
+            TestClass.enterRoom();
+
+            DataInfo info = client.getRoomPublicInfo(roomId);
+            TestClass.outPutMsg(info, "getRoomPublicInfo", info.toString());
+
+            RTMAnswer hehe = client.setRoomInfo(roomId, "hehe", "haha");
+            TestClass.outPutMsg(hehe, "setRoomInfo");
+
+            GroupInfoStruct groupInfo = client.getRoomInfo(roomId);
+            TestClass.outPutMsg(groupInfo, "getRoomInfo", groupInfo.toString());
+
+            answer = client.getUserGroups();
+            TestClass.outPutMsg(answer, "getUserGroups", answer.uids.toString());
+    }
+
+    void asyncRoomTest(){
+        client.leaveRoom(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, "", 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"leaveRoom");
             }
-        }, TestClass.roomId);
-        TestClass.asyncOutput(status, method);
+        },roomId);
 
-        int errorCode = client.leaveRoom(TestClass.roomId);
-        TestClass.outPutMsg(errorCode, method);
-    }
+        TestClass.enterRoom();
 
-    void getSelfRooms() {
-        final String method = "getUserGroups";
-        HashSet<Long> roomIds = new HashSet<Long>();
-
-        boolean status = client.getUserRooms(new MembersCallback() {
+        client.getUserRooms(new IRTMCallback<HashSet<Long>>() {
             @Override
-            public void call(HashSet<Long> roomIds, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, roomIds.toString(), 0, false);
-
+            public void onResult(HashSet<Long> rooms, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getUserRooms", rooms.toString());
             }
         });
-        TestClass.asyncOutput(status, method);
-        roomIds.clear();
 
-        int errorCode = client.getUserRooms(roomIds);
-        TestClass.outPutMsg(errorCode, method, roomIds.toString());
-    }
-
-    void setRoomInfos(String publicInfos, String privateInfos) {
-        final String method = "setRoomInfo";
-        final String beizhu = "publicInfos:" + publicInfos + " privateInfos:" + privateInfos;
-
-        boolean status = client.setRoomInfo(new ErrorCodeCallback() {
+        client.enterRoom(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"enterRoom");
             }
-        }, TestClass.roomId, publicInfos, privateInfos);
-        TestClass.asyncOutput(status, method);
+        },roomId);
 
-        int errorCode = client.setRoomInfo(TestClass.roomId, publicInfos, privateInfos);
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void getRoomInfos() {
-        StringBuilder publicInfos = new StringBuilder();
-        StringBuilder privateInfos = new StringBuilder();
-
-        final String method = "getRoomInfo";
-
-        boolean status = client.getRoomInfo(new DoubleStringCallback() {
+        client.setRoomInfo(new IRTMEmptyCallback() {
             @Override
-            public void call(String str1, String str2, int errorCode) {
-                String beizhu = "publicInfos:" + str1 + " privateInfos:" + str2;
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"setRoomInfo");
             }
-        }, TestClass.roomId);
-        TestClass.asyncOutput(status, method);
+        },roomId,"hello","world");
 
-        int errorCode = client.getRoomInfo(publicInfos, privateInfos, TestClass.roomId);
-        String beizhu = "publicInfos:" + publicInfos + " privateInfos:" + privateInfos;
-        TestClass.outPutMsg(errorCode, method, beizhu);
+        client.getRoomPublicInfo(new IRTMCallback<String>() {
+            @Override
+            public void onResult(String s, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getRoomPublicInfo",s);
+            }
+        },roomId);
+
+
+        client.getRoomInfo(new IRTMCallback<GroupInfoStruct>() {
+            @Override
+            public void onResult(GroupInfoStruct groupInfoStruct, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getRoomInfo", groupInfoStruct!=null?groupInfoStruct.toString():"");
+            }
+        },roomId);
     }
 }
 
 class FileCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
 
     private byte fileMType = 50;
@@ -1059,386 +874,143 @@ class FileCase implements CaseInterface {
             mylog.log("not available rtmclient");
             return;
         }
-        sendP2PFile();
-        sendGroupFile();
         TestClass.enterRoom();
-        sendRoomFile();
+        mylog.log("======== Begin file test case =========\n");
+        syncFileTest();
+        asyncFileTest();
+        mylog.log("======== End file test case =========\n");
     }
 
     //--------------[ send files Demo ]---------------------//
-    void sendP2PFile() {
-        final String method = "sendFile";
-        final String beizhu = "to user:" + TestClass.peerUid;
-        boolean status = client.sendFile(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.peerUid, fileMType, fileContent, filename);
+    void syncFileTest(){
+            ModifyTimeStruct answer = client.sendFile(TestClass.peerUid, fileMType, fileContent, filename);
+            TestClass.outPutMsg(answer, "sendFile", TestClass.userBeizhu);
 
-        TestClass.asyncOutput(status, method, 3);
+            answer = client.sendGroupFile(TestClass.groupId, fileMType, fileContent, filename);
+            TestClass.outPutMsg(answer, "sendGroupFile", TestClass.groupBeizhu);
 
-        int errorCode = client.sendFile(ret, TestClass.peerUid, fileMType, fileContent, filename);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+            answer = client.sendRoomFile(TestClass.roomId, fileMType, fileContent, filename);
+            TestClass.outPutMsg(answer, "sendRoomFile", TestClass.roomBeizhu);
     }
 
-    void sendGroupFile() {
-        final String method = "sendGroupFile";
-        final String beizhu = "to group:" + TestClass.groupId;
-        boolean status = client.sendGroupFile(new LongFunctionCallback() {
+    void asyncFileTest(){
+        client.sendFile(new IRTMCallback<Long>() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            public void onResult(Long aLong, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"sendFile", TestClass.roomBeizhu);
             }
-        }, TestClass.groupId, fileMType, fileContent, filename);
-        TestClass.asyncOutput(status, method, 3);
+        },TestClass.roomId, fileMType, fileContent, filename);
 
-        int errorCode = client.sendGroupFile(ret, TestClass.groupId, fileMType, fileContent, filename);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-    }
-
-    void sendRoomFile() {
-        final String method = "sendRoomFile";
-        final String beizhu = "to room:" + TestClass.roomId;
-        boolean status = client.sendRoomFile(new LongFunctionCallback() {
+        client.sendGroupFile(new IRTMCallback<Long>() {
             @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
+            public void onResult(Long aLong, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"sendGroupFile", TestClass.groupBeizhu);
             }
-        }, TestClass.roomId, fileMType, fileContent, filename);
-        TestClass.asyncOutput(status, method, 3);
+        },TestClass.roomId, fileMType, fileContent, filename);
 
-        int errorCode = client.sendRoomFile(ret, TestClass.roomId, fileMType, fileContent, filename);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
+
+        client.sendRoomFile(new IRTMCallback<Long>() {
+            @Override
+            public void onResult(Long aLong, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"sendRoomFile", TestClass.roomBeizhu);
+            }
+        },TestClass.roomId, fileMType, fileContent, filename);
     }
 }
 
 class SystemCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
+    Map<String, String> attrs = new HashMap<String, String>(){{
+        put("name","tome");
+        put("age","18");
+    }};
 
-    void addAttributesDemo() {
-        final String method = "addAttributes";
-        final Map<String, String> arrs = new HashMap<String, String>() {
-            {
-                put("key1", "value1");
-            }
-        };
+    void systemTest(){
 
-        Map<String, String> arrs1 = new HashMap<String, String>() {{
-            put("key2", "value2");
-        }};
+            RTMAnswer answer = client.addAttributes(attrs);
+            TestClass.outPutMsg(answer, "addAttributes", attrs.toString());
 
-        boolean status = client.addAttributes(new ErrorCodeCallback() {
+            AttrsStruct ret = client.getAttributes();
+            TestClass.outPutMsg(ret, "getAttributes", ret.toString());
+
+        client.addAttributes(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, arrs.toString(), 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"addAttributes", attrs.toString());
             }
-        }, arrs);
-        TestClass.asyncOutput(status, method);
+        },attrs);
 
-        int errorCode = client.addAttributes(arrs1);
-        TestClass.outPutMsg(errorCode, method, arrs1.toString());
-    }
-
-    void getAttributesDemo() {
-        final String method = "getAttributes";
-        List<Map<String, String>> arrs = new ArrayList<>();
-
-        boolean status = client.getAttributes(new AttrsCallback() {
+        client.getAttributes(new IRTMCallback<List<Map<String, String>>>() {
             @Override
-            public void call(List<Map<String, String>> attrs, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, attrs.toString(), 0, false);
+            public void onResult(List<Map<String, String>> maps, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getAttributes", maps!=null?maps.toString():"");
             }
         });
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.getAttributes(arrs);
-        TestClass.outPutMsg(errorCode, method, arrs.toString());
     }
+
 
     public void start() {
         if (client == null) {
             mylog.log("not available rtmclient");
             return;
         }
-        addAttributesDemo();
-        getAttributesDemo();
-
-        client.bye();
-        TestClass.mySleep(1);
-
-        int errcode = client.login(TestClass.token);
-        if (errcode != ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log("relogin error-" + errcode);
-            return;
-        }
-        else
-            mylog.log("system login ok");
+        mylog.log("======== Begin system test case =========\n");
+        systemTest();
+        mylog.log("======== End system test case =========\n");
     }
 }
 
 class UserCase implements CaseInterface {
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
-
+    HashSet<Long> onlineUsers = new HashSet<Long>(){
+        {
+            add(101L);
+            add(100L);
+            add(102L);
+        }
+    };
     public void start() {
         if (client == null) {
             mylog.log("not available rtmclient");
             return;
         }
-        getOnlineUsers();
+        mylog.log("======== Begin user test case =========\n");
+        userTest();
+        mylog.log("======== End user test case =========\n");
 
-        setUserInfos("This is public info", "This is private info");
-        getUserInfos();
-
-        mylog.log("======== =========");
-
-        setUserInfos("", "This is private info");
-        getUserInfos();
-
-        mylog.log("======== =========");
-
-        setUserInfos("This is public info", "");
-        getUserInfos();
-
-        mylog.log("======== only change the private infos =========");
-
-        setUserInfos(null, "balabala");
-        getUserInfos();
-
-        setUserInfos("This is public info", "This is private info");
-        client.bye();
-        TestClass.mySleep(1);
-
-        mylog.log("======== user relogin =========");
-        int errcode = client.login(TestClass.token);
-        if (errcode != ErrorCode.FPNN_EC_OK.value()) {
-            mylog.log("relogin error-" + errcode);
-            return;
-        }
-
-        getUserInfos();
     }
 
-    void getOnlineUsers() {
-        final String method = "getOnlineUsers";
+    void userTest(){
+            MembersStruct answer = client.getOnlineUsers(onlineUsers);
+            TestClass.outPutMsg(answer, "getOnlineUsers", answer.toString());
 
-        final HashSet<Long> uids = new HashSet<Long>() {{
-            add(9527L);
-            add(9528L);
-        }};
+            RTMAnswer ret = client.setUserInfo("hehe", "haha");
+            TestClass.outPutMsg(ret, "setUserInfo");
 
-        final HashSet<Long> onlineUids = new HashSet<Long>();
+            GroupInfoStruct userInfo = client.getUserInfo();
+            TestClass.outPutMsg(userInfo, "getUserInfo", userInfo.privateInfo + " " + userInfo.publicInfo);
 
-        boolean status = client.getOnlineUsers(new MembersCallback() {
+
+        client.getOnlineUsers(new IRTMCallback<HashSet<Long>>() {
             @Override
-            public void call(HashSet<Long> retUids, int errorCode) {
-                String beizhu = "getUsers online:" + uids.toString() + "  real onlines:" + retUids.toString();
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+            public void onResult(HashSet<Long> longs, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getOnlineUsers", longs!=null?longs.toString():"");
             }
-        }, uids);
-        TestClass.asyncOutput(status, method);
+        },onlineUsers);
 
-        int errorCode = client.getOnlineUsers(onlineUids, uids);
-        String beizhu = "getUsers online:" + uids.toString() + "  real onlines:" + onlineUids.toString();
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void setUserInfos(String publicInfos, String privateInfos) {
-        final String method = "setUserInfos";
-        final String beizhu = "publicInfos:" + publicInfos + " privateInfos:" + privateInfos;
-
-        boolean status = client.setUserInfo(new ErrorCodeCallback() {
+        client.setUserInfo(new IRTMEmptyCallback() {
             @Override
-            public void call(int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+            public void onResult(RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"setUserInfo");
             }
-        }, publicInfos, privateInfos);
-        TestClass.asyncOutput(status, method);
+        },"hehe","haa");
 
-
-        int errorCode = client.setUserInfo(publicInfos, privateInfos);
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void getUserInfos() {
-        StringBuilder publicInfos = new StringBuilder();
-        StringBuilder privateInfos = new StringBuilder();
-
-        final String method = "getUserInfo";
-
-        boolean status = client.getUserInfo(new DoubleStringCallback() {
+        client.getUserInfo(new IRTMCallback<GroupInfoStruct>() {
             @Override
-            public void call(String str1, String str2, int errorCode) {
-                String beizhu = "publicInfos:" + str1 + " privateInfos:" + str2;
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
+            public void onResult(GroupInfoStruct groupInfoStruct, RTMAnswer answer) {
+                TestClass.asyncOutPutMsg(answer,"getUserInfo", groupInfoStruct.privateInfo + " " + groupInfoStruct.publicInfo);
             }
         });
-        TestClass.asyncOutput(status, method);
-
-
-        int errorCode = client.getUserInfo(publicInfos, privateInfos);
-        String beizhu = "publicInfos:" + publicInfos + " privateInfos:" + privateInfos;
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-}
-
-class MessageCase implements CaseInterface {
-    private static byte customMType = 66;
-
-        public static String textMessage = "{\"user\":{\"name\":\"alex\",\"age\":\"18\",\"isMan\":true}}";
-//    public static String textMessage = "            ";
-
-
-
-    //    private static String textMessage = "Hello, RTM!";
-    private static byte[] binaryMessage = new byte[]{-30, 0x00, 0x00, -112, 0x00, 0x00, 0x00, 1, 9, 10, 11, 12, 13, 14, 15, 16, 0x00};
-
-    LongMtime ret = new LongMtime();
-    RTMClient client = TestClass.client;
-
-    public void start() {
-        if (client == null) {
-            mylog.log("not available rtmclient");
-            return;
-        }
-        sendP2PMessage();
-        sendGroupMessage();
-
-        if (TestClass.enterRoom()) {
-            sendRoomMessage();
-        }
-        getUnreadMessage();
-        getSession();
-
-        mylog.log("Wait 10 seonds for receiving server pushed messsage if those are being demoed ...");
-        TestClass.mySleep(5);
-    }
-
-    void getSession() {
-        final String method = "getSession";
-        boolean status = client.getSession(new UnreadCallback() {
-            @Override
-            public void call(List<Long> p2p_uids, List<Long> groupIds, int errorCode) {
-                String beizhu = "uids:" + p2p_uids.toString() + " gids:" + groupIds.toString();
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
-            }
-        });
-        TestClass.asyncOutput(status, method);
-
-        List<Long> uids = new ArrayList<Long>();
-        List<Long> groupIds = new ArrayList<Long>();
-
-        int errorCode = client.getSession(uids, groupIds);
-        String beizhu = "uids:" + uids.toString() + " gids:" + groupIds.toString();
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void getUnreadMessage() {
-        final String method = "getUnread";
-        boolean status = client.getUnread(new UnreadCallback() {
-            @Override
-            public void call(List<Long> p2p_uids, List<Long> groupIds, int errorCode) {
-                String beizhu = "uids:" + p2p_uids.toString() + " gids:" + groupIds.toString();
-                TestClass.outPutMsg(errorCode, method, beizhu, 0, false);
-            }
-        });
-        TestClass.asyncOutput(status, method);
-
-        List<Long> uids = new ArrayList<Long>();
-        List<Long> groupIds = new ArrayList<Long>();
-
-        int errorCode = client.getUnread(uids, groupIds);
-        String beizhu = "uids:" + uids.toString() + " gids:" + groupIds.toString();
-        TestClass.outPutMsg(errorCode, method, beizhu);
-    }
-
-    void sendP2PMessage() {
-        final String beizhu = "to user " + TestClass.peerUid;
-        final String method = "sendMessage";
-
-        boolean status = client.sendMessage(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.peerUid, customMType, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendMessage(ret, TestClass.peerUid, customMType, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-
-        //for binary//
-        final String method1 = "sendMessage in binary";
-        boolean status1 = client.sendMessage(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method1, beizhu, mtime, false);
-            }
-        }, TestClass.peerUid, customMType, binaryMessage);
-        TestClass.asyncOutput(status1, method1);
-
-        int errorCode1 = client.sendMessage(ret, TestClass.peerUid, customMType, binaryMessage);
-        TestClass.outPutMsg(errorCode1, method1, beizhu, ret.mtime);
-    }
-
-    void sendGroupMessage() {
-        final String beizhu = "to group " + TestClass.groupId;
-        final String method = "sendGroupMessage";
-
-        boolean status = client.sendGroupMessage(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.groupId, customMType, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendGroupMessage(ret, TestClass.groupId, customMType, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-
-        //for binary//
-        final String method1 = "sendGroupMessage in binary";
-        boolean status1 = client.sendMessage(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method1, beizhu, mtime, false);
-            }
-        }, TestClass.groupId, customMType, binaryMessage);
-        TestClass.asyncOutput(status1, method1);
-
-        int errorCode1 = client.sendMessage(ret, TestClass.groupId, customMType, binaryMessage);
-        TestClass.outPutMsg(errorCode1, method1, beizhu, ret.mtime);
-    }
-
-    void sendRoomMessage() {
-        final String beizhu = "to room " + TestClass.roomId;
-        final String method = "sendRoomMessage";
-
-        boolean status = client.sendRoomMessage(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method, beizhu, mtime, false);
-            }
-        }, TestClass.roomId, customMType, textMessage);
-        TestClass.asyncOutput(status, method);
-
-        int errorCode = client.sendRoomMessage(ret, TestClass.roomId, customMType, textMessage);
-        TestClass.outPutMsg(errorCode, method, beizhu, ret.mtime);
-
-        //for binary//
-        final String method1 = "sendRoomMessage in binary";
-        boolean status1 = client.sendMessage(new LongFunctionCallback() {
-            @Override
-            public void call(long mtime, int errorCode) {
-                TestClass.outPutMsg(errorCode, method1, beizhu, mtime, false);
-            }
-        }, TestClass.groupId, customMType, binaryMessage);
-        TestClass.asyncOutput(status1, method1);
-
-        int errorCode1 = client.sendMessage(ret, TestClass.groupId, customMType, binaryMessage);
-        TestClass.outPutMsg(errorCode1, method1, beizhu, ret.mtime);
     }
 }
 
@@ -1448,7 +1020,6 @@ class HistoryCase implements CaseInterface {
     }};
     private static int fetchTotalCount = 10;
 
-    LongMtime ret = new LongMtime();
     RTMClient client = TestClass.client;
 
     public void start() {
@@ -1456,446 +1027,240 @@ class HistoryCase implements CaseInterface {
             mylog.log("not available rtmclient");
             return;
         }
-        if (true)
-            return;
-
+        mylog.log("Begin History test case\n");
         TestClass.enterRoom();
-        mylog.log("\n================[ get P2P Message " + fetchTotalCount + " items ]==================");
-        getP2PMessage();
+        syncHistoryTest();
+        asyncHistoryTest();
 
-        mylog.log("\n================[ get Group Message " + fetchTotalCount + " items ]==================");
-        getGroupMessage();
-
-        mylog.log("\n================[ get Room Message " + fetchTotalCount + " items ]==================");
-        getRoomMessage();
-
-        mylog.log("\n================[ get Broadcast Message " + fetchTotalCount + " items ]==================");
-        getBroadcastMessage();
-
-
-        mylog.log("\n================[ get P2P Chat " + fetchTotalCount + " items ]==================");
-        getP2PChat();
-
-        mylog.log("\n================[ get Group Chat " + fetchTotalCount + " items ]==================");
-        getGroupChat();
-
-        mylog.log("\n================[ get Room Chat " + fetchTotalCount + " items ]==================");
-        getRoomChat();
-
-        mylog.log("\n================[ get Broadcast Chat " + fetchTotalCount + " items ]==================");
-        getBroadcastChat();
-
-        mylog.log("End History test case");
+        mylog.log("End History test case\n");
     }
 
     //------------------------[ Desplay Histories Message ]-------------------------//
+    void syncHistoryTest() {
+        mylog.log("\n================[ get P2P History Chat " + fetchTotalCount + " items ]==================");
+        int count = fetchTotalCount;
+        long beginMsec = 0;
+        long endMsec = 0;
+        long lastId = 0;
+
+        HistoryMessageResult hisresult;
+        while (count >= 0) {
+            hisresult = client.getP2PHistoryChat(TestClass.peerUid, true, fetchTotalCount, beginMsec, endMsec, lastId, 0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+        mylog.log("\n================[ get Group History Chat " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getGroupHistoryChat(TestClass.peerUid, true, fetchTotalCount, beginMsec, endMsec, lastId, 0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+        mylog.log("\n================[ get Room History Chat " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getRoomHistoryChat(TestClass.peerUid, true, fetchTotalCount, beginMsec, endMsec, lastId, 0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+        mylog.log("\n================[ get Broadcast History Chat " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getBroadcastHistoryChat(true, fetchTotalCount, beginMsec, endMsec, lastId, 0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+
+        mylog.log("\n================[ get P2P History Message " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getP2PHistoryMessage(TestClass.peerUid, true, fetchTotalCount, beginMsec, endMsec, lastId, types,0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+
+        mylog.log("\n================[ get Group History Message " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getGroupHistoryMessage(TestClass.peerUid, true, fetchTotalCount, beginMsec, endMsec, lastId, types,0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+
+        mylog.log("\n================[ get Room History Message " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getRoomHistoryMessage(TestClass.peerUid, true, fetchTotalCount, beginMsec, endMsec, lastId, types,0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+
+        mylog.log("\n================[ get Broadcast History Message " + fetchTotalCount + " items ]==================");
+        beginMsec = 0;endMsec = 0;lastId = 0;
+
+        while (count >= 0) {
+            hisresult = client.getBroadcastHistoryMessage(true, fetchTotalCount, beginMsec, endMsec, lastId, types,0);
+            count = hisresult.count;
+
+            count -= fetchTotalCount;
+
+            displayHistoryMessages(hisresult.messages);
+            beginMsec = hisresult.beginMsec;
+            endMsec = hisresult.endMsec;
+            lastId = hisresult.lastId;
+        }
+    }
+
+    void asyncHistoryTest(){
+        mylog.log("\n================[ get P2P History Chat " + fetchTotalCount + " items ]==================");
+        client.getP2PHistoryChat(new IRTMCallback<HistoryMessageResult>() {
+           @Override
+           public void onResult(HistoryMessageResult ret, RTMAnswer answer) {
+               if (answer.errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                   mylog.log("getP2PMessage in async return error:" + answer.getErrInfo());
+                   return;
+               }
+               displayHistoryMessages(ret.messages);
+           }
+       },TestClass.peerUid, true, fetchTotalCount, 0, 0, 0,0);
+       TestClass.mySleep(1);
+
+        mylog.log("\n================[ get GROUP History Chat " + fetchTotalCount + " items ]==================");
+        client.getGroupHistoryChat(new IRTMCallback<HistoryMessageResult>() {
+            @Override
+            public void onResult(HistoryMessageResult ret, RTMAnswer answer) {
+                if (answer.errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                    mylog.log("getGroupHistoryChat in async return error:" + answer.getErrInfo());
+                    return;
+                }
+                displayHistoryMessages(ret.messages);
+            }
+        },TestClass.groupId, true, fetchTotalCount, 0, 0, 0,0);
+        TestClass.mySleep(1);
+
+        mylog.log("\n================[ get ROOM History Chat " + fetchTotalCount + " items ]==================");
+        client.getRoomHistoryChat(new IRTMCallback<HistoryMessageResult>() {
+            @Override
+            public void onResult(HistoryMessageResult ret, RTMAnswer answer) {
+                if (answer.errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                    mylog.log("getRoomHistoryChat in async return error:" + answer.getErrInfo());
+                    return;
+                }
+                displayHistoryMessages(ret.messages);
+            }
+        },TestClass.roomId, true, fetchTotalCount, 0, 0, 0,0);
+        TestClass.mySleep(1);
+
+        mylog.log("\n================[ get P2P History Message " + fetchTotalCount + " items ]==================");
+        client.getP2PHistoryMessage(new IRTMCallback<HistoryMessageResult>() {
+            @Override
+            public void onResult(HistoryMessageResult ret, RTMAnswer answer) {
+                if (answer.errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                    mylog.log("getP2PHistoryMessage in async return error:" + answer.getErrInfo());
+                    return;
+                }
+                displayHistoryMessages(ret.messages);
+            }
+        },TestClass.peerUid, true, fetchTotalCount, 0, 0, 0, types,0);
+        TestClass.mySleep(1);
+
+        mylog.log("\n================[ get GROUP History Message " + fetchTotalCount + " items ]==================");
+        client.getGroupHistoryMessage(new IRTMCallback<HistoryMessageResult>() {
+            @Override
+            public void onResult(HistoryMessageResult ret, RTMAnswer answer) {
+                if (answer.errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                    mylog.log("getGroupHistoryMessage in async return error:" + answer.getErrInfo());
+                    return;
+                }
+                displayHistoryMessages(ret.messages);
+            }
+        },TestClass.groupId, true, fetchTotalCount, 0, 0, 0, types,0);
+        TestClass.mySleep(1);
+
+
+        mylog.log("\n================[ get ROOM History Message " + fetchTotalCount + " items ]==================");
+        client.getRoomHistoryMessage(new IRTMCallback<HistoryMessageResult>() {
+            @Override
+            public void onResult(HistoryMessageResult ret, RTMAnswer answer) {
+                if (answer.errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                    mylog.log("getRoomHistoryMessage in async return error:" + answer.getErrInfo());
+                    return;
+                }
+                displayHistoryMessages(ret.messages);
+            }
+        },TestClass.roomId, true, fetchTotalCount, 0, 0, 0, types,0);
+        TestClass.mySleep(1);
+    }
+
     void displayHistoryMessages(List<HistoryMessage> messages) {
         for (HistoryMessage hm : messages) {
             String str = "";
             if (hm.binaryMessage != null) {
                 str = String.format("-- Fetched: ID:%d, from:%d, mtype:%d, mid:%d,  binary message length :%s, attrs:%s, mtime:%d",
-                        hm.id, hm.fromUid, hm.mtype, hm.mid, hm.binaryMessage.length, hm.attrs, hm.mtime);
+                        hm.cursorId, hm.messageId, hm.fromUid, hm.messageType, hm.binaryMessage.length, hm.attrs, hm.modifiedTime);
             } else {
-                str = String.format("-- Fetched: ID:%d, from:%d, mtype:%d, mid:%d,  message :%s, attrs:%s, mtime:%d",
-                        hm.id, hm.fromUid, hm.mtype, hm.mid, hm.message, hm.attrs, hm.mtime);
+                if (hm.messageType == MessageType.AUDIO)
+                    str = String.format("-- Fetched: ID:%d, from:%d, mtype:%d, mid:%d,  audioinfo :%s, attrs:%s, mtime:%d",
+                            hm.cursorId, hm.messageId, hm.fromUid, hm.messageType, hm.audioInfo.duration +" " + hm.audioInfo.sourceLanguage + " " + hm.audioInfo.recognizedLanguage + " " + hm.audioInfo.recognizedText, hm.attrs, hm.modifiedTime);
+                else
+                    str = String.format("-- Fetched: ID:%d, from:%d, mtype:%d, mid:%d,  message :%s, attrs:%s, mtime:%d",
+                            hm.cursorId, hm.messageId, hm.fromUid, hm.messageType, hm.stringMessage, hm.attrs, hm.modifiedTime);
             }
             mylog.log(str);
-        }
-    }
-
-
-    //------------------------[ Message Histories Demo ]-------------------------//
-    void getP2PMessage() {
-        final String beizhu = "in user " + TestClass.peerUid;
-        final String method = "getP2PMessage";
-        HistoryMessageResult result = new HistoryMessageResult();
-        List<Byte> types = new ArrayList<Byte>() {{
-            add((byte)66);
-        }
-        };
-
-
-        boolean status = client.getP2PMessage(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getP2PMessage in async return error:" + errorCode);
-                    return;
-                }
-                String desc = beizhu + " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + lastId;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, TestClass.peerUid, true, fetchTotalCount, 0, 0, 0, types);
-        TestClass.asyncOutput(status, method);
-
-        TestClass.mySleep(2);
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-            int errorCode = client.getP2PMessage(result, TestClass.peerUid, true, maxCount, beginMsec, endMsec, lastId, new ArrayList<Byte>() {{
-                add((byte) 66);
-            }});
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getP2PMessage return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-            TestClass.outPutMsg(errorCode, method, beizhu);
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    void getGroupMessage() {
-        final String beizhu = "in group " + TestClass.groupId;
-        final String method = "getGroupMessage";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getGroupMessage(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getGroupMessage in async return error:" + errorCode);
-                    return;
-                }
-                String desc = beizhu + " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + lastId;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, TestClass.groupId, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getGroupMessage(result, TestClass.groupId, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getGroupMessage return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-
-            TestClass.outPutMsg(errorCode, method, beizhu);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    void getRoomMessage() {
-        final String beizhu = "in room " + TestClass.roomId;
-        final String method = "getRoomMessage";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getRoomMessage(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getRoomMessage in async return error:" + errorCode);
-                    return;
-                }
-                String desc = beizhu + " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + lastId;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, TestClass.roomId, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getRoomMessage(result, TestClass.roomId, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getRoomMessage return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-
-            TestClass.outPutMsg(errorCode, method, beizhu);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    void getBroadcastMessage() {
-        final String method = "getBroadcastMessage";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getBroadcastMessage(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getBroadcastMessage in async return error:" + errorCode);
-                    return;
-                }
-                String desc = " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + count;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getBroadcastMessage(result, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getBroadcastMessage return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-
-            TestClass.outPutMsg(errorCode, method);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    //------------------------[ Chat Histories Demo ]-------------------------//
-    void getP2PChat() {
-        final String beizhu = "in user " + TestClass.peerUid;
-        final String method = "getP2PChat";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getP2PChat(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getP2PChat in async return error:" + errorCode);
-                    return;
-                }
-                String desc = beizhu + " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + count;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, TestClass.peerUid, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getP2PChat(result, TestClass.peerUid, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getP2PChat in sync return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-
-
-            TestClass.outPutMsg(errorCode, method, beizhu);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    void getGroupChat() {
-        final String beizhu = "in group " + TestClass.groupId;
-        final String method = "getGroupChat";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getGroupChat(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getGroupChat in async return error:" + errorCode);
-                    return;
-                }
-                String desc = beizhu + " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + count;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, TestClass.groupId, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getGroupChat(result, TestClass.groupId, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getGroupChat in sync return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-            TestClass.outPutMsg(errorCode, method, beizhu);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    void getRoomChat() {
-        final String beizhu = "in room " + TestClass.roomId;
-        final String method = "getRoomChat";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getRoomChat(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getRoomChat in async return error:" + errorCode);
-                    return;
-                }
-                String desc = beizhu + " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + count;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, TestClass.roomId, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getRoomChat(result, TestClass.roomId, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getRoomChat in sync return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-            TestClass.outPutMsg(errorCode, method, beizhu);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
-        }
-    }
-
-    void getBroadcastChat() {
-        final String method = "getBroadcastChat";
-        HistoryMessageResult result = new HistoryMessageResult();
-
-        boolean status = client.getBroadcastChat(new HistoryMessageCallback() {
-            @Override
-            public void call(int count, long lastId, long beginMsec, long endMsec, List<HistoryMessage> messages, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    mylog.log("getBroadcastChat in async return error:" + errorCode);
-                    return;
-                }
-                String desc = " total num:" + count + " beginMsec:" + beginMsec + " endMsec" + endMsec + " lastId:" + count;
-                TestClass.outPutMsg(errorCode, method, desc, 0, false);
-                displayHistoryMessages(messages);
-            }
-        }, true, fetchTotalCount);
-        TestClass.asyncOutput(status, method);
-
-
-        int count = fetchTotalCount;
-        long beginMsec = 0;
-        long endMsec = 0;
-        long lastId = 0;
-        int fetchedCount = 0;
-
-        while (count > 0) {
-            int maxCount = (count > 20) ? 20 : count;
-            count -= maxCount;
-
-            int errorCode = client.getBroadcastChat(result, true, maxCount, beginMsec, endMsec, lastId);
-            if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                mylog.log("getBroadcastChat in sync return error:" + errorCode);
-                continue;
-            }
-            if (result.messages == null || result.messages.size() <= 0)
-                break;
-            TestClass.outPutMsg(errorCode, method);
-
-            fetchedCount += result.count;
-            displayHistoryMessages(result.messages);
-
-            beginMsec = result.beginMsec;
-            endMsec = result.endMsec;
-            lastId = result.lastId;
         }
     }
 }

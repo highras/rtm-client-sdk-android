@@ -4,160 +4,161 @@ import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
-import com.rtmsdk.UserInterface.DoubleStringCallback;
-import com.rtmsdk.UserInterface.ErrorCodeCallback;
-import com.rtmsdk.UserInterface.MembersCallback;
-import com.rtmsdk.UserInterface.MessageCallback;
+import com.rtmsdk.UserInterface.*;
+import com.rtmsdk.RTMStruct.*;
 
 import java.util.HashSet;
 
 public class RTMRoom extends RTMFriend {
-    //===========================[ Enter Room ]=========================//
-    public boolean enterRoom(ErrorCodeCallback callback, long roomId) {
-        return enterRoom(callback, roomId, 0);
+    //重载
+    public void enterRoom(IRTMEmptyCallback callback, long roomId) {
+        enterRoom(callback, roomId, 0);
     }
 
-    /**
-     * 进入房间 async
-     * @param callback ErrorCodeCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param timeout  超时时间(秒)
-     * @return true(发送成功)  false(发送失败)
-     */
-    public boolean enterRoom(final ErrorCodeCallback callback, long roomId, int timeout) {
-        Quest quest = new Quest("enterroom");
-        quest.param("rid", roomId);
-
-        return sendQuest(callback, quest, timeout);
-    }
-
-    public int enterRoom(long roomId) {
+    public RTMAnswer enterRoom(long roomId) {
         return enterRoom(roomId, 0);
     }
 
-    /**
-     * 进入房间 async
-     *
-     * @param roomId  房间id(NoNull)
-     * @param timeout 超时时间(秒)
-     * @return errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
-     */
-    public int enterRoom(long roomId, int timeout) {
-        Quest quest = new Quest("enterroom");
-        quest.param("rid", roomId);
-        return sendQuestCode(quest, timeout);
+    public void leaveRoom(IRTMEmptyCallback callback, long roomId) {
+        leaveRoom(callback, roomId, 0);
     }
 
-    //===========================[ Leave Room ]=========================//
-    public boolean leaveRoom(ErrorCodeCallback callback, long roomId) {
-        return leaveRoom(callback, roomId, 0);
-    }
-
-    /**
-     * 离开房间 async
-     *
-     * @param callback ErrorCodeCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param timeout  超时时间(秒)
-     * @return true(发送成功)  false(发送失败)
-     */
-    public boolean leaveRoom(ErrorCodeCallback callback, long roomId, int timeout) {
-        Quest quest = new Quest("leaveroom");
-        quest.param("rid", roomId);
-        return sendQuest(callback, quest, timeout);
-    }
-
-    public int leaveRoom(long roomId) {
+    public RTMAnswer leaveRoom(long roomId){
         return leaveRoom(roomId, 0);
     }
 
-    /**
-     * 离开房间 async
-     *
-     * @param roomId  房间id(NoNull)
-     * @param timeout 超时时间(秒)
-     * @return errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
-     */
-    public int leaveRoom(long roomId, int timeout) {
-        Quest quest = new Quest("leaveroom");
-        quest.param("rid", roomId);
-
-        return sendQuestCode(quest, timeout);
+    public void getUserRooms(IRTMCallback<HashSet<Long>> callback) {
+        getUserRooms(callback, 0);
     }
 
-    //===========================[ Get User Rooms ]=========================//
-    //-- Action<roomIds, errorCode>
-    public boolean getUserRooms(final MembersCallback callback) {
-        return getUserRooms(callback, 0);
+    public MembersStruct getUserRooms(){
+        return getUserRooms(0);
+    }
+
+    public void setGroupInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo) {
+        setGroupInfo(callback, roomId, publicInfo, privateInfo, 0);
+    }
+
+    public RTMAnswer setRoomInfo(long roomId, String publicInfo, String privateInfo){
+        return setRoomInfo(roomId, publicInfo, privateInfo, 0);
+    }
+
+    public void setRoomInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo) {
+        setRoomInfo(callback,roomId,publicInfo,privateInfo,0);
+    }
+
+    public GroupInfoStruct getRoomInfo(long roomId){
+        return getRoomInfo(roomId,0);
+    }
+
+    public void getRoomInfo(final IRTMCallback<GroupInfoStruct> callback, long roomId) {
+        getRoomInfo(callback,roomId, 0);
+    }
+
+    public DataInfo getRoomPublicInfo(long roomId){
+        return getRoomPublicInfo(roomId, 0);
+    }
+
+    public void getRoomPublicInfo(IRTMCallback<String>  callback,long roomId){
+        getRoomPublicInfo(callback,roomId, 0);
+    }
+    //重载end
+
+
+    /**
+     * 进入房间 async
+     * @param callback IRTMEmptyCallback回调(NoNull)
+     * @param roomId   房间id(NoNull)
+     * @param timeout  超时时间(秒)
+     */
+    public void enterRoom(final IRTMEmptyCallback callback, long roomId, int timeout) {
+        Quest quest = new Quest("enterroom");
+        quest.param("rid", roomId);
+
+        sendQuestEmptyCallback(callback, quest, timeout);
+    }
+
+    /**
+     * 进入房间 sync
+     * @param roomId  房间id(NoNull)
+     * @param timeout 超时时间(秒)
+     */
+    public RTMAnswer enterRoom(long roomId, int timeout){
+        Quest quest = new Quest("enterroom");
+        quest.param("rid", roomId);
+        return sendQuestEmptyResult(quest, timeout);
+    }
+
+    /**
+     * 离开房间 async
+     * @param callback IRTMEmptyCallback回调(NoNull)
+     * @param roomId   房间id(NoNull)
+     * @param timeout  超时时间(秒)
+     */
+    public void leaveRoom(IRTMEmptyCallback callback, long roomId, int timeout) {
+        Quest quest = new Quest("leaveroom");
+        quest.param("rid", roomId);
+        sendQuestEmptyCallback(callback, quest, timeout);
+    }
+
+
+    /**
+     * 离开房间 sync
+     * @param roomId  房间id(NoNull)
+     * @param timeout 超时时间(秒)
+     */
+    public RTMAnswer leaveRoom(long roomId, int timeout) {
+        Quest quest = new Quest("leaveroom");
+        quest.param("rid", roomId);
+        return sendQuestEmptyResult(quest, timeout);
     }
 
     /**
      * 获取用户所在的房间   async
-     *
-     * @param callback MembersCallback回调(NoNull)
+     * @param callback IRTMCallback回调(NoNull)
      * @param timeout  超时时间（秒）
-     * @return true(发送成功)  false(发送失败)
      */
-    public boolean getUserRooms(final MembersCallback callback, int timeout) {
+    public void getUserRooms(final IRTMCallback<HashSet<Long>> callback, int timeout) {
         Quest quest = new Quest("getuserrooms");
-        return sendQuest(quest, new FunctionalAnswerCallback() {
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> roomIds = null;
-                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    roomIds = new HashSet<>();
-                    RTMUtils.wantLongHashSet(answer,"rooms", roomIds);
-                }
-                callback.call(roomIds, errorCode);
+                HashSet<Long> groupIds = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value())
+                    groupIds = RTMUtils.wantLongHashSet(answer,"rooms");
+                callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
             }
         }, timeout);
-    }
-
-    public int getUserRooms(HashSet<Long> roomIds) {
-        return getUserRooms(roomIds, 0);
     }
 
     /**
      * 获取用户所在的房间   sync
-     *
-     * @param roomIds 群组集合(NoNull)
-     * @param timeout 超时时间（秒）
-     * @return errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
-     */
-    public int getUserRooms(HashSet<Long> roomIds, int timeout) {
+     * @param timeout   超时时间（秒）
+     * @return  用户所在房间集合
+     * */
+    public MembersStruct getUserRooms(int timeout){
         Quest quest = new Quest("getuserrooms");
 
         Answer answer = sendQuest(quest, timeout);
-        int code = checkAnswer(answer);
-        if (code == ErrorCode.FPNN_EC_OK.value())
-            RTMUtils.wantLongHashSet(answer,"rooms", roomIds);
-        return code;
-    }
-
-    //===========================[ Set Room Info ]=========================//
-    public boolean setRoomInfo(ErrorCodeCallback callback, long roomId) {
-        return setRoomInfo(callback, roomId, null, null, 0);
-    }
-
-    public boolean setRoomInfo(ErrorCodeCallback callback, long roomId, String publicInfo) {
-        return setRoomInfo(callback, roomId, publicInfo, null, 0);
-    }
-
-    public boolean setRoomInfo(ErrorCodeCallback callback, long roomId, String publicInfo, String privateInfo) {
-        return setRoomInfo(callback, roomId, publicInfo, privateInfo, 0);
+        RTMAnswer result = genRTMAnswer(answer);
+        MembersStruct ret = new MembersStruct();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
+            ret.uids = RTMUtils.wantLongHashSet(answer,"rooms");
+        return ret;
     }
 
     /**
      * 设置房间的公开信息或者私有信息 async
-     *
-     * @param callback    ErrorCodeCallback回调(NoNull)
-     * @param roomId      房间id(NoNull)
-     * @param publicInfo  群组公开信息
-     * @param privateInfo 群组 私有信息
-     * @param timeout     超时时间（秒）
-     * @return true(发送成功)  false(发送失败)
+     * @param callback  IRTMEmptyCallback回调(NoNull)
+     * @param roomId   房间id(NoNull)
+     * @param publicInfo    房间公开信息
+     * @param privateInfo   房间 私有信息
+     * @param timeout   超时时间（秒）
      */
-    public boolean setRoomInfo(ErrorCodeCallback callback, long roomId, String publicInfo, String privateInfo, int timeout) {
+    public void setRoomInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo, int timeout) {
         Quest quest = new Quest("setroominfo");
         quest.param("rid", roomId);
         if (publicInfo != null)
@@ -165,31 +166,17 @@ public class RTMRoom extends RTMFriend {
         if (privateInfo != null)
             quest.param("pinfo", privateInfo);
 
-        return sendQuest(callback, quest, timeout);
-    }
-
-    public int setRoomInfo(long roomId) {
-        return setRoomInfo(roomId, null, null, 0);
-    }
-
-    public int setRoomInfo(long roomId, String publicInfo) {
-        return setRoomInfo(roomId, publicInfo, null, 0);
-    }
-
-    public int setRoomInfo(long roomId, String publicInfo, String privateInfo) {
-        return setRoomInfo(roomId, publicInfo, privateInfo, 0);
+        sendQuestEmptyCallback(callback, quest, timeout);
     }
 
     /**
      * 设置房间的公开信息或者私有信息 sync
-     *
-     * @param roomId      房间id(NoNull)
-     * @param publicInfo  公开信息
-     * @param privateInfo 私有信息
-     * @param timeout     超时时间（秒）
-     * @return errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
+     * @param roomId   房间id(NoNull)
+     * @param publicInfo    房间公开信息
+     * @param privateInfo   房间 私有信息
+     * @param timeout   超时时间（秒）
      */
-    public int setRoomInfo(long roomId, String publicInfo, String privateInfo, int timeout) {
+    public RTMAnswer setRoomInfo(long roomId, String publicInfo, String privateInfo, int timeout){
         Quest quest = new Quest("setroominfo");
         quest.param("rid", roomId);
         if (publicInfo != null)
@@ -197,116 +184,95 @@ public class RTMRoom extends RTMFriend {
         if (privateInfo != null)
             quest.param("pinfo", privateInfo);
 
-        return sendQuestCode(quest, timeout);
-    }
-
-    //===========================[ Get Room Info ]=========================//
-    //-- Action<publicInfo, privateInfo, errorCode>
-    public boolean getRoomInfo(final DoubleStringCallback callback, long roomId) {
-        return getRoomInfo(callback, roomId, 0);
+        return sendQuestEmptyResult(quest, timeout);
     }
 
     /**
      * 获取房间的公开信息或者私有信息 async
-     *
-     * @param callback DoubleStringCallback回调(NoNull)
+     * @param callback  IRTMCallback回调(NoNull)
      * @param roomId   房间id(NoNull)
-     * @param timeout  超时时间（秒）
-     * @return true(发送成功)  false(发送失败)
+     * @param timeout   超时时间（秒）
      */
-    public boolean getRoomInfo(final DoubleStringCallback callback, long roomId, int timeout) {
+    public void getRoomInfo(final IRTMCallback<GroupInfoStruct> callback, final long roomId, int timeout) {
         Quest quest = new Quest("getroominfo");
         quest.param("rid", roomId);
-        return sendQuest(quest, new FunctionalAnswerCallback() {
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                String publicInfo = "";
-                String privateInfo = "";
-
+                GroupInfoStruct RoomInfo = null;
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    publicInfo = answer.wantString("oinfo");
-                    privateInfo = answer.wantString("pinfo");
+                    RoomInfo = new GroupInfoStruct();
+                    RoomInfo.publicInfo = answer.wantString("oinfo");
+                    RoomInfo.privateInfo = answer.wantString("pinfo");
                 }
-                callback.call(publicInfo, privateInfo, errorCode);
+                callback.onResult(RoomInfo, genRTMAnswer(answer,errorCode));
             }
         }, timeout);
-    }
-
-    public int getRoomInfo(StringBuilder publicInfo, StringBuilder privateInfo, long roomId) {
-        return getRoomInfo(publicInfo, privateInfo, roomId, 0);
     }
 
     /**
      * 获取房间的公开信息或者私有信息 sync
-     *
-     * @param publicInfo  公开信息
-     * @param privateInfo 私有信息
-     * @param roomId      房间id(NoNull)
-     * @param timeout     超时时间（秒）
-     * @return errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
+     * @param roomId   房间id(NoNull)
+     * @param timeout   超时时间（秒）
+     * @return  GroupInfoStruct结构
      */
-    public int getRoomInfo(StringBuilder publicInfo, StringBuilder privateInfo, long roomId, int timeout) {
+    public GroupInfoStruct getRoomInfo(long roomId, int timeout){
         Quest quest = new Quest("getroominfo");
         quest.param("rid", roomId);
+
         Answer answer = sendQuest(quest, timeout);
-        int code = checkAnswer(answer);
-        if (code == ErrorCode.FPNN_EC_OK.value()) {
-            publicInfo.append(answer.wantString("oinfo"));
-            privateInfo.append(answer.wantString("pinfo"));
+        RTMAnswer result = genRTMAnswer(answer);
+        GroupInfoStruct RoomInfo = new GroupInfoStruct();
+        if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            RoomInfo.publicInfo = answer.wantString("oinfo");
+            RoomInfo.privateInfo = answer.wantString("pinfo");
         }
-        return code;
+        RoomInfo.errorMsg = result.errorMsg;
+        RoomInfo.errorCode = result.errorCode;
+        return RoomInfo;
     }
 
-    //===========================[ Get Room Open Info ]=========================//
-    //-- Action<public_info, errorCode>
-    public boolean getRoomPublicInfo(final MessageCallback callback, long roomId) {
-        return getRoomPublicInfo(callback, roomId, 0);
-    }
 
     /**
      * 获取房间的公开信息 async
-     * @param callback MessageCallback回调(NoNull)
+     * @param callback  IRTMCallback回调(NoNull)
      * @param roomId   房间id(NoNull)
-     * @param timeout  超时时间（秒）
-     * @return true(发送成功)  false(发送失败)
+     * @param timeout   超时时间（秒）
      */
-    public boolean getRoomPublicInfo(final MessageCallback callback, long roomId, int timeout) {
+    public void getRoomPublicInfo(final IRTMCallback<String>  callback, long roomId, int timeout) {
         Quest quest = new Quest("getroomopeninfo");
         quest.param("rid", roomId);
 
-        return sendQuest(quest, new FunctionalAnswerCallback() {
+        sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 String publicInfo = "";
-
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     publicInfo = answer.wantString("oinfo");
 
-                callback.call(publicInfo, errorCode);
+                callback.onResult(publicInfo, genRTMAnswer(answer,errorCode));
             }
         }, timeout);
     }
 
-    public int getRoomPublicInfo(StringBuilder publicInfo, long roomId) {
-        return getRoomPublicInfo(publicInfo, roomId, 0);
-    }
-
     /**
      * 获取房间的公开信息 sync
-     * @param publicInfo    公开信息
      * @param roomId   房间id(NoNull)
      * @param timeout   超时时间（秒）
-     * @return  errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
+     * @return  房间公开信息
      */
-    public int getRoomPublicInfo(StringBuilder publicInfo, long roomId, int timeout) {
+    public DataInfo getRoomPublicInfo(long roomId, int timeout){
         Quest quest = new Quest("getroomopeninfo");
         quest.param("rid", roomId);
 
         Answer answer = sendQuest(quest, timeout);
-        int code = checkAnswer(answer);
-        if (code == ErrorCode.FPNN_EC_OK.value())
-            publicInfo.append(answer.wantString("oinfo"));
-
-        return code;
+        RTMAnswer result = genRTMAnswer(answer);
+        DataInfo ret = new DataInfo();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
+            ret.info = answer.wantString("oinfo");
+        return  ret;
     }
 }
