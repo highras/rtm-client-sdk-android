@@ -23,7 +23,7 @@ class RTMChat extends RTMRoom {
         }
     };
     //重载start
-    public void sendChat(IRTMCallback<Long> callback, long uid, String message) {
+    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message) {
         sendChat(callback, uid, message, "", 0);
     }
 
@@ -31,7 +31,7 @@ class RTMChat extends RTMRoom {
         return sendChat(uid, message, "", 0);
     }
 
-    public void sendGroupChat(IRTMCallback<Long> callback, long groupId, String message) {
+    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message) {
         sendGroupChat(callback, groupId, message, "", 0);
     }
 
@@ -39,7 +39,7 @@ class RTMChat extends RTMRoom {
         return sendGroupChat(groupId, message, "", 0);
     }
 
-    public void sendRoomChat(IRTMCallback<Long> callback, long roomId, String message) {
+    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message) {
         sendRoomChat(callback, roomId, message, "", 0);
     }
 
@@ -51,11 +51,11 @@ class RTMChat extends RTMRoom {
         return sendCmd(uid, message, "", 0);
     }
 
-    public void sendCmd(IRTMCallback<Long> callback, long uid, String message) {
+    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message) {
         sendCmd(callback,uid, message, "", 0);
     }
 
-    public void sendGroupCmd(IRTMCallback<Long> callback, long groupId, String message) {
+    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message) {
         sendGroupCmd(callback, groupId, message, "", 0);
     }
 
@@ -63,13 +63,13 @@ class RTMChat extends RTMRoom {
         return sendGroupCmd(groupId, message, "", 0);
     }
 
-    public void sendRoomCmd(IRTMCallback<Long> callback, long roomId, String message){
+    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message){
         sendRoomCmd(callback, roomId, message, "", 0);
     }
     public ModifyTimeStruct sendRoomCmd(long roomId, String message){
         return sendRoomCmd(roomId, message, "", 0);
     }
-    public void sendAudio(IRTMCallback<Long> callback, long uid, File file) {
+    public void sendAudio(IRTMDoubleValueCallback<Long,Long> callback, long uid, File file) {
         sendAudio(callback, uid, file, "", 0);
     }
 
@@ -77,7 +77,7 @@ class RTMChat extends RTMRoom {
         return sendAudio(uid, file, "", 0);
     }
 
-    public void sendGroupAudio(IRTMCallback<Long> callback, long groupId, File file) {
+    public void sendGroupAudio(IRTMDoubleValueCallback<Long,Long> callback, long groupId, File file) {
         sendGroupAudio(callback, groupId, file, "", 0);
     }
 
@@ -85,7 +85,7 @@ class RTMChat extends RTMRoom {
         return sendGroupAudio(groupId,file, "",0);
     }
 
-    public void sendRoomAudio(IRTMCallback<Long> callback, long roomId, File file) {
+    public void sendRoomAudio(IRTMDoubleValueCallback<Long,Long> callback, long roomId, File file) {
         sendRoomAudio(callback, roomId, file, "", 0);
     }
 
@@ -222,7 +222,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendChat(IRTMCallback<Long> callback, long uid, String message, String attrs, int timeout) {
+    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs, int timeout) {
         internalSendChat(callback, uid, MessageType.CHAT, message, attrs, timeout,MessageCategories.P2PMessage);
     }
 
@@ -246,7 +246,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendGroupChat(IRTMCallback<Long> callback, long groupId, String message, String attrs, int timeout) {
+    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs, int timeout) {
         internalSendChat(callback, groupId, MessageType.CHAT, message, attrs, timeout, MessageCategories.GroupMessage);
     }
 
@@ -270,7 +270,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendRoomChat(IRTMCallback<Long> callback, long roomId, String message, String attrs, int timeout){
+    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs, int timeout){
         internalSendChat(callback, roomId, MessageType.CHAT, message, attrs, timeout, MessageCategories.RoomMessage);
     }
 
@@ -294,7 +294,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendCmd(IRTMCallback<Long> callback, long uid, String message, String attrs, int timeout) {
+    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs, int timeout) {
         internalSendChat(callback, uid, MessageType.CMD, message, attrs, timeout,MessageCategories.P2PMessage);
     }
 
@@ -318,7 +318,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendGroupCmd(IRTMCallback<Long> callback, long groupId, String message, String attrs, int timeout) {
+    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs, int timeout) {
         internalSendChat(callback, groupId, MessageType.CMD, message, attrs, timeout,MessageCategories.GroupMessage);
     }
 
@@ -343,7 +343,7 @@ class RTMChat extends RTMRoom {
      * @param timeout   超时时间(秒)
 
      */
-    public void sendRoomCmd(IRTMCallback<Long> callback, long roomId, String message, String attrs, int timeout){
+    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs, int timeout){
         internalSendChat(callback, roomId, MessageType.CMD, message, attrs, timeout,MessageCategories.RoomMessage);
     }
 
@@ -367,7 +367,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendAudio(IRTMCallback<Long> callback, long uid, File file, String attrs, int timeout) {
+    public void sendAudio(IRTMDoubleValueCallback<Long,Long> callback, long uid, File file, String attrs, int timeout) {
         byte[] data = RTMAudio.getInstance().genAudioData(file);
         internalSendChat(callback, uid, MessageType.AUDIO, data, attrs, timeout,MessageCategories.P2PMessage);
     }
@@ -393,7 +393,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendGroupAudio(IRTMCallback<Long> callback, long groupId, File file, String attrs, int timeout) {
+    public void sendGroupAudio(IRTMDoubleValueCallback<Long,Long> callback, long groupId, File file, String attrs, int timeout) {
         byte[] data = RTMAudio.getInstance().genAudioData(file);
         internalSendChat(callback, groupId, MessageType.AUDIO, data, attrs, timeout,MessageCategories.GroupMessage);
     }
@@ -418,7 +418,7 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendRoomAudio(IRTMCallback<Long> callback, long roomId, File file, String attrs, int timeout) {
+    public void sendRoomAudio(IRTMDoubleValueCallback<Long,Long> callback, long roomId, File file, String attrs, int timeout) {
         byte[] data = RTMAudio.getInstance().genAudioData(file);
         internalSendChat(callback, roomId, MessageType.AUDIO, data, attrs, timeout,MessageCategories.RoomMessage);
     }

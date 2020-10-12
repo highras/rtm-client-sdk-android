@@ -4,10 +4,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.util.Log;
 
-
-import com.fpnn.sdk.ConnectionConnectedCallback;
 import com.fpnn.sdk.ConnectionWillCloseCallback;
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
@@ -80,14 +77,14 @@ class RTMCore  implements INetEvent{
 
     private IReloginStart reloginStartCallback;
     private IReloginCompleted reloginCompletedCallback;
-    private ArrayList<Integer> finishCodeList = new ArrayList<Integer>(){{
-        add(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value());
-        add(RTMErrorCode.RTM_EC_PROJECT_BLACKUSER.value());
-        add(RTMErrorCode.RTM_EC_ADMIN_LOGIN.value());
-        add(RTMErrorCode.RTM_EC_INVALID_PID_OR_UID.value());
-    }
+    private ArrayList<Integer> finishCodeList = new ArrayList<Integer>(){
+        {
+            add(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value());
+            add(RTMErrorCode.RTM_EC_PROJECT_BLACKUSER.value());
+            add(RTMErrorCode.RTM_EC_ADMIN_LOGIN.value());
+            add(RTMErrorCode.RTM_EC_INVALID_PID_OR_UID.value());
+        }
     };
-
 
     void setAutoConnect(Context applicationContext, IReloginStart startCallback, IReloginCompleted completedCallback){
         if (applicationContext == null || startCallback == null || completedCallback == null) {
@@ -108,7 +105,8 @@ class RTMCore  implements INetEvent{
 
     void reloginEvent(final int count){
         int num = count;
-        RTMStruct.RTMAnswer loginAnswer = login(token,lang,loginAttrs,loginAddresType);
+        Map<String, String> kk = loginAttrs;
+        RTMStruct.RTMAnswer loginAnswer = login(token, lang, kk, loginAddresType);
         if(loginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
             isRelogin.set(false);
             reloginCompletedCallback.reloginCompleted(uid, true, loginAnswer, num++);
@@ -488,7 +486,7 @@ class RTMCore  implements INetEvent{
                 if (connectionId != 0 && connectionId == _connectionId && closedCase != CloseType.ByUser && getClientStatus() != ClientStatus.Connecting) {
                     closeStatus();
                     processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
-                    if (!autoConnect) //这块有问题 服务器超时把客户端踢了 不知道怎么重连
+                    if (!autoConnect)
                         close();
                     else
                     {
@@ -532,9 +530,9 @@ class RTMCore  implements INetEvent{
         qt.param("token", token);
         qt.param("lang", lang);
         qt.param("version", "Android-" + RTMConfig.SDKVersion);
+
         if (attr != null)
             qt.param("attrs", attr);
-
         try {
             Answer answer = rtmGate.sendQuest(qt);
 
@@ -674,7 +672,6 @@ class RTMCore  implements INetEvent{
 
     RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
         this.lang = lang.equals("") ? Locale.getDefault().getLanguage() : lang;
-        this.lang = "en";
         this.token =  token;
         this.loginAddresType = addressType;
         this.loginAttrs = attr;

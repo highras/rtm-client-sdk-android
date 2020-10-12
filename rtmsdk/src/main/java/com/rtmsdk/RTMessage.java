@@ -9,7 +9,7 @@ import java.util.List;
 
 class RTMessage extends RTMMessageCore {
     //重载start
-    public void sendMessage(IRTMCallback<Long> callback, long uid, byte mtype, String message){
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, String message){
         sendMessage(callback, uid, mtype, message, "", 0);
     }
 
@@ -17,7 +17,7 @@ class RTMessage extends RTMMessageCore {
         return sendMessage(uid, mtype, message, "", 0);
     }
 
-    public void sendGroupMessage(IRTMCallback<Long> callback, long groupId, byte mtype, String message) {
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message) {
         sendGroupMessage(callback, groupId, mtype, message, "", 0);
     }
 
@@ -25,7 +25,7 @@ class RTMessage extends RTMMessageCore {
         return sendGroupMessage(groupId, mtype, message, "", 0);
     }
 
-    public void sendRoomMessage(IRTMCallback<Long> callback, long roomId, byte mtype, String message) {
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message) {
         sendRoomMessage(callback, roomId, mtype, message, "", 0);
     }
 
@@ -125,7 +125,7 @@ class RTMessage extends RTMMessageCore {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendMessage(IRTMCallback<Long> callback, long uid, byte mtype, String message, String attrs, int timeout) {
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, String message, String attrs, int timeout) {
         internalSendMessage(callback, uid, mtype, message, attrs, timeout, MessageCategories.P2PMessage);
     }
 
@@ -151,7 +151,7 @@ class RTMessage extends RTMMessageCore {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendGroupMessage(IRTMCallback<Long> callback, long groupId, byte mtype, String message, String attrs, int timeout) {
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message, String attrs, int timeout) {
         internalSendMessage(callback, groupId, mtype, message, attrs, timeout, MessageCategories.GroupMessage);
     }
 
@@ -177,7 +177,7 @@ class RTMessage extends RTMMessageCore {
      * @param attrs     客户端自定义属性信息
      * @param timeout   超时时间(秒)
      */
-    public void sendRoomMessage(IRTMCallback<Long> callback, long roomId, byte mtype, String message, String attrs, int timeout) {
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message, String attrs, int timeout) {
         internalSendMessage(callback, roomId, mtype, message, attrs, timeout, MessageCategories.RoomMessage);
     }
 
@@ -199,7 +199,7 @@ class RTMessage extends RTMMessageCore {
     /**参数说明同上
      * mtype MUST large than 50, else this interface will return false or erroeCode-RTM_EC_INVALID_MTYPE.
      */
-    public void sendMessage(IRTMCallback<Long> callback, long uid, byte mtype, byte[] message, String attrs, int timeout) {
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, byte[] message, String attrs, int timeout) {
         internalSendMessage(callback, uid, mtype, message, attrs, timeout,MessageCategories.P2PMessage);
     }
 
@@ -208,7 +208,7 @@ class RTMessage extends RTMMessageCore {
     }
 
     //*****sendGroupMessage******//
-    public void sendGroupMessage(IRTMCallback<Long> callback, long groupId, byte mtype, byte[] message, String attrs, int timeout) {
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] message, String attrs, int timeout) {
         internalSendMessage(callback, groupId, mtype, message, attrs, timeout, MessageCategories.GroupMessage);
     }
 
@@ -217,7 +217,7 @@ class RTMessage extends RTMMessageCore {
     }
 
     //*****sendRoomMessage******//
-    public void sendRoomMessage(IRTMCallback<Long> callback, long roomId, byte mtype, byte[] message, String attrs, int timeout) {
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] message, String attrs, int timeout) {
         internalSendMessage(callback, roomId, mtype, message, attrs, timeout, MessageCategories.RoomMessage);
     }
 

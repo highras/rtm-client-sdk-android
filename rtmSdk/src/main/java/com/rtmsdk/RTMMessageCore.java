@@ -6,6 +6,7 @@ import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.DuplicatedMessageFilter.MessageCategories;
 import com.rtmsdk.UserInterface.IRTMCallback;
+import com.rtmsdk.UserInterface.IRTMDoubleValueCallback;
 import com.rtmsdk.RTMStruct.*;
 
 import org.json.JSONException;
@@ -32,10 +33,11 @@ class RTMMessageCore extends RTMCore {
                 toWhere = "to";
                 break;
         }
+        long messageId = RTMUtils.genMid();
 
         Quest quest = new Quest(method);
         quest.param(toWhere, id);
-        quest.param("mid", RTMUtils.genMid());
+        quest.param("mid", messageId);
         quest.param("mtype", mtype);
         quest.param("msg", message);
         quest.param("attrs", attrs);
@@ -45,7 +47,7 @@ class RTMMessageCore extends RTMCore {
             return genModifyAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
         else if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value())
             return genModifyAnswer(answer);
-        return genModifyAnswer(answer,answer.wantLong("mtime"));
+        return genModifyAnswer(answer,answer.wantLong("mtime"), messageId);
     }
 
     private ModifyTimeStruct genModifyAnswer(int code){
@@ -53,24 +55,26 @@ class RTMMessageCore extends RTMCore {
         tmp.errorCode = code;
         tmp.errorMsg = RTMErrorCode.getMsg(code);
         tmp.modifyTime = 0;
+        tmp.messageId = 0;
         if (code == ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value())
             tmp.errorMsg = "invalid connection";
         return tmp;
     }
 
-    private ModifyTimeStruct genModifyAnswer(Answer anser, long time){
+    private ModifyTimeStruct genModifyAnswer(Answer anser, long time, long messageId){
         ModifyTimeStruct tmp = new ModifyTimeStruct();
         tmp.errorCode = anser.getErrorCode();
         tmp.errorMsg = anser.getErrorMessage();
         tmp.modifyTime = time;
+        tmp.messageId = messageId;
         return tmp;
     }
 
     private ModifyTimeStruct genModifyAnswer(Answer anser){
-        return genModifyAnswer(anser,0);
+        return genModifyAnswer(anser,0,0);
     }
 
-    private void sendMsgAsync(final IRTMCallback<Long> callback, long id, byte mtype, Object message, String attrs, int timeout, MessageCategories type) {
+    private void sendMsgAsync(final IRTMDoubleValueCallback<Long,Long> callback, long id, byte mtype, Object message, String attrs, int timeout, MessageCategories type) {
         String method = "", toWhere = "";
         switch (type) {
             case GroupMessage:
@@ -87,7 +91,7 @@ class RTMMessageCore extends RTMCore {
                 break;
         }
         long mid = RTMUtils.genMid();
-        Quest quest = new Quest(method);
+        final Quest quest = new Quest(method);
         quest.param(toWhere, id);
         quest.param("mid", mid);
         quest.param("mtype", mtype);
@@ -100,7 +104,7 @@ class RTMMessageCore extends RTMCore {
                 long mtime = 0;
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     mtime = answer.wantLong("mtime");
-                callback.onResult(mtime, genRTMAnswer(answer,errorCode));
+                callback.onResult(mtime, quest.wantLong("mid"),genRTMAnswer(answer,errorCode));
             }
         }, timeout);
     }
@@ -303,9 +307,9 @@ class RTMMessageCore extends RTMCore {
     }
 
     //======================[ String message version ]================================//
-    void internalSendMessage(IRTMCallback<Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
+    void internalSendMessage(IRTMDoubleValueCallback<Long,Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
         if (mtype <= MessageType.NORMALFILE){
-            callback.onResult(0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value()));
+            callback.onResult(0L,0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value()));
             return;
         }
         sendMsgAsync(callback, toid, mtype, message, attrs, timeout, msgType);
@@ -317,7 +321,7 @@ class RTMMessageCore extends RTMCore {
         return sendMsgSync(toid, mtype, message, attrs, timeout, msgType);
     }
 
-    void internalSendChat(IRTMCallback<Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
+    void internalSendChat(IRTMDoubleValueCallback<Long,Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
         sendMsgAsync(callback, toid, mtype, message, attrs, timeout, msgType);
     }
 

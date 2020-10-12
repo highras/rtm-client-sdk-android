@@ -175,6 +175,10 @@ public class RTMAudio {
     }
 
 
+    private RTMAudio(){
+
+    }
+
     public short[] getRawData(byte[] amrSrc) {
         if (amrSrc == null)
             return null;

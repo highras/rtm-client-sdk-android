@@ -55,7 +55,7 @@ public class RTMStruct {
         public String attrs;        //
         public long modifiedTime;   //服务器处理返回时间
         public AudioInfo audioInfo = null; //语音消息结构 实际语音消息需要再次调用getchat获得
-        public TranslatedInfo translatedInfo = null; //聊天信息结构
+        public TranslatedInfo translatedInfo = null; //聊天信息结构(push)
     }
 
     public static class HistoryMessage extends RTMMessage //历史消息结构
@@ -107,6 +107,7 @@ public class RTMStruct {
 
     public static class ModifyTimeStruct extends RTMAnswer{
         public long  modifyTime; //服务器返回时间
+        public long  messageId = 0; //消息id
     }
 
 

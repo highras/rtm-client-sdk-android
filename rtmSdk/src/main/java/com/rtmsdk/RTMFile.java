@@ -8,12 +8,15 @@ import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.RTMStruct.*;
-import com.rtmsdk.UserInterface.DoubleStringCallback;
-import com.rtmsdk.UserInterface.IRTMCallback;
+import com.rtmsdk.UserInterface.IRTMDoubleValueCallback;
 
 import java.net.InetSocketAddress;
 
 class RTMFile extends RTMSystem {
+    interface DoubleStringCallback{
+        void onResult(String str1, String str2, int errorCode);
+    }
+
     private enum fileTokenType {
         P2P,
         Group,
@@ -33,11 +36,11 @@ class RTMFile extends RTMSystem {
         public String endpoint;
         public int remainTimeout;
         public long lastActionTimestamp;
-        public UserInterface.IRTMCallback<Long> callback;
+        public UserInterface.IRTMDoubleValueCallback<Long,Long> callback;
     }
 
     //重载
-    public void sendFile(IRTMCallback<Long> callback, long peerUid, byte mtype, byte[] fileContent, String filename) {
+    public void sendFile(IRTMDoubleValueCallback<Long,Long> callback, long peerUid, byte mtype, byte[] fileContent, String filename) {
         sendFile(callback, peerUid, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
@@ -45,7 +48,7 @@ class RTMFile extends RTMSystem {
         return sendFile(peerUid, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
-    public void sendGroupFile(IRTMCallback<Long> callback, long groupId, byte mtype, byte[] fileContent, String filename) {
+    public void sendGroupFile(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] fileContent, String filename) {
         sendGroupFile(callback, groupId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
@@ -53,7 +56,7 @@ class RTMFile extends RTMSystem {
         return sendGroupFile(groupId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
-    public void  sendRoomFile(IRTMCallback<Long> callback, long roomId, byte mtype, byte[] fileContent, String filename) {
+    public void  sendRoomFile(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] fileContent, String filename) {
         sendRoomFile(callback, roomId, mtype, fileContent, filename, "", RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
@@ -219,7 +222,7 @@ class RTMFile extends RTMSystem {
         if (info.remainTimeout <= 0)
             return ErrorCode.FPNN_EC_CORE_TIMEOUT.value();
 
-        Quest quest = buildSendFileQuest(info);
+        final Quest quest = buildSendFileQuest(info);
 
         client.sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
@@ -227,7 +230,7 @@ class RTMFile extends RTMSystem {
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     try {
                         long mtime = answer.wantLong("mtime");
-                        info.callback.onResult(mtime, genRTMAnswer(ErrorCode.FPNN_EC_OK.value()));
+                        info.callback.onResult(mtime, quest.wantLong("mid"),genRTMAnswer(ErrorCode.FPNN_EC_OK.value()));
 
                         activeFileGateClient(info.endpoint, client);
                         return;
@@ -235,7 +238,7 @@ class RTMFile extends RTMSystem {
                         errorCode = ErrorCode.FPNN_EC_CORE_INVALID_PACKAGE.value();
                     }
                 }
-                info.callback.onResult(0L, genRTMAnswer(answer,errorCode));
+                info.callback.onResult(0L, 0L,genRTMAnswer(answer,errorCode));
             }
         }, info.remainTimeout);
 
@@ -264,7 +267,7 @@ class RTMFile extends RTMSystem {
                     errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
 
                 if (errorCode != ErrorCode.FPNN_EC_OK.value())
-                    info.callback.onResult(0L, genRTMAnswer(errorCode));
+                    info.callback.onResult(0L, 0L,genRTMAnswer(errorCode));
             }
         });
         try {
@@ -294,13 +297,13 @@ class RTMFile extends RTMSystem {
             else
                 ErrorRecorder.getInstance().recordError("send file error");
         } else
-            info.callback.onResult(0L, genRTMAnswer(errorCode));
+            info.callback.onResult(0L,0L,genRTMAnswer(errorCode));
     }
 
     //===========================[ Real Send File ]=========================//
-    private void realSendFile(final IRTMCallback<Long> callback, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+    private void realSendFile(final UserInterface.IRTMDoubleValueCallback<Long,Long> callback, fileTokenType tokenType, long targetId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
         if (mtype < MessageType.IMAGEFILE || mtype > MessageType.NORMALFILE) {
-            callback.onResult(0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_MTYPE.value()));
+            callback.onResult(0L,0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_MTYPE.value()));
             return ;
         }
 
@@ -410,7 +413,7 @@ class RTMFile extends RTMSystem {
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
      */
-    public void sendFile(IRTMCallback<Long> callback, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+    public void sendFile(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long peerUid, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
         realSendFile(callback, fileTokenType.P2P, peerUid, mtype, fileContent, filename, fileExtension, timeout);
     }
 
@@ -443,7 +446,7 @@ class RTMFile extends RTMSystem {
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
      */
-    public void  sendGroupFile(IRTMCallback<Long> callback, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+    public void  sendGroupFile(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
         realSendFile(callback, fileTokenType.Group, groupId, mtype, fileContent, filename, fileExtension, timeout);
     }
 
@@ -476,7 +479,7 @@ class RTMFile extends RTMSystem {
      * @param fileExtension 文件属性信息
      * @param timeout       超时时间(秒)
      */
-    public void  sendRoomFile(IRTMCallback<Long> callback, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
+    public void  sendRoomFile(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] fileContent, String filename, String fileExtension, int timeout) {
         realSendFile(callback, fileTokenType.Room, roomId, mtype, fileContent, filename, fileExtension, timeout);
     }
 

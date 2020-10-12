@@ -1,9 +1,6 @@
 package com.rtmsdk;
 
-import com.rtmsdk.RTMStruct.*;
-
-import java.util.HashSet;
-import java.util.List;
+import com.rtmsdk.RTMStruct.RTMAnswer;
 
 public class UserInterface {
 
@@ -28,7 +25,8 @@ public class UserInterface {
         void onResult(T t, RTMAnswer answer);
     }
 
-    interface DoubleStringCallback{
-        void onResult(String str1, String str2, int errorCode);
+    //泛型接口 带有两个返回值的回调函数
+    public interface IRTMDoubleValueCallback<T,V> {
+        void onResult(T t, V v, RTMAnswer answer);
     }
 }

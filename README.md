@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        implementation 'com.github.highras:rtm-android:2.0.1'
+        api 'com.github.highras:rtm-android:2.0.2'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.0.1</version>
+        <version>2.0.3</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -40,12 +40,12 @@
 
 ### 使用说明
 - rtm通信需要网络权限，使用语音相关功能需要存储和录音权限
-- 请在子线程中调用RTMClient的登录和任何发送操作
+- 请在子线程初始化RTMClient， 以及登录和任何发送操作
 - rtm支持自动重连 初始化rtmclient成功后调用setAutoconnect方法设置自动重连
   - 自动重连需要设置重连开始回调和重连完成回调函数并传入applicationContext
-- 服务器push消息:请继承IRTMQuestProcessor类,重写自己需要的push系列函数
+- 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数
 - 所有同步和异步接口都会返回 RTMAnswer，请先判断answer中的errorCode 如果为0正常
-- RTMConfig 创建后，所有配置均已有默认值，使用者需要重新设置需要更改的值，然后传入Init接口即可。
+- RTMConfig 创建后，所有配置均已有默认值，使用者需要重新设置需要更改的值，请调用config接口即可。
 - 用户可以重写rtm的日志类 收集和获取sdk内部的错误信息 例如
     ~~~
      public class TestErrorRecorder extends ErrorRecorder {

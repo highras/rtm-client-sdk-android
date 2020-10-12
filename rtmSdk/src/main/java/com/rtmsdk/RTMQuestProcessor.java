@@ -1,5 +1,4 @@
 package com.rtmsdk;
-import android.util.Log;
 
 import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.TCPClient;

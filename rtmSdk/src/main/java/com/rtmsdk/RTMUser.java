@@ -4,10 +4,13 @@ import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
-import com.rtmsdk.UserInterface.*;
-import com.rtmsdk.RTMStruct.*;
+import com.rtmsdk.RTMStruct.GroupInfoStruct;
+import com.rtmsdk.RTMStruct.MembersStruct;
+import com.rtmsdk.RTMStruct.RTMAnswer;
+import com.rtmsdk.RTMStruct.UserPublicInfo;
+import com.rtmsdk.UserInterface.IRTMCallback;
+import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -125,7 +128,7 @@ public class RTMUser extends RTMData {
 
     /**
      * 获取的用户公开信息或者私有信息 async
-     * @param callback DoubleStringCallback回调(NoNull)
+     * @param callback IRTMCallback<GroupInfoStruct>回调(NoNull)
      * @param timeout  超时时间（秒）
 
      */
