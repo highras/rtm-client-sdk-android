@@ -1,5 +1,4 @@
 package com.rtmsdk;
-
 import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;
@@ -15,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-class RTMQuestProcessor {
+class RTMQuestProcessor extends RTMCore{
     private RTMPushProcessor questProcessor;
     private DuplicatedMessageFilter duplicatedFilter;
     private ErrorRecorder errorRecorder;
@@ -70,6 +69,7 @@ class RTMQuestProcessor {
     }
 
     Answer kickout(Quest quest, InetSocketAddress peer) {
+        setCloseType(CloseType.ByServer);
         refRtmGate.close();
         if (questProcessor != null)
             questProcessor.kickout();
@@ -156,28 +156,36 @@ class RTMQuestProcessor {
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageType.AUDIO) {
-            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
-            try {
-                JSONObject hh = new JSONObject(messageInfo.message);
-                audioTmp.duration = hh.getInt("du");
-                audioTmp.recognizedText = hh.getString("rt");
-                audioTmp.sourceLanguage = hh.getString("sl");
-                audioTmp.recognizedLanguage = hh.getString("rl");
-                userMsg.audioInfo = audioTmp;
-            } catch (JSONException e) {
-                if (errorRecorder != null)
-                    errorRecorder.recordError(e);
-            }
-            questProcessor.pushAudio(userMsg);
-            return null;
-        }
-
         if (mtype == MessageType.CMD) {
             userMsg.stringMessage = messageInfo.message;
             questProcessor.pushCmd(userMsg);
         } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
-            userMsg.stringMessage = messageInfo.message;
+            FileStruct fileInfo = new FileStruct();
+            String fileRecieve = quest.wantString("msg");
+            String fileattrs = quest.wantString("attrs");
+            try {
+                JSONObject kk = new JSONObject(fileRecieve);
+                fileInfo.url = kk.getString("url");
+                fileInfo.fileSize = kk.getLong("size");
+                if (kk.has("surl"))
+                    fileInfo.surl = kk.getString("surl");
+                userMsg.fileInfo = fileInfo;
+                if (mtype == MessageType.AUDIOFILE) {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    if (tt.has("rtm")){
+                        JSONObject rtmjson = tt.getJSONObject("rtm");
+                        if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                            JSONObject fileAttrs = tt.getJSONObject("rtm");
+                            userMsg.fileInfo.isRTMaudio = true;
+                            userMsg.fileInfo.lang = fileAttrs.getString("lang");
+                            userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                ErrorRecorder.record("pushmsg parse json error " + e.getMessage());
+                e.printStackTrace();
+            }
             questProcessor.pushFile(userMsg);
         }
         else {
@@ -193,7 +201,7 @@ class RTMQuestProcessor {
         return null;
     }
 
-    Answer pushgroupmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushgroupmsg(Quest quest, InetSocketAddress peer) {
         refRtmGate.sendAnswer(new Answer(quest));
 
         if (questProcessor == null)
@@ -226,41 +234,52 @@ class RTMQuestProcessor {
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageType.AUDIO) {
-            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
-            try {
-                JSONObject hh = new JSONObject(messageInfo.message);
-                audioTmp.duration = hh.getInt("du");
-                audioTmp.recognizedText = hh.getString("rt");
-                audioTmp.sourceLanguage = hh.getString("sl");
-                audioTmp.recognizedLanguage = hh.getString("rl");
-                userMsg.audioInfo = audioTmp;
-            } catch (JSONException e) {
-                if (errorRecorder != null)
-                    errorRecorder.recordError(e);
-            }
-            questProcessor.pushGroupAudio(userMsg);
-            return null;
-        }
-
-        userMsg.stringMessage = messageInfo.message;
         if (mtype == MessageType.CMD) {
+            userMsg.stringMessage = messageInfo.message;
             questProcessor.pushGroupCmd(userMsg);
-        } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+        }else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            FileStruct fileInfo = new FileStruct();
+            String fileRecieve = quest.wantString("msg");
+            String fileattrs = quest.wantString("attrs");
+            try {
+                JSONObject kk = new JSONObject(fileRecieve);
+                fileInfo.url = kk.getString("url");
+                fileInfo.fileSize = kk.getLong("size");
+                if (kk.has("surl"))
+                    fileInfo.surl = kk.getString("surl");
+
+                userMsg.fileInfo = fileInfo;
+                if (mtype == MessageType.AUDIOFILE) {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    if (tt.has("rtm")){
+                        JSONObject rtmjson = tt.getJSONObject("rtm");
+                        if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                            JSONObject fileAttrs = tt.getJSONObject("rtm");
+                            userMsg.fileInfo.isRTMaudio = true;
+                            userMsg.fileInfo.lang = fileAttrs.getString("lang");
+                            userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                ErrorRecorder.record("pushgroupmsg parse json error " + e.getMessage());
+                e.printStackTrace();
+            }
             questProcessor.pushGroupFile(userMsg);
-        } else {
+        }else {
             if (messageInfo.isBinary) {
                 userMsg.binaryMessage = messageInfo.binaryData;
                 questProcessor.pushGroupMessage(userMsg);
             }
-            else
+            else {
+                userMsg.stringMessage = messageInfo.message;
                 questProcessor.pushGroupMessage(userMsg);
+            }
         }
-
         return null;
     }
 
-    Answer pushroommsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushroommsg(Quest quest, InetSocketAddress peer) {
         refRtmGate.sendAnswer(new Answer(quest));
 
         if (questProcessor == null)
@@ -293,41 +312,52 @@ class RTMQuestProcessor {
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageType.AUDIO) {
-            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
-            try {
-                JSONObject hh = new JSONObject(messageInfo.message);
-                audioTmp.duration = hh.getInt("du");
-                audioTmp.recognizedText = hh.getString("rt");
-                audioTmp.sourceLanguage = hh.getString("sl");
-                audioTmp.recognizedLanguage = hh.getString("rl");
-                userMsg.audioInfo = audioTmp;
-            } catch (JSONException e) {
-                if (errorRecorder != null)
-                    errorRecorder.recordError(e);
-            }
-            questProcessor.pushRoomAudio(userMsg);
-            return null;
-        }
-
-        userMsg.stringMessage = messageInfo.message;
         if (mtype == MessageType.CMD) {
+            userMsg.stringMessage = messageInfo.message;
             questProcessor.pushRoomCmd(userMsg);
-        } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+        }else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            FileStruct fileInfo = new FileStruct();
+            String fileRecieve = quest.wantString("msg");
+            String fileattrs = quest.wantString("attrs");
+            try {
+                JSONObject kk = new JSONObject(fileRecieve);
+                fileInfo.url = kk.getString("url");
+                fileInfo.fileSize = kk.getLong("size");
+                if (kk.has("surl"))
+                    fileInfo.surl = kk.getString("surl");
+
+                userMsg.fileInfo = fileInfo;
+                if (mtype == MessageType.AUDIOFILE) {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    if (tt.has("rtm")){
+                        JSONObject rtmjson = tt.getJSONObject("rtm");
+                        if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                            JSONObject fileAttrs = tt.getJSONObject("rtm");
+                            userMsg.fileInfo.isRTMaudio = true;
+                            userMsg.fileInfo.lang = fileAttrs.getString("lang");
+                            userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                ErrorRecorder.record("pushroommsg parse json error " + e.getMessage());
+                e.printStackTrace();
+            }
             questProcessor.pushRoomFile(userMsg);
-        } else {
+        }else {
             if (messageInfo.isBinary) {
                 userMsg.binaryMessage = messageInfo.binaryData;
                 questProcessor.pushRoomMessage(userMsg);
             }
-            else
+            else {
+                userMsg.stringMessage = messageInfo.message;
                 questProcessor.pushRoomMessage(userMsg);
+            }
         }
-
         return null;
     }
 
-    Answer pushbroadcastmsg(Quest quest, InetSocketAddress peer) throws UnsupportedEncodingException {
+    Answer pushbroadcastmsg(Quest quest, InetSocketAddress peer) {
         refRtmGate.sendAnswer(new Answer(quest));
 
         if (questProcessor == null)
@@ -358,36 +388,47 @@ class RTMQuestProcessor {
         }
 
         MessageInfo messageInfo = BuildMessageInfo(quest);
-        if (mtype == MessageType.AUDIO) {
-            RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
-            try {
-                JSONObject hh = new JSONObject(messageInfo.message);
-                audioTmp.duration = hh.getInt("du");
-                audioTmp.recognizedText = hh.getString("rt");
-                audioTmp.sourceLanguage = hh.getString("sl");
-                audioTmp.recognizedLanguage = hh.getString("rl");
-                userMsg.audioInfo = audioTmp;
-            } catch (JSONException e) {
-                if (errorRecorder != null)
-                    errorRecorder.recordError(e);
-            }
-            questProcessor.pushBroadcastAudio(userMsg);
-
-            return null;
-        }
-
-        userMsg.stringMessage = messageInfo.message;
         if (mtype == MessageType.CMD) {
+            userMsg.stringMessage = messageInfo.message;
             questProcessor.pushBroadcastCmd(userMsg);
         } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
+            FileStruct fileInfo = new FileStruct();
+            String fileRecieve = quest.wantString("msg");
+            String fileattrs = quest.wantString("attrs");
+            try {
+                JSONObject kk = new JSONObject(fileRecieve);
+                fileInfo.url = kk.getString("url");
+                fileInfo.fileSize = kk.getLong("size");
+                if (kk.has("surl"))
+                    fileInfo.surl = kk.getString("surl");
+
+                userMsg.fileInfo = fileInfo;
+                if (mtype == MessageType.AUDIOFILE) {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    if (tt.has("rtm")){
+                        JSONObject rtmjson = tt.getJSONObject("rtm");
+                        if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                            JSONObject fileAttrs = tt.getJSONObject("rtm");
+                            userMsg.fileInfo.isRTMaudio = true;
+                            userMsg.fileInfo.lang = fileAttrs.getString("lang");
+                            userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                ErrorRecorder.record("pushbroadcastmsg parse json error " + e.getMessage());
+                e.printStackTrace();
+            }
             questProcessor.pushBroadcastFile(userMsg);
-        } else {
+        }else {
             if (messageInfo.isBinary) {
                 userMsg.binaryMessage =  messageInfo.binaryData;
                 questProcessor.pushBroadcastMessage(userMsg);
             }
-            else
+            else {
+                userMsg.stringMessage = messageInfo.message;
                 questProcessor.pushBroadcastMessage(userMsg);
+            }
         }
         return null;
     }

@@ -1,6 +1,9 @@
 package com.rtmsdk;
 
+//语音识别语种
 public enum TranscribeLang {
+    NONE(""),   //空
+    AR_EG("ar-EG"),
     AR_SA("ar-SA"),
     AR_AE("ar-AE"),
     AR_KW("ar-KW"),

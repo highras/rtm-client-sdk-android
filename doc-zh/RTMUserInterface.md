@@ -1,20 +1,32 @@
-package com.rtmsdk;
+~~~ java
 
-import org.json.JSONObject;
+   //重连开始接口 每次重连都会判断reloginWillStart 返回值 若返回false则中断重连
+    //reloginWillStart 参数说明 uid-用户id  answer本次重连的结果  reloginCount重连次数
+    public interface  IReloginStart{
+        boolean reloginWillStart(long uid, RTMAnswer answer, int reloginCount);
+    }
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+    //重连完成
+    public interface  IReloginCompleted{
+        void   reloginCompleted(long uid, boolean successfulm, RTMAnswer answer, int reloginCount);
+    }
+
+    //返回空结果的回调接口
+    public interface IRTMEmptyCallback {
+        void onResult(RTMAnswer answer);
+    }
+
+    //泛型接口 带有一个返回值的回调函数
+    public interface IRTMCallback<T> {
+        void onResult(T t, RTMAnswer answer);
+    }
+
+    interface DoubleStringCallback{
+        void onResult(String str1, String str2, int errorCode);
+    }
+    
 
 public class RTMStruct {
-
-    public static class RTMAudioStruct {
-        public  int duration; //语音时长
-        public String lang; //语种
-        public byte audioData[];// 语音内容
-        public File file;//语音文件路径
-    }
 
     public enum TranslateType {
         Chat,
@@ -94,49 +106,6 @@ public class RTMStruct {
         public long modifiedTime;   //服务器处理返回时间
         public FileStruct fileInfo; //文件结构信息(语音的信息也存在这里)
         public TranslatedInfo translatedInfo = null; //聊天信息结构(push)
-
-        public String getInfo()
-        {
-            String info ="";
-            StringBuilder kk = new StringBuilder();
-            JSONObject all = new JSONObject();
-            JSONObject file = new JSONObject();
-            JSONObject trans = new JSONObject();
-            try {
-
-                all.put("fromUid", fromUid);
-                all.put("toId", toId);
-                all.put("messageType", messageType);
-                all.put("messageId", messageId);
-                all.put("stringMessage", stringMessage);
-                all.put("binaryMessage", binaryMessage==null?0:binaryMessage.length);
-                all.put("attrs", attrs);
-                all.put("modifiedTime", modifiedTime);
-
-                if (fileInfo!=null) {
-                    file.put("url", fileInfo.url);
-                    file.put("duration", fileInfo.duration);
-                    file.put("fileSize", fileInfo.fileSize);
-                    file.put("lang", fileInfo.lang);
-                    file.put("surl", fileInfo.surl);
-                    file.put("isrtmaudio", fileInfo.isRTMaudio);
-                    all.put("fileInfo", file);
-                }
-                if (translatedInfo != null) {
-                    trans.put("source", translatedInfo.source);
-                    trans.put("target", translatedInfo.target);
-                    trans.put("sourceText", translatedInfo.sourceText);
-                    trans.put("targetText", translatedInfo.targetText);
-                    all.put("transInfo", trans);
-                }
-
-            info = all.toString(10);
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-            return info;
-        }
     }
 
     public static class HistoryMessage extends RTMMessage //历史消息结构
@@ -153,36 +122,6 @@ public class RTMStruct {
         public String attrs;    //消息的附加属性信息(客户端自定义)
         public long modifiedTime;   //服务器应答时间
         public FileStruct fileInfo; //文件类型结构 messageType为FileMessageType的都存在这里
-
-        public String getInfo()
-        {
-            String info ="";
-            JSONObject all = new JSONObject();
-            JSONObject file = new JSONObject();
-            try {
-
-                all.put("cusorId", cusorId);
-                all.put("messageType", messageType);
-                all.put("stringMessage", stringMessage);
-                all.put("binaryMessage", binaryMessage==null?0:binaryMessage.length);
-                all.put("attrs", attrs);
-                all.put("modifiedTime", modifiedTime);
-
-                if (fileInfo!=null) {
-                    file.put("url", fileInfo.url);
-                    file.put("duration", fileInfo.duration);
-                    file.put("fileSize", fileInfo.fileSize);
-                    file.put("lang", fileInfo.lang);
-                    file.put("surl", fileInfo.surl);
-                    all.put("fileInfo", file);
-                }
-                info = all.toString(10);
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-            return info;
-        }
     }
 
     public static class TranslatedInfo extends RTMAnswer//聊天消息结构
@@ -251,3 +190,5 @@ public class RTMStruct {
         public boolean isRTMaudio = false; //是否是rtm语音消息
     }
 }
+
+~~~

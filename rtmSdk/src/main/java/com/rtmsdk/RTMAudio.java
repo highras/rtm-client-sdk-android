@@ -6,10 +6,12 @@ import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 
 import com.fpnn.sdk.proto.MessagePayloadPacker;
 import com.livedata.audioConvert.AudioConvert;
+import com.rtmsdk.RTMStruct.RTMAudioStruct;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,71 +20,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.TreeMap;
-
-class RTMAudioHeader {
-    private byte version = 1;
-    private ContainerType containerType = ContainerType.CodecInherent;
-    private CodecType codecType = CodecType.AmrWb;
-    private Map<String, Object> infoData = new TreeMap<>();
-    private byte[] headerArray;
-
-    public enum ContainerType {
-        CodecInherent(0);
-        private int value;
-
-        ContainerType(int value) {
-            this.value = value;
-        }
-    }
-
-    public enum CodecType {
-        AmrWb(1),
-        AmrNb(2);
-        private int value;
-
-        CodecType(int value) {
-            this.value = value;
-        }
-    }
-
-    public RTMAudioHeader(byte version, ContainerType containerType, CodecType codecType, String lang, int duration, int sampleRate) {
-        this.version = version;
-        this.containerType = containerType;
-        this.codecType = codecType;
-
-        infoData.put("lang", lang);
-        infoData.put("dur", duration);
-        infoData.put("srate", sampleRate);
-    }
-
-    public RTMAudioHeader(String lang, int duration, int sampleRate) {
-        infoData.put("lang", lang);
-        infoData.put("dur", duration);
-        infoData.put("srate", sampleRate);
-    }
-
-    public byte[] headerArray() throws IOException {
-        MessagePayloadPacker packData = new MessagePayloadPacker();
-        packData.pack(infoData);
-        byte[] dataArray = packData.toByteArray();
-        int mapLength = dataArray.length;
-        byte[] infoDataLength = RTMUtils.intToByteArray(mapLength);
-
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-        os.write(version);    //语音数据结构版本
-        os.write((byte) containerType.value);     //音频数据容器格式枚举值
-        os.write((byte) codecType.value);        //编解码器枚举值
-        os.write(1);    //附加信息条数
-
-        os.write(infoDataLength);   //附加信息长度 msgpack后
-        os.write(dataArray);        //附加信息内容 msgpack后
-
-        return os.toByteArray();
-    }
-}
 
 class AmrBroad implements Runnable {
     private Thread mDecodeThread;
@@ -150,7 +87,12 @@ class AmrBroad implements Runnable {
 
 public class RTMAudio {
     private static RTMAudio instance = null;
-
+    private Handler handler=new Handler();
+    private Runnable mUpdateMicStatusTimer = new Runnable() {
+        public void run() {
+            updateMicStatus();
+        }
+    };
     private IAudioAction audioAction = null;
     private TranscribeLang lang = TranscribeLang.EN_US;
     //    private AudioTrack mPlayer;
@@ -228,13 +170,15 @@ public class RTMAudio {
         void broadAudio();
 
         void broadFinish();
+
+        void listenVolume(double db);//录音分贝的回调
     }
 
     /**
      *
      * @param file 录音文件默认存储的地址
-     * @param lang 语言见
-     * @param audioAction 用户自定义的开始 和录音结束的回调
+     * @param lang 语言
+     * @param audioAction 用户自定义回调
      */
     public void init(File file, TranscribeLang lang, IAudioAction audioAction) {
         this.audioAction = audioAction;
@@ -242,7 +186,6 @@ public class RTMAudio {
 
         recordFile = file;
     }
-
 
     public void setLang(TranscribeLang lang){
         this.lang = lang;
@@ -252,11 +195,15 @@ public class RTMAudio {
         return lang.getName();
     }
 
+    public TranscribeLang getInitLang(){
+        return lang;
+    }
+
     private int getAudioTime(File file) {
         int length;
         MediaPlayer tmp = new MediaPlayer();
         try {
-            tmp.setDataSource(recordFile.getPath());
+            tmp.setDataSource(file.getPath());
             tmp.prepare();
             length = tmp.getDuration();
         } catch (IOException e) {
@@ -268,28 +215,43 @@ public class RTMAudio {
         return length;
     }
 
-    public byte[] genAudioData(){
-        return genAudioData(recordFile);
+
+    public RTMStruct.RTMAudioStruct getAudioInfo() {
+        return getAudioInfo(recordFile);
     }
 
-    public byte[] genAudioData(File file) {
+    public boolean checkAudio(byte[] data)
+    {
+        if (data ==null)
+            return false;
+        byte[] amrHeader = "#!AMR-WB\n".getBytes();
+        byte[] result = new byte[amrHeader.length];
+        System.arraycopy(data ,0,result,0,amrHeader.length);
+        if(!Arrays.equals(result,amrHeader))
+            return false;
+        return  true;
+    }
+
+    public RTMStruct.RTMAudioStruct getAudioInfo(File file) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        try{
-            byte[] audio = fileToByteArray(file);
-            if (audio == null)
-                return null;
-            final int audioDur = getAudioTime(file);
+        RTMAudioStruct tt = new RTMAudioStruct();
+        byte[] audio = fileToByteArray(file);
+        if (audio == null)
+            return null;
+        byte[] amrHeader = "#!AMR-WB\n".getBytes();
+        byte[] result = new byte[amrHeader.length];
+        System.arraycopy(audio ,0,result,0,amrHeader.length);
+        if(!Arrays.equals(result,amrHeader))
+            return null;
 
-            RTMAudioHeader tt = new RTMAudioHeader(lang.getName(), audioDur, minSampleRate);
-            byte[] header = tt.headerArray();
-
-            os.write(header);        //附加信息内容 msgpack后
-            os.write(audio);      //语音内容
-        }
-        catch (IOException ex){
-            Log.e("rtmaduio","genAudioData error " + ex.getMessage());
-        }
-        return os.toByteArray();
+        int audioDur = getAudioTime(file);
+        if (audioDur == 0)
+            return null;
+        tt.file = file;
+        tt.audioData = audio;
+        tt.duration = audioDur;
+        tt.lang = lang.getName();
+        return tt;
     }
 
     private byte[] fileToByteArray(File file) {
@@ -313,24 +275,22 @@ public class RTMAudio {
         return data;
     }
 
-    static byte[] unpackAudioData(byte[] audioDta) {
-        if (audioDta == null)
-            return null;
-//        byte[] data = Arrays.copyOfRange(audioDta, 3, audioDta.length);//刨除前3字节
-        int pos = 4;
-
-        ByteArrayInputStream ss = new ByteArrayInputStream(audioDta);
-
-        int extNum = audioDta[3];
-        for (int i = 0; i < extNum; i++) {
-            byte[] extraLength = Arrays.copyOfRange(audioDta, pos, pos + 4);//4个字节附加内容长度
-            pos += 4;
-            int len = RTMUtils.byteArrayToInt(extraLength);
-            byte[] extraContent = Arrays.copyOfRange(audioDta, pos, pos + len);//附加内容
-            pos += len;
+    private void updateMicStatus() {
+        if (mRecorder != null) {
+            double ratio = (double)mRecorder.getMaxAmplitude() /1;
+            double db = 0;// 分贝
+            if (ratio > 1)
+                db = 20 * Math.log10(ratio);
+            if (audioAction !=null){
+                audioAction.listenVolume(db);
+            }
+            handler.postDelayed(mUpdateMicStatusTimer, 500);
         }
+    }
 
-        return Arrays.copyOfRange(audioDta, pos, audioDta.length);//音频数据
+    public void startRecord(TranscribeLang lang) {
+        this.lang = lang;
+        startRecord();
     }
 
     public void startRecord() {
@@ -371,12 +331,13 @@ public class RTMAudio {
             mRecorder.start();
             if (audioAction != null)
                 audioAction.startRecord();
+            updateMicStatus();
         } catch (Exception e) {
             Log.e("rtmaudio","startRecord error " + e.getMessage());
         }
     }
 
-    public File stopRecord() {
+    public RTMAudioStruct stopRecord() {
         if (mRecorder == null)
             return null;
         try {
@@ -389,7 +350,8 @@ public class RTMAudio {
         mRecorder = null;
         if (audioAction != null)
             audioAction.stopRecord();
-        return recordFile;
+
+        return getAudioInfo();
 //        audioDur = System.currentTimeMillis() - audioDur;
     }
 

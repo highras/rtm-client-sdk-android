@@ -2,13 +2,16 @@
 ~~~c++
 以下接口统一统参数说明
     /**
+     * mtype MUST large than 50, else this interface will return false or erroeCode-RTM_EC_INVALID_MTYPE.
+     */
+    /**
      *发送p2p消息(sync)
      * @param uid/groupId/roomId  目标用户id/群组id/房间id(NoNull)
      * @param mtype     消息类型
      * @param message   消息内容(NoNull)
      * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
-     * @return          服务器返回时间
+     * @return          ModifyTimeStruct结构
      */
 发送p2p消息   
     public ModifyTimeStruct sendMessage(long uid, byte mtype, String message, String attrs, int timeout)
@@ -19,7 +22,7 @@
 发送房间消息
     public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, String message, String attrs, int timeout)
 
-----二进制消息-----
+
 发送p2p二进制消息
     public ModifyTimeStruct sendMessage(long uid, byte mtype, byte[] message, String attrs, int timeout)
 
@@ -38,7 +41,7 @@
      * @param count     显示条目数 最多一次20
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
+     * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
      * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
@@ -58,12 +61,13 @@
      * @param count     显示条目数 最多一次20
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
+     * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
      * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
     public HistoryMessageResult getBroadcastHistoryMessage( boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout)
+
 
 以下接口统一参数说明
     /*获取单条聊天消息 sync
@@ -106,7 +110,7 @@
 以下接口统一统参数说明(mtype MUST large than 50, else this interface will return false or erroeCode-RTM_EC_INVALID_MTYPE)
     /**
      *发送p2p消息(async)
-     * @param callback  IRTMCallback<Long>接口回调(NoNull)
+     * @param callback  IRTMDoubleValueCallback<Long,Long>接口回调(NoNull)
      * @param uid/groupId/roomId  目标用户id/群组id/房间id(NoNull)
      * @param mtype     消息类型
      * @param message   p2p消息(NoNull)
@@ -115,22 +119,20 @@
      */
      
 发送p2p消息
-    public void sendMessage(IRTMCallback<Long> callback, long uid, byte mtype, String message, String attrs, int timeout) 
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, String message, String attrs, int timeout) 
      
 发送群组消息
-    public void sendGroupMessage(IRTMCallback<Long> callback, long groupId, byte mtype, String message, String attrs, int timeout) 
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message, String attrs, int timeout) 
 
 发送房间消息
-    public void sendRoomMessage(IRTMCallback<Long> callback, long roomId, byte mtype, String message, String attrs, int timeout) 
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message, String attrs, int timeout) 
      
-----二进制消息----
-    public void sendMessage(IRTMCallback<Long> callback, long uid, byte mtype, byte[] message, String attrs, int timeout) 
+    //binary message
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, byte[] message, String attrs, int timeout) 
 
-发送群组二进制消息
-    public void sendGroupMessage(IRTMCallback<Long> callback, long groupId, byte mtype, byte[] message, String attrs, int timeout) 
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] message, String attrs, int timeout) 
 
-发送房间二进制消息
-    public void sendRoomMessage(IRTMCallback<Long> callback, long roomId, byte mtype, byte[] message, String attrs, int timeout) 
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] message, String attrs, int timeout) 
 
 以下接口统一参数说明
     /**
@@ -140,7 +142,7 @@
      * @param count     显示条目数 最多一次20
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
+     * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
      * @param timeout   超时时间(秒)
      */
@@ -161,7 +163,7 @@
      * @param count     显示条目数 最多一次20
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
+     * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
      * @param timeout   超时时间(秒)
      */

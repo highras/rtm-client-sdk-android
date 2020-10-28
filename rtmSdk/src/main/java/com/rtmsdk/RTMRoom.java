@@ -8,6 +8,7 @@ import com.rtmsdk.UserInterface.*;
 import com.rtmsdk.RTMStruct.*;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class RTMRoom extends RTMFriend {
     //重载
@@ -55,13 +56,22 @@ public class RTMRoom extends RTMFriend {
         getRoomInfo(callback,roomId, 0);
     }
 
-    public DataInfo getRoomPublicInfo(long roomId){
+    public GroupInfoStruct getRoomPublicInfo(long roomId){
         return getRoomPublicInfo(roomId, 0);
     }
 
     public void getRoomPublicInfo(IRTMCallback<String>  callback,long roomId){
         getRoomPublicInfo(callback,roomId, 0);
     }
+
+    public void getRoomsOpeninfo(IRTMCallback<Map<String, String>>  callback, HashSet<Long> rids) {
+        getRoomsOpeninfo(callback, rids, 0);
+    }
+
+    public PublicInfo getRoomsOpeninfo(HashSet<Long> uids) {
+        return getRoomsOpeninfo(uids, 0);
+    }
+
     //重载end
 
 
@@ -260,19 +270,62 @@ public class RTMRoom extends RTMFriend {
      * 获取房间的公开信息 sync
      * @param roomId   房间id(NoNull)
      * @param timeout   超时时间（秒）
-     * @return  房间公开信息
+     * @return  GroupInfoStruct
      */
-    public DataInfo getRoomPublicInfo(long roomId, int timeout){
+    public GroupInfoStruct getRoomPublicInfo(long roomId, int timeout){
         Quest quest = new Quest("getroomopeninfo");
         quest.param("rid", roomId);
 
         Answer answer = sendQuest(quest, timeout);
         RTMAnswer result = genRTMAnswer(answer);
-        DataInfo ret = new DataInfo();
+        GroupInfoStruct ret = new GroupInfoStruct();
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.info = answer.wantString("oinfo");
+            ret.publicInfo = answer.wantString("oinfo");
         return  ret;
+    }
+
+    /**
+     * 获取其他用户的公开信息，每次最多获取100人
+     * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
+     * @param rids     房间id集合
+     * @param timeout  超时时间(秒)
+     */
+    public void getRoomsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> rids, int timeout) {
+        Quest quest = new Quest("getroomsopeninfo");
+        quest.param("rids",rids);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                Map<String, String> attributes = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    attributes = RTMUtils.wantStringMap(answer, "info");
+                }
+                callback.onResult(attributes, genRTMAnswer(answer,errorCode));
+            }
+        }, timeout);
+    }
+
+    /**
+     * 获取群组的公开信息，每次最多获取100人
+     * @param rids        房间id集合
+     * @param timeout     超时时间(秒)
+     *return              PublicInfo 结构
+     */
+    public PublicInfo getRoomsOpeninfo(HashSet<Long> rids, int timeout) {
+        Quest quest = new Quest("getroomsopeninfo");
+        quest.param("rids", rids);
+
+        Answer answer = sendQuest(quest, timeout);
+        RTMAnswer result = genRTMAnswer(answer);
+        PublicInfo ret = new PublicInfo();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
+            ret.publicInfos = RTMUtils.wantStringMap(answer, "info");
+
+        return ret;
     }
 }

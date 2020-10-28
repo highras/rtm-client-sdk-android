@@ -1,8 +1,4 @@
-package com.rtmsdk;
-
-import com.rtmsdk.RTMStruct.RTMMessage;
-public class RTMPushProcessor
-{
+~~~ c++
     //链接断开 (如果设置重连 会自动连接)
     public void sessionClosed(int ClosedByErrorCode){};
 
@@ -37,3 +33,4 @@ public class RTMPushProcessor
     public void pushRoomFile(RTMMessage msg){};
     public void pushBroadcastFile(RTMMessage msg){};
 }
+~~~

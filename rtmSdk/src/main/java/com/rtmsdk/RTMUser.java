@@ -7,7 +7,7 @@ import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.RTMStruct.GroupInfoStruct;
 import com.rtmsdk.RTMStruct.MembersStruct;
 import com.rtmsdk.RTMStruct.RTMAnswer;
-import com.rtmsdk.RTMStruct.UserPublicInfo;
+import com.rtmsdk.RTMStruct.PublicInfo;
 import com.rtmsdk.UserInterface.IRTMCallback;
 import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 
@@ -45,10 +45,9 @@ public class RTMUser extends RTMData {
         getUserPublicInfo(callback, uids, 0);
     }
 
-    public UserPublicInfo getUserPublicInfo(HashSet<Long> uids) {
+    public PublicInfo getUserPublicInfo(HashSet<Long> uids) {
         return getUserPublicInfo(uids, 0);
     }
-
     //重载end
 
     /**
@@ -196,17 +195,17 @@ public class RTMUser extends RTMData {
      * @param timeout     超时时间(秒)
      *return 返回用户id 公开信息map(NoNull) 用户id会被转变成string返回
      */
-    public UserPublicInfo getUserPublicInfo(HashSet<Long> uids, int timeout) {
+    public PublicInfo getUserPublicInfo(HashSet<Long> uids, int timeout) {
         Quest quest = new Quest("getuseropeninfo");
         quest.param("uids", uids);
 
         Answer answer = sendQuest(quest, timeout);
         RTMAnswer result = genRTMAnswer(answer);
-        UserPublicInfo ret = new UserPublicInfo();
+        PublicInfo ret = new PublicInfo();
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.userInfo = RTMUtils.wantStringMap(answer, "uids");
+            ret.publicInfos = RTMUtils.wantStringMap(answer, "info");
 
         return ret;
     }

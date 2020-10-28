@@ -1,5 +1,5 @@
 ~~~ java
---群组相关接口--
+--Group Interface--
     /**
      * 添加群组用户 async
      * @param callback  IRTMEmptyCallback回调(NoNull)
@@ -7,7 +7,7 @@
      * @param uids      用户id集合(NoNull)
      * @param timeout   超时时间（秒）
      * */
-    public void addGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids, int timeout) {
+    public void addGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids, int timeout) 
 
     /**
      * 添加群组用户  sync
@@ -16,8 +16,26 @@
      * @param timeout   超时时间（秒）
      * @return
      * */
-    public RTMAnswer addGroupMembers(long groupId, HashSet<Long> uids, int timeout) {
+    public RTMAnswer addGroupMembers(long groupId, HashSet<Long> uids, int timeout)
 
+
+    /**
+     * 获取其他用户的公开信息，每次最多获取100人
+     * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
+     * @param gids     房间id集合
+     * @param timeout  超时时间(秒)
+     */
+    public void getGroupsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> gids, int timeout) 
+    
+        /**
+     * 获取群组的公开信息，每次最多获取100人
+     * @param gids        群组id集合
+     * @param timeout     超时时间(秒)
+     *return              PublicInfo 结构
+     */
+    public PublicInfo getGroupsOpeninfo(HashSet<Long> gids, int timeout) 
+    
+    
     /**
      * 删除群组用户   async
      * @param callback  IRTMEmptyCallback回调(NoNull)
@@ -25,7 +43,7 @@
      * @param uids      用户id集合(NoNull)
      * @param timeout   超时时间（秒）
      * */
-    public void deleteGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids, int timeout) {
+    public void deleteGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids, int timeout) 
   
     /**
      * 删除群组用户   sync
@@ -41,7 +59,7 @@
      * @param groupId   群组id(NoNull)
      * @param timeout   超时时间（秒）
      * */
-    public void getGroupMembers(final IRTMCallback<HashSet<Long>> callback, long groupId, int timeout) {
+    public void getGroupMembers(final IRTMCallback<HashSet<Long>> callback, long groupId, int timeout)
 
     /**
      * 获取群组用户   sync
@@ -57,7 +75,7 @@
      * @param callback  IRTMCallback回调(NoNull)
      * @param timeout   超时时间（秒）
      * */
-    public void getUserGroups(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getUserGroups(final IRTMCallback<HashSet<Long>> callback, int timeout)
 
 
     /**
@@ -75,7 +93,7 @@
      * @param privateInfo   群组 私有信息
      * @param timeout   超时时间（秒）
      */
-    public void setGroupInfo(IRTMEmptyCallback callback, long groupId, String publicInfo, String privateInfo, int timeout) {
+    public void setGroupInfo(IRTMEmptyCallback callback, long groupId, String publicInfo, String privateInfo, int timeout)
     
     
     /**
@@ -93,25 +111,15 @@
      * @param groupId   群组id(NoNull)
      * @param timeout   超时时间（秒）
      */
-    public void getGroupInfo(final IRTMCallback<GroupInfoStruct> callback, final long groupId, int timeout) {
+    public void getGroupInfo(final IRTMCallback<GroupInfoStruct> callback, final long groupId, int timeout)
 
     /**
-     * 获取群组的公开信息或者私有信息 sync
-     * @param publicInfo    群组公开信息
-     * @param privateInfo    群组私有信息
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
-     * @return  errcode错误码(如果为RTMErrorCode.FPNN_EC_OK为成功)
-     */
-    public int getGroupInfo(StringBuilder publicInfo, StringBuilder privateInfo, long groupId, int timeout);
-
-    /**
-     * 获取群组的公开信息或者私有信息 sync
+     * 获取群组的公开信息和私有信息 sync
      * @param groupId   群组id(NoNull)
      * @param timeout   超时时间（秒）
      * @return  GroupInfoStruct结构
      */
-    public GroupInfoStruct getGroupInfo(long groupId, int timeout){
+    public GroupInfoStruct getGroupInfo(long groupId, int timeout)
 
     /**
      * 获取群组的公开信息 async
@@ -119,26 +127,25 @@
      * @param groupId   群组id(NoNull)
      * @param timeout   超时时间（秒）
      */
-    public void getGroupPublicInfo(final IRTMCallback<String>  callback, long groupId, int timeout) {
+    public void getGroupPublicInfo(final IRTMCallback<String>  callback, long groupId, int timeout)
     
     
     /**
      * 获取群组的公开信息 sync
      * @param groupId   群组id(NoNull)
      * @param timeout   超时时间（秒）
-     * @return  群组公开信息
+     * @return  GroupInfoStruct结构
      */
-    public DataInfo getGroupPublicInfo(long groupId, int timeout){
-
-
-    ----房间相关接口----
+    public GroupInfoStruct getGroupPublicInfo(long groupId, int timeout){
+        
+        //ROOM interface
     /**
      * 进入房间 async
      * @param callback IRTMEmptyCallback回调(NoNull)
      * @param roomId   房间id(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void enterRoom(final IRTMEmptyCallback callback, long roomId, int timeout) {
+    public void enterRoom(final IRTMEmptyCallback callback, long roomId, int timeout)
 
     /**
      * 进入房间 sync
@@ -153,21 +160,21 @@
      * @param roomId   房间id(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void leaveRoom(IRTMEmptyCallback callback, long roomId, int timeout) {
+    public void leaveRoom(IRTMEmptyCallback callback, long roomId, int timeout)
 
     /**
      * 离开房间 sync
      * @param roomId  房间id(NoNull)
      * @param timeout 超时时间(秒)
      */
-    public RTMAnswer leaveRoom(long roomId, int timeout) {
+    public RTMAnswer leaveRoom(long roomId, int timeout)
 
     /**
      * 获取用户所在的房间   async
      * @param callback IRTMCallback回调(NoNull)
      * @param timeout  超时时间（秒）
      */
-    public void getUserRooms(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getUserRooms(final IRTMCallback<HashSet<Long>> callback, int timeout)
 
     /**
      * 获取用户所在的房间   sync
@@ -184,7 +191,7 @@
      * @param privateInfo   房间 私有信息
      * @param timeout   超时时间（秒）
      */
-    public void setRoomInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo, int timeout) {
+    public void setRoomInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo, int timeout)
 
     /**
      * 设置房间的公开信息或者私有信息 sync
@@ -201,7 +208,7 @@
      * @param roomId   房间id(NoNull)
      * @param timeout   超时时间（秒）
      */
-    public void getRoomInfo(final IRTMCallback<GroupInfoStruct> callback, final long roomId, int timeout) {
+    public void getRoomInfo(final IRTMCallback<GroupInfoStruct> callback, final long roomId, int timeout)
 
     /**
      * 获取房间的公开信息或者私有信息 sync
@@ -211,31 +218,47 @@
      */
     public GroupInfoStruct getRoomInfo(long roomId, int timeout){
 
+            /**
+     * 获取其他用户的公开信息，每次最多获取100人
+     * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
+     * @param rids     房间id集合
+     * @param timeout  超时时间(秒)
+     */
+    public void getRoomsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> rids, int timeout) 
+    
+      /**
+     * 获取群组的公开信息，每次最多获取100人
+     * @param rids        房间id集合
+     * @param timeout     超时时间(秒)
+     *return              PublicInfo 结构
+     */
+    public PublicInfo getRoomsOpeninfo(HashSet<Long> rids, int timeout) 
+    
     /**
      * 获取房间的公开信息 async
      * @param callback  IRTMCallback回调(NoNull)
      * @param roomId   房间id(NoNull)
      * @param timeout   超时时间（秒）
      */
-    public void getRoomPublicInfo(final IRTMCallback<String>  callback, long roomId, int timeout) {
+    public void getRoomPublicInfo(final IRTMCallback<String>  callback, long roomId, int timeout)
     
     /**
      * 获取房间的公开信息 sync
      * @param roomId   房间id(NoNull)
      * @param timeout   超时时间（秒）
-     * @return  房间公开信息
+     * @return  GroupInfoStruct结构
      */
-    public DataInfo getRoomPublicInfo(long roomId, int timeout){
+    public GroupInfoStruct getRoomPublicInfo(long roomId, int timeout){
     
     
-    --好友相关接口---
+    --Friend Interface---
     /**
      * 添加好友 async
      * @param callback IRTMEmptyCallback回调(NoNull)
      * @param uids   用户id集合(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void addFriends(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void addFriends(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout)
 
     /**
      * 添加好友 sync
@@ -250,7 +273,7 @@
      * @param uids   用户id集合(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void deleteFriends(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void deleteFriends(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout)
 
     /**
      * 删除好友 sync
@@ -264,7 +287,7 @@
      * @param callback MembersCallback回调(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void getFriends(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getFriends(final IRTMCallback<HashSet<Long>> callback, int timeout)
 
     /**
      * 查询自己好友 sync
@@ -279,7 +302,7 @@
      * @param uids   用户id集合(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void addBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void addBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout)
 
     /**
      * 添加黑名单 sync
@@ -294,7 +317,7 @@
      * @param uids   用户id集合(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void delBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void delBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout)
 
     /**
      * 删除黑名单用户 sync
@@ -308,7 +331,7 @@
      * @param callback MembersCallback回调(NoNull)
      * @param timeout  超时时间(秒)
      */
-    public void getBlacklist(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getBlacklist(final IRTMCallback<HashSet<Long>> callback, int timeout)
 
     /**
      * 查询黑名单 sync

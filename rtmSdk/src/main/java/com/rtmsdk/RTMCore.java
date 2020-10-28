@@ -7,6 +7,7 @@ import android.net.NetworkInfo;
 
 import com.fpnn.sdk.ConnectionWillCloseCallback;
 import com.fpnn.sdk.ErrorCode;
+import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;
@@ -56,7 +57,7 @@ class RTMCore  implements INetEvent{
     private byte[] encrptyData;
     private boolean autoConnect;
     private Context context;
-    private CloseType closedCase = CloseType.None;
+    private static CloseType closedCase = CloseType.None;
     private int lastNetType = NetUtils.NETWORK_NOTINIT;
     private AtomicBoolean isRelogin = new AtomicBoolean(false);
 
@@ -106,7 +107,7 @@ class RTMCore  implements INetEvent{
     void reloginEvent(final int count){
         int num = count;
         Map<String, String> kk = loginAttrs;
-        RTMStruct.RTMAnswer loginAnswer = login(token, lang, kk, loginAddresType);
+        RTMStruct.RTMAnswer loginAnswer = login(token, TranslateLang.getByName(lang), kk, loginAddresType);
         if(loginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
             isRelogin.set(false);
             reloginCompletedCallback.reloginCompleted(uid, true, loginAnswer, num++);
@@ -266,19 +267,19 @@ class RTMCore  implements INetEvent{
     }
 
 
-    RTMStruct.RTMAnswer genRTMAnswer(Answer answer)
-    {
-        return genRTMAnswer(answer, 0);
+    RTMStruct.RTMAnswer genRTMAnswer(Answer answer) {
+        if (answer == null)
+            return genRTMAnswer(answer, ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
+        return new RTMStruct.RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
     }
 
 
-    RTMStruct.RTMAnswer genRTMAnswer(Answer answer,int errcode)
-    {
-        if (answer == null) {
+    RTMStruct.RTMAnswer genRTMAnswer(Answer answer,int errcode) {
+        if (answer == null && errcode !=0) {
             if (errcode == ErrorCode.FPNN_EC_CORE_TIMEOUT.value())
                 return new RTMStruct.RTMAnswer(errcode, "FPNN_EC_CORE_TIMEOUT");
             else
-                return new RTMStruct.RTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(),"invalid conection");
+                return new RTMStruct.RTMAnswer(errcode,"fpnn  error");
         }
         else
             return new RTMStruct.RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
@@ -305,6 +306,11 @@ class RTMCore  implements INetEvent{
             Thread.currentThread().interrupt();
         }
         return answer;
+    }
+
+    void setCloseType(CloseType type)
+    {
+        closedCase = type;
     }
 
     void sayBye(final IRTMEmptyCallback callback) {
@@ -386,6 +392,8 @@ class RTMCore  implements INetEvent{
 
     RTMStruct.RTMAnswer sendQuestEmptyResult(Quest quest, int timeout){
         Answer ret =  sendQuest(quest, timeout);
+        if (ret == null)
+            return genRTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(),"invalid connection");
         return genRTMAnswer(ret);
     }
 
@@ -462,7 +470,7 @@ class RTMCore  implements INetEvent{
     }
 
     //-------------[ Auth(Login) utilies functions ]--------------------------//
-    private void ConfigRtmGateClient(TCPClient client) {
+    private void ConfigRtmGateClient(final TCPClient client) {
         client.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
         client.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
 
@@ -490,6 +498,8 @@ class RTMCore  implements INetEvent{
                         close();
                     else
                     {
+                        if (closedCase == CloseType.ByServer)
+                            return;
                         if (isRelogin.get() == true){
                             return;
                         }
@@ -593,12 +603,12 @@ class RTMCore  implements INetEvent{
                 } else if (!answer.wantBoolean("ok")) {
                     if (retry) {
                         closeStatus();
-                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"auth failed token maybe expired"));
+                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"retry failed auth failed token maybe expired"));
                     } else {
                         String endpoint = answer.getString("gate");
                         if (endpoint.equals("")) {
                             closeStatus();
-                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNAUTHORIZED.value()));
+                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"auth failed token maybe expired"));
                         } else {
                             rtmGate = TCPClient.create(endpoint);
                             auth(callback, token, attr, true);
@@ -619,7 +629,7 @@ class RTMCore  implements INetEvent{
         }, 0);
     }
 
-    void login(final IRTMEmptyCallback callback, final String token, final String lang, final String addressType, final Map<String, String> attr) {
+    void login(final IRTMEmptyCallback callback, final String token, final TranslateLang lang, final String addressType, final Map<String, String> attr) {
         synchronized (interLocker) {
             if (status == ClientStatus.Connected || status == ClientStatus.Connecting) {
                 new Thread(new Runnable() {
@@ -633,7 +643,10 @@ class RTMCore  implements INetEvent{
             status = ClientStatus.Connecting;
         }
         this.token =  token;
-        this.lang = lang;
+        if (lang == null)
+            this.lang = "";
+        else
+            this.lang = lang.getName();
         this.loginAddresType = addressType;
         this.loginAttrs = attr;
         closedCase = CloseType.None;
@@ -670,8 +683,11 @@ class RTMCore  implements INetEvent{
         }
     }
 
-    RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
-        this.lang = lang.equals("") ? Locale.getDefault().getLanguage() : lang;
+    RTMStruct.RTMAnswer login(String token, TranslateLang lang, Map<String, String> attr, String addressType) {
+        if (lang == null)
+            this.lang = "";
+        else
+            this.lang = lang.getName();
         this.token =  token;
         this.loginAddresType = addressType;
         this.loginAttrs = attr;

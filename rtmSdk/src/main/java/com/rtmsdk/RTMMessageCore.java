@@ -112,8 +112,17 @@ class RTMMessageCore extends RTMCore {
 
     private HistoryMessageResult buildHistoryMessageResult(Answer answer) {
         HistoryMessageResult result = new HistoryMessageResult();
-        if(answer == null)
+        if(answer == null){
+            result.errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
+            result.errorMsg = "invalid connection";
             return result;
+        }
+        result.errorCode = answer.getErrorCode();
+        result.errorMsg = answer.getErrorMessage();
+
+        if (result.errorCode != RTMErrorCode.RTM_EC_OK.value())
+            return result;
+
         result.count = answer.wantInt("num");
         result.lastId = answer.wantLong("lastid");
         result.beginMsec = answer.wantLong("begin");
@@ -132,28 +141,43 @@ class RTMMessageCore extends RTMCore {
             tmp.messageType = (byte)RTMUtils.wantInt(value.get(2));
             tmp.messageId = RTMUtils.wantLong(value.get(3));
             Object obj = value.get(5);
-            if (tmp.messageType == RTMStruct.MessageType.AUDIO) {
-                RTMStruct.AudioInfo audioTmp = new RTMStruct.AudioInfo();
-                try {
-                    JSONObject kk = new JSONObject(String.valueOf(obj));
-                    audioTmp.duration = kk.getInt("du");
-                    audioTmp.sourceLanguage = kk.getString("sl");
-                    audioTmp.recognizedLanguage = kk.getString("rl");
-                    audioTmp.recognizedText = kk.getString("rt");
-                    tmp.audioInfo = audioTmp;
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-            else {
-                if (obj instanceof byte[])
-                    tmp.binaryMessage = (byte [])obj;
-                else
-                    tmp.stringMessage = String.valueOf(obj);
-            }
-
             tmp.attrs = String.valueOf(value.get(6));
             tmp.modifiedTime = RTMUtils.wantLong(value.get(7));
+            try {
+                if (tmp.messageType >= MessageType.IMAGEFILE && tmp.messageType <= MessageType.NORMALFILE) {
+                    String fileinfo = String.valueOf(obj);
+                    FileStruct fileInfo = new FileStruct();
+                    JSONObject filemsg = new JSONObject(fileinfo);
+                    fileInfo.url = filemsg.getString("url");
+                    fileInfo.fileSize = filemsg.getLong("size");
+                    if (filemsg.has("surl"))
+                        fileInfo.surl = filemsg.getString("surl");
+
+                    if (tmp.messageType == MessageType.AUDIOFILE) {
+                        JSONObject tt = new JSONObject(tmp.attrs);
+                        if (tt.has("rtm")){
+                            JSONObject rtmjson = tt.getJSONObject("rtm");
+                            if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                                JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                fileInfo.lang = fileAttrs.getString("lang");
+                                fileInfo.duration = fileAttrs.getInt("duration");
+                                fileInfo.isRTMaudio = true;
+                            }
+                        }
+                    }
+                    tmp.fileInfo = fileInfo;
+                } else {
+                    if (obj instanceof byte[])
+                        tmp.binaryMessage = (byte[]) obj;
+                    else
+                        tmp.stringMessage = String.valueOf(obj);
+                }
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+                continue;
+            }
             result.messages.add(tmp);
         }
         result.count = result.messages.size();
@@ -197,12 +221,16 @@ class RTMMessageCore extends RTMCore {
         return quest;
     }
 
-    private void adjustHistoryMessageResultForP2PMessage(long fromUid, HistoryMessageResult result) {
+    private void adjustHistoryMessageResultForP2PMessage(long toUid, HistoryMessageResult result) {
         for (RTMStruct.HistoryMessage hm : result.messages) {
-            if (hm.fromUid == 1)
+            if (hm.fromUid == 1) {
                 hm.fromUid = getUid();
-            else
-                hm.fromUid = fromUid;
+                hm.toId = toUid;
+            }
+            else {
+                hm.fromUid = toUid;
+                hm.toId = getUid();
+            }
         }
     }
 
@@ -225,33 +253,61 @@ class RTMMessageCore extends RTMCore {
     HistoryMessageResult getHistoryMessage(final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout, MessageCategories type){
         Quest quest = genGetMessageQuest(id, desc, count, beginMsec, endMsec, lastId, mtypes, type);
         Answer answer = sendQuest(quest, timeout);
-        HistoryMessageResult ret = new HistoryMessageResult();
-        if (answer == null){
-            ret.errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
-            ret.errorMsg = "invalid connection";
+        HistoryMessageResult result = buildHistoryMessageResult(answer);
+        if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            if (type == DuplicatedMessageFilter.MessageCategories.P2PMessage)
+                adjustHistoryMessageResultForP2PMessage(id, result);
         }
-        else if (answer.getErrorCode() == ErrorCode.FPNN_EC_OK.value()){
-            ret = buildHistoryMessageResult(answer);
-        }
-        ret.errorCode = answer.getErrorCode();
-        ret.errorMsg = answer.getErrorMessage();
-        return ret;
+        return result;
     }
 
     private SingleMessage buildSingleMessage(Answer answer) {
         SingleMessage message = new SingleMessage();
-        if (answer ==null || answer.getErrorCode() != RTMErrorCode.RTM_EC_OK.value())
-            return message;
-        message.messageId = answer.wantLong("id");
-        message.messageType = (byte) answer.wantInt("mtype");
-        message.attrs = answer.wantString("attrs");
-        message.modifiedTime = answer.wantLong("mtime");
-        Object obj = answer.want("msg");
+        if (answer ==null) {
+            message.errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
+            message.errorMsg = "invalid connection";
+        }
+        else{
+            message.errorCode = answer.getErrorCode();
+            message.errorMsg = answer.getErrorMessage();
+            if (answer.getErrorCode() == ErrorCode.FPNN_EC_OK.value() && answer.getPayload().keySet().size()>0) {
+                message.cusorId = answer.wantLong("id");
+                message.messageType = (byte) answer.wantInt("mtype");
+                message.attrs = answer.wantString("attrs");
+                message.modifiedTime = answer.wantLong("mtime");
+                Object obj = answer.want("msg");
+                if (message.messageType >= MessageType.IMAGEFILE && message.messageType <= MessageType.NORMALFILE) {
+                    FileStruct fileInfo = new FileStruct();
+                    try {
+                        JSONObject kk = new JSONObject(String.valueOf(obj));
+                        fileInfo.url = kk.getString("url");
+                        fileInfo.fileSize = kk.getLong("size");
+                        if (kk.has("surl"))
+                            fileInfo.surl = kk.getString("surl");
 
-        if (obj instanceof byte[])
-            message.binaryMessage = (byte[]) obj;
-        else
-            message.stringMessage = String.valueOf(obj);
+                        if (message.messageType == MessageType.AUDIOFILE) {
+                            JSONObject tt = new JSONObject(message.attrs);
+                            if (tt.has("rtm")){//rtm语音消息
+                                JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                fileInfo.lang = fileAttrs.getString("lang");
+                                fileInfo.duration = fileAttrs.getInt("duration");
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    message.fileInfo = fileInfo;
+                }
+                else{
+                    if (obj instanceof byte[]){
+                        byte[] data = (byte[]) obj;
+                        message.binaryMessage = data;
+                    }
+                    else
+                        message.stringMessage = String.valueOf(obj);
+                }
+            }
+        }
         return message;
     }
 
@@ -281,7 +337,7 @@ class RTMMessageCore extends RTMCore {
         quest.param("type", type);
 
         Answer answer = sendQuest(quest, timeout);
-        RTMAnswer result = genRTMAnswer(answer);
+//        RTMAnswer result = genRTMAnswer(answer);
 
         return buildSingleMessage(answer);
     }

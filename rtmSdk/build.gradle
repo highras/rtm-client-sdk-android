@@ -30,9 +30,11 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(include: ['*.jar','*.aar'], dir: 'libs')
     implementation 'androidx.appcompat:appcompat:1.1.0'
-    api 'com.github.highras:fpnn-android:2.0.2'
+        api 'com.github.highras:fpnn-android:2.0.3'
+//    implementation files('libs/msgpack-core-0.8.17.jar')
+//    api files('libs/fpnnsdk.aar')
 }
 
 apply plugin: 'com.novoda.bintray-release'
@@ -41,7 +43,7 @@ publish {
     userOrg = 'mayajun420'   //bintray组织id或者个人账户名
     groupId = 'com.github.highras' //域名+公司名称 org非盈利 com商业  瞎起还不行 不然报“The relevant organization no longer exist”
     artifactId = 'rtm-android' //repositories下的package name
-    publishVersion = '2.0.3' //版本号
+    publishVersion = '2.0.7' //版本号
     desc = 'android-rtm-sdk' //描述
     website = 'https://github.com/highras/rtm-client-sdk-android/'  //必须填写证明你对项目有过提交或者贡献 不然add to jcenter失败
 }

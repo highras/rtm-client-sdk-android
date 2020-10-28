@@ -8,6 +8,7 @@ import com.rtmsdk.UserInterface.*;
 import com.rtmsdk.RTMStruct.*;
 
 import java.util.HashSet;
+import java.util.Map;
 
 class RTMGroup extends RTMFile {
     //重载
@@ -18,7 +19,7 @@ class RTMGroup extends RTMFile {
     public RTMAnswer addGroupMembers(long groupId, HashSet<Long> uids){
         return addGroupMembers(groupId, uids, 0);
     }
-    
+
     public void deleteGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids) {
         deleteGroupMembers(callback, groupId, uids, 0);
     }
@@ -43,6 +44,14 @@ class RTMGroup extends RTMFile {
         return getUserGroups(0);
     }
 
+    public void getGroupsOpeninfo(IRTMCallback<Map<String, String>>  callback, HashSet<Long> uids) {
+        getGroupsOpeninfo(callback, uids, 0);
+    }
+
+    public PublicInfo getGroupsOpeninfo(HashSet<Long> gids) {
+        return getGroupsOpeninfo(gids, 0);
+    }
+
     public void setGroupInfo(IRTMEmptyCallback callback, long groupId, String publicInfo, String privateInfo) {
         setGroupInfo(callback, groupId, publicInfo, privateInfo, 0);
     }
@@ -63,7 +72,7 @@ class RTMGroup extends RTMFile {
         getGroupPublicInfo(callback, groupId, 0);
     }
 
-    public DataInfo getGroupPublicInfo(long groupId){
+    public GroupInfoStruct getGroupPublicInfo(long groupId){
         return getGroupPublicInfo(groupId, 0);
     }
     //重载end
@@ -162,6 +171,49 @@ class RTMGroup extends RTMFile {
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
             ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+
+        return ret;
+    }
+
+    /**
+     * 获取其他用户的公开信息，每次最多获取100人
+     * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
+     * @param gids     房间id集合
+     * @param timeout  超时时间(秒)
+     */
+    public void getGroupsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> gids, int timeout) {
+        Quest quest = new Quest("getgroupsopeninfo");
+        quest.param("gids",gids);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                Map<String, String> attributes = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    attributes = RTMUtils.wantStringMap(answer, "info");
+                }
+                callback.onResult(attributes, genRTMAnswer(answer,errorCode));
+            }
+        }, timeout);
+    }
+
+    /**
+     * 获取群组的公开信息，每次最多获取100人
+     * @param gids        群组id集合
+     * @param timeout     超时时间(秒)
+     *return              PublicInfo 结构
+     */
+    public PublicInfo getGroupsOpeninfo(HashSet<Long> gids, int timeout) {
+        Quest quest = new Quest("getgroupsopeninfo");
+        quest.param("gids", gids);
+
+        Answer answer = sendQuest(quest, timeout);
+        RTMAnswer result = genRTMAnswer(answer);
+        PublicInfo ret = new PublicInfo();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
+            ret.publicInfos = RTMUtils.wantStringMap(answer, "info");
 
         return ret;
     }
@@ -315,19 +367,19 @@ class RTMGroup extends RTMFile {
      * 获取群组的公开信息 sync
      * @param groupId   群组id(NoNull)
      * @param timeout   超时时间（秒）
-     * @return  群组公开信息
+     * @return      GroupInfoStruct 群组公开信息
      */
-    public DataInfo getGroupPublicInfo(long groupId, int timeout){
+    public GroupInfoStruct getGroupPublicInfo(long groupId, int timeout){
         Quest quest = new Quest("getgroupopeninfo");
         quest.param("gid", groupId);
 
         Answer answer = sendQuest(quest, timeout);
         RTMAnswer result = genRTMAnswer(answer);
-        DataInfo ret = new DataInfo();
+        GroupInfoStruct ret = new GroupInfoStruct();
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.info = answer.wantString("oinfo");
+            ret.publicInfo = answer.wantString("oinfo");
         return ret;
     }
 }

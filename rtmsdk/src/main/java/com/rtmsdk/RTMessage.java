@@ -1,10 +1,8 @@
 package com.rtmsdk;
 
-
 import com.rtmsdk.DuplicatedMessageFilter.MessageCategories;
 import com.rtmsdk.RTMStruct.*;
 import com.rtmsdk.UserInterface.*;
-
 import java.util.List;
 
 class RTMessage extends RTMMessageCore {
@@ -17,6 +15,15 @@ class RTMessage extends RTMMessageCore {
         return sendMessage(uid, mtype, message, "", 0);
     }
 
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, byte[] message){
+        sendMessage(callback, uid, mtype, message, "", 0);
+    }
+
+    public ModifyTimeStruct sendMessage(long uid, byte mtype, byte[] message){
+        return sendMessage(uid, mtype, message, "", 0);
+    }
+
+
     public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message) {
         sendGroupMessage(callback, groupId, mtype, message, "", 0);
     }
@@ -25,11 +32,28 @@ class RTMessage extends RTMMessageCore {
         return sendGroupMessage(groupId, mtype, message, "", 0);
     }
 
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] message) {
+        sendGroupMessage(callback, groupId, mtype, message, "", 0);
+    }
+
+    public ModifyTimeStruct sendGroupMessage(long groupId, byte mtype, byte[] message){
+        return sendGroupMessage(groupId, mtype, message, "", 0);
+    }
+
+
     public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message) {
         sendRoomMessage(callback, roomId, mtype, message, "", 0);
     }
 
-    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, String message) throws Exception{
+    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, String message){
+        return sendRoomMessage(roomId, mtype, message, "", 0);
+    }
+
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] message) {
+        sendRoomMessage(callback, roomId, mtype, message, "", 0);
+    }
+
+    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, byte[] message) {
         return sendRoomMessage(roomId, mtype, message, "", 0);
     }
 
@@ -88,6 +112,9 @@ class RTMessage extends RTMMessageCore {
         return getGroupMessage(fromUid, groupId, messageId, 0);
     }
 
+    public void getBroadcastMessage(IRTMCallback<SingleMessage> callback, long messageId) {
+        getBroadcastMessage(callback, messageId,0);
+    }
     public void deleteGroupMessage(IRTMEmptyCallback callback, long fromUid, long groupId, long messageId) {
         deleteGroupMessage(callback,fromUid, groupId, messageId,0);
     }
@@ -104,6 +131,9 @@ class RTMessage extends RTMMessageCore {
         return getRoomMessage(fromUid, roomId, messageId, 0);
     }
 
+    public SingleMessage getBroadcastMessage(long messageId) {
+        return getBroadcastMessage(messageId, 0);
+    }
     public void deleteRoomMessage(IRTMEmptyCallback callback, long fromUid, long roomId, long messageId) {
         deleteRoomMessage(callback,fromUid, roomId, messageId,0);
     }
@@ -121,8 +151,8 @@ class RTMessage extends RTMMessageCore {
      * @param callback  IRTMCallback<Long>接口回调(NoNull)
      * @param uid       目标用户id(NoNull)
      * @param mtype     消息类型
-     * @param message   p2p消息(NoNull)
-     * @param attrs     客户端自定义属性信息
+     * @param message   消息内容(NoNull)
+     * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
      */
     public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, String message, String attrs, int timeout) {
@@ -136,7 +166,7 @@ class RTMessage extends RTMMessageCore {
      * @param message   消息内容(NoNull)
      * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
-     * @return          服务器返回时间
+     * @return          ModifyTimeStruct结构
      */
     public ModifyTimeStruct sendMessage(long uid, byte mtype, String message, String attrs, int timeout){
         return internalSendMessage(uid, mtype, message, attrs, timeout,MessageCategories.P2PMessage);
@@ -146,9 +176,9 @@ class RTMessage extends RTMMessageCore {
      *发送群组消息(async)
      * @param callback  IRTMCallback<Long>接口回调(NoNull)
      * @param groupId   群组id(NoNull)
-     * @param mtype     消息类型
+     * @param mtype     消息类型(NoNull)
      * @param message   群组消息(NoNull)
-     * @param attrs     客户端自定义属性信息
+     * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
      */
     public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message, String attrs, int timeout) {
@@ -160,9 +190,9 @@ class RTMessage extends RTMMessageCore {
      * @param groupId   群组id(NoNull)
      * @param mtype     消息类型
      * @param message   群组消息(NoNull)
-     * @param attrs     客户端自定义属性信息
+     * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
-     * @return          服务器返回时间
+     * @return          ModifyTimeStruct结构
      */
     public ModifyTimeStruct sendGroupMessage(long groupId, byte mtype, String message, String attrs, int timeout){
         return internalSendMessage(groupId, mtype, message, attrs, timeout,MessageCategories.GroupMessage);
@@ -174,7 +204,7 @@ class RTMessage extends RTMMessageCore {
      * @param roomId    房间id(NoNull)
      * @param mtype     消息类型
      * @param message   房间消息(NoNull)
-     * @param attrs     客户端自定义属性信息
+     * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
      */
     public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message, String attrs, int timeout) {
@@ -186,9 +216,9 @@ class RTMessage extends RTMMessageCore {
      * @param roomId    房间id(NoNull)
      * @param mtype     消息类型
      * @param message   房间消息(NoNull)
-     * @param attrs     客户端自定义属性信息
+     * @param attrs     客户端自定义信息
      * @param timeout   超时时间(秒)
-     * @return          服务器返回时间
+     * @return          ModifyTimeStruct结构
      */
     public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, String message, String attrs, int timeout){
         return internalSendMessage(roomId, mtype, message, attrs, timeout,MessageCategories.RoomMessage);
@@ -231,11 +261,11 @@ class RTMessage extends RTMMessageCore {
      * @param callback  IRTMCallback<HistoryMessageResult> 回调(NoNull)
      * @param peerUid   目标uid(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      */
     public void getP2PHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long peerUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) {
@@ -246,11 +276,11 @@ class RTMessage extends RTMMessageCore {
      *获取p2p记录(sync)
      * @param peerUid   用户id(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
@@ -263,11 +293,11 @@ class RTMessage extends RTMMessageCore {
      * @param callback  IRTMCallback回调(NoNull)
      * @param groupId  群组id(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      */
     public void getGroupHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) {
@@ -278,11 +308,11 @@ class RTMessage extends RTMMessageCore {
      *获取群组历史消息(sync)
      * @param groupId   群组id(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
@@ -295,11 +325,11 @@ class RTMessage extends RTMMessageCore {
      * @param callback  IRTMCallback回调(NoNull)
      * @param roomId    房间id(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      */
     public void   getRoomHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) {
@@ -310,11 +340,11 @@ class RTMessage extends RTMMessageCore {
      *获取房间历史消息(async)
      * @param roomId    房间id(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
@@ -326,11 +356,11 @@ class RTMessage extends RTMMessageCore {
      *获取广播历史消息(async)
      * @param callback  IRTMCallback回调(NoNull)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      */
     public void getBroadcastHistoryMessage(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) {
@@ -340,11 +370,11 @@ class RTMessage extends RTMMessageCore {
     /**
      *获取广播历史消息(async)
      * @param desc      是否按时间倒叙排列
-     * @param count     显示条目数 最多一次20
+     * @param count     显示条目数
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
-     * @param lastId    最后一条消息id
-     * @param mtypes    查询历史消息类型
+     * @param lastId    最后一条消息索引id(第一次默认填0)
+     * @param mtypes    查询的消息类型
      * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
@@ -365,7 +395,7 @@ class RTMessage extends RTMMessageCore {
         getMessage(callback, fromUid, toUid, messageId, MessageCategories.P2PMessage.value(), timeout);
     }
 
-    /*获取p2p单条聊天消息 sync
+    /*获取p2p单条消息 sync
      * @param messageId   消息id(NoNull)
      * @param fromUid   发送者id(NoNull)
      * @param toUid     接收者id(NoNull)
@@ -399,7 +429,7 @@ class RTMessage extends RTMMessageCore {
 
 
     /**
-     *获取群组单条聊天消息 async
+     *获取群组单条消息 async
      * @param callback IRTMCallback<SingleMessage>回调(NoNull)
      * @param fromUid   发送者id(NoNull)
      * @param groupId     群组id(NoNull)
