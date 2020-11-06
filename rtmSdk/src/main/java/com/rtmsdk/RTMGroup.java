@@ -1,5 +1,7 @@
 package com.rtmsdk;
 
+import androidx.annotation.NonNull;
+
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
@@ -11,135 +13,65 @@ import java.util.HashSet;
 import java.util.Map;
 
 class RTMGroup extends RTMFile {
-    //重载
-    public void addGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids) {
-        addGroupMembers(callback, groupId, uids, 0);
-    }
-
-    public RTMAnswer addGroupMembers(long groupId, HashSet<Long> uids){
-        return addGroupMembers(groupId, uids, 0);
-    }
-
-    public void deleteGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids) {
-        deleteGroupMembers(callback, groupId, uids, 0);
-    }
-
-    public RTMAnswer deleteGroupMembers(long groupId, HashSet<Long> uids){
-        return deleteGroupMembers(groupId, uids, 0);
-    }
-
-    public void getGroupMembers(IRTMCallback<HashSet<Long>> callback, long groupId) {
-        getGroupMembers(callback, groupId, 0);
-    }
-
-    public MembersStruct getGroupMembers(long groupId){
-        return getGroupMembers(groupId, 0);
-    }
-
-    public void getUserGroups(IRTMCallback<HashSet<Long>> callback) {
-        getUserGroups(callback, 0);
-    }
-
-    public MembersStruct getUserGroups(){
-        return getUserGroups(0);
-    }
-
-    public void getGroupsOpeninfo(IRTMCallback<Map<String, String>>  callback, HashSet<Long> uids) {
-        getGroupsOpeninfo(callback, uids, 0);
-    }
-
-    public PublicInfo getGroupsOpeninfo(HashSet<Long> gids) {
-        return getGroupsOpeninfo(gids, 0);
-    }
-
-    public void setGroupInfo(IRTMEmptyCallback callback, long groupId, String publicInfo, String privateInfo) {
-        setGroupInfo(callback, groupId, publicInfo, privateInfo, 0);
-    }
-
-    public RTMAnswer setGroupInfo(long groupId, String publicInfo, String privateInfo){
-        return setGroupInfo(groupId, publicInfo, privateInfo, 0);
-    }
-
-    public void getGroupInfo(IRTMCallback<GroupInfoStruct> callback, long groupId) {
-        getGroupInfo(callback, groupId, 0);
-    }
-
-    public GroupInfoStruct getGroupInfo(long groupId){
-        return getGroupInfo(groupId,0);
-    }
-
-    public void getGroupPublicInfo(IRTMCallback<String> callback, long groupId) {
-        getGroupPublicInfo(callback, groupId, 0);
-    }
-
-    public GroupInfoStruct getGroupPublicInfo(long groupId){
-        return getGroupPublicInfo(groupId, 0);
-    }
-    //重载end
     /**
      * 添加群组用户 async
-     * @param callback  IRTMEmptyCallback回调(NoNull)
-     * @param groupId   群组id(NoNull)
-     * @param uids      用户id集合(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMEmptyCallback回调
+     * @param groupId   群组id
+     * @param uids      用户id集合
      * */
-    public void addGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids, int timeout) {
+    public void addGroupMembers(@NonNull final IRTMEmptyCallback callback, long groupId, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("addgroupmembers");
         quest.param("gid", groupId);
         quest.param("uids", uids);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 添加群组用户  sync
-     * @param groupId   群组id(NoNull)
-     * @param uids      用户id集合(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param groupId   群组id
+     * @param uids      用户id集合
      * @return
      * */
-    public RTMAnswer addGroupMembers(long groupId, HashSet<Long> uids, int timeout) {
+    public RTMAnswer addGroupMembers(long groupId, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("addgroupmembers");
         quest.param("gid", groupId);
         quest.param("uids", uids);
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 删除群组用户   async
-     * @param callback  IRTMEmptyCallback回调(NoNull)
-     * @param groupId   群组id(NoNull)
-     * @param uids      用户id集合(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMEmptyCallback回调
+     * @param groupId   群组id
+     * @param uids      用户id集合
      * */
-    public void deleteGroupMembers(final IRTMEmptyCallback callback, long groupId, HashSet<Long> uids, int timeout) {
+    public void deleteGroupMembers(@NonNull final IRTMEmptyCallback callback, long groupId, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("delgroupmembers");
         quest.param("gid", groupId);
         quest.param("uids", uids);
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 删除群组用户   sync
-     * @param groupId   群组id(NoNull)
-     * @param uids      用户id集合(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param groupId   群组id
+     * @param uids      用户id集合
      * */
-    public RTMAnswer deleteGroupMembers(long groupId, HashSet<Long> uids, int timeout){
+    public RTMAnswer deleteGroupMembers(long groupId,@NonNull HashSet<Long> uids){
         Quest quest = new Quest("delgroupmembers");
         quest.param("gid", groupId);
         quest.param("uids", uids);
 
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 获取群组用户   async
-     * @param callback  IRTMCallback回调(NoNull)
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMCallback回调
+     * @param groupId   群组id
      * */
-    public void getGroupMembers(final IRTMCallback<HashSet<Long>> callback, long groupId, int timeout) {
+    public void getGroupMembers(@NonNull final IRTMCallback<HashSet<Long>> callback, long groupId) {
         Quest quest = new Quest("getgroupmembers");
         quest.param("gid", groupId);
 
@@ -151,20 +83,19 @@ class RTMGroup extends RTMFile {
                     uids  = RTMUtils.wantLongHashSet(answer,"uids");
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取群组用户   sync
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
-     * reutn 用户id集合
+     * @param groupId   群组id
+     * return  MembersStruct用户id集合
      * */
-    public MembersStruct getGroupMembers(long groupId, int timeout){
+    public MembersStruct getGroupMembers(long groupId){
         Quest quest = new Quest("getgroupmembers");
         quest.param("gid", groupId);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MembersStruct ret = new MembersStruct();
         ret.errorCode = result.errorCode;
@@ -177,11 +108,10 @@ class RTMGroup extends RTMFile {
 
     /**
      * 获取其他用户的公开信息，每次最多获取100人
-     * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
+     * @param callback IRTMCallback<Map<String, String>>回调
      * @param gids     房间id集合
-     * @param timeout  超时时间(秒)
      */
-    public void getGroupsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> gids, int timeout) {
+    public void getGroupsOpeninfo(@NonNull final IRTMCallback<Map<String, String>> callback, @NonNull HashSet<Long> gids) {
         Quest quest = new Quest("getgroupsopeninfo");
         quest.param("gids",gids);
 
@@ -194,20 +124,19 @@ class RTMGroup extends RTMFile {
                 }
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取群组的公开信息，每次最多获取100人
      * @param gids        群组id集合
-     * @param timeout     超时时间(秒)
      *return              PublicInfo 结构
      */
-    public PublicInfo getGroupsOpeninfo(HashSet<Long> gids, int timeout) {
+    public PublicInfo getGroupsOpeninfo(@NonNull HashSet<Long> gids) {
         Quest quest = new Quest("getgroupsopeninfo");
         quest.param("gids", gids);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         PublicInfo ret = new PublicInfo();
         ret.errorCode = result.errorCode;
@@ -220,10 +149,9 @@ class RTMGroup extends RTMFile {
 
     /**
      * 获取用户所在的群组   async
-     * @param callback  IRTMCallback回调(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMCallback回调
      * */
-    public void getUserGroups(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getUserGroups(@NonNull final IRTMCallback<HashSet<Long>> callback) {
         Quest quest = new Quest("getusergroups");
 
         sendQuest(quest, new FunctionalAnswerCallback() {
@@ -234,18 +162,17 @@ class RTMGroup extends RTMFile {
                     groupIds = RTMUtils.wantLongHashSet(answer,"gids");
                 callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取用户所在的群组   sync
-     * @param timeout   超时时间（秒）
-     * @return  用户所在群组集合
+     * @return  MembersStruct
      * */
-    public MembersStruct getUserGroups(int timeout){
+    public MembersStruct getUserGroups(){
         Quest quest = new Quest("getusergroups");
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MembersStruct ret = new MembersStruct();
         ret.errorCode = result.errorCode;
@@ -258,14 +185,12 @@ class RTMGroup extends RTMFile {
 
     /**
      * 设置群组的公开信息或者私有信息 async
-     * @param callback  IRTMEmptyCallback回调(NoNull)
-     * @param groupId   群组id(NoNull)
+     * @param callback  IRTMEmptyCallback回调
+     * @param groupId   群组id
      * @param publicInfo    群组公开信息
      * @param privateInfo   群组 私有信息
-     * @param timeout   超时时间（秒）
-
      */
-    public void setGroupInfo(IRTMEmptyCallback callback, long groupId, String publicInfo, String privateInfo, int timeout) {
+    public void setGroupInfo(@NonNull IRTMEmptyCallback callback, long groupId, String publicInfo, String privateInfo) {
         Quest quest = new Quest("setgroupinfo");
         quest.param("gid", groupId);
         if (publicInfo != null)
@@ -273,17 +198,16 @@ class RTMGroup extends RTMFile {
         if (privateInfo != null)
             quest.param("pinfo", privateInfo);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 设置群组的公开信息或者私有信息 sync
-     * @param groupId   群组id(NoNull)
+     * @param groupId   群组id
      * @param publicInfo    群组公开信息
      * @param privateInfo   群组 私有信息
-     * @param timeout   超时时间（秒）
      */
-    public RTMAnswer setGroupInfo(long groupId, String publicInfo, String privateInfo, int timeout){
+    public RTMAnswer setGroupInfo(long groupId, String publicInfo, String privateInfo){
         Quest quest = new Quest("setgroupinfo");
         quest.param("gid", groupId);
         if (publicInfo != null)
@@ -291,16 +215,15 @@ class RTMGroup extends RTMFile {
         if (privateInfo != null)
             quest.param("pinfo", privateInfo);
 
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 获取群组的公开信息或者私有信息 async
-     * @param callback  IRTMCallback回调(NoNull)
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMCallback回调
+     * @param groupId   群组id
      */
-    public void getGroupInfo(final IRTMCallback<GroupInfoStruct> callback, final long groupId, int timeout) {
+    public void getGroupInfo(@NonNull final IRTMCallback<GroupInfoStruct> callback, final long groupId) {
         Quest quest = new Quest("getgroupinfo");
         quest.param("gid", groupId);
 
@@ -315,20 +238,19 @@ class RTMGroup extends RTMFile {
                 }
                 callback.onResult(groupInfo, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取群组的公开信息或者私有信息 sync
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param groupId   群组id
      * @return  GroupInfoStruct结构
      */
-    public GroupInfoStruct getGroupInfo(long groupId, int timeout){
+    public GroupInfoStruct getGroupInfo(long groupId){
         Quest quest = new Quest("getgroupinfo");
         quest.param("gid", groupId);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct ret = new GroupInfoStruct();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -343,11 +265,10 @@ class RTMGroup extends RTMFile {
 
     /**
      * 获取群组的公开信息 async
-     * @param callback  MessageCallback回调(NoNull)
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  MessageCallback回调
+     * @param groupId   群组id
      */
-    public void getGroupPublicInfo(final IRTMCallback<String>  callback, long groupId, int timeout) {
+    public void getGroupPublicInfo(@NonNull final IRTMCallback<String>  callback, long groupId) {
         Quest quest = new Quest("getgroupopeninfo");
         quest.param("gid", groupId);
 
@@ -360,20 +281,19 @@ class RTMGroup extends RTMFile {
 
                 callback.onResult(publicInfo, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取群组的公开信息 sync
-     * @param groupId   群组id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param groupId   群组id
      * @return      GroupInfoStruct 群组公开信息
      */
-    public GroupInfoStruct getGroupPublicInfo(long groupId, int timeout){
+    public GroupInfoStruct getGroupPublicInfo(long groupId){
         Quest quest = new Quest("getgroupopeninfo");
         quest.param("gid", groupId);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct ret = new GroupInfoStruct();
         ret.errorCode = result.errorCode;

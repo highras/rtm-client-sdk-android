@@ -8,7 +8,6 @@ import com.rtmsdk.RTMStruct.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -162,8 +161,8 @@ class RTMQuestProcessor extends RTMCore{
         } else if (mtype >= MessageType.IMAGEFILE && mtype <= MessageType.NORMALFILE) {
             FileStruct fileInfo = new FileStruct();
             String fileRecieve = quest.wantString("msg");
-            String fileattrs = quest.wantString("attrs");
             try {
+                JSONObject tt = new JSONObject(attrs);
                 JSONObject kk = new JSONObject(fileRecieve);
                 fileInfo.url = kk.getString("url");
                 fileInfo.fileSize = kk.getLong("size");
@@ -171,7 +170,6 @@ class RTMQuestProcessor extends RTMCore{
                     fileInfo.surl = kk.getString("surl");
                 userMsg.fileInfo = fileInfo;
                 if (mtype == MessageType.AUDIOFILE) {
-                    JSONObject tt = new JSONObject(fileattrs);
                     if (tt.has("rtm")){
                         JSONObject rtmjson = tt.getJSONObject("rtm");
                         if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
@@ -179,8 +177,20 @@ class RTMQuestProcessor extends RTMCore{
                             userMsg.fileInfo.isRTMaudio = true;
                             userMsg.fileInfo.lang = fileAttrs.getString("lang");
                             userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                            userMsg.fileInfo.codec = fileAttrs.getString("codec");
+                            userMsg.fileInfo.srate = fileAttrs.getInt("srate");
                         }
                     }
+                }
+                String realAttrs = "";
+                if (tt.has("custom")) {
+                    try {
+                        JSONObject custtomObject = tt.getJSONObject("custom");
+                        realAttrs = custtomObject.toString();
+                    } catch (JSONException ex) {
+                        realAttrs = "";
+                    }
+                    userMsg.attrs = realAttrs;
                 }
             } catch (JSONException e) {
                 ErrorRecorder.record("pushmsg parse json error " + e.getMessage());
@@ -242,6 +252,7 @@ class RTMQuestProcessor extends RTMCore{
             String fileRecieve = quest.wantString("msg");
             String fileattrs = quest.wantString("attrs");
             try {
+                JSONObject tt = new JSONObject(fileattrs);
                 JSONObject kk = new JSONObject(fileRecieve);
                 fileInfo.url = kk.getString("url");
                 fileInfo.fileSize = kk.getLong("size");
@@ -250,7 +261,6 @@ class RTMQuestProcessor extends RTMCore{
 
                 userMsg.fileInfo = fileInfo;
                 if (mtype == MessageType.AUDIOFILE) {
-                    JSONObject tt = new JSONObject(fileattrs);
                     if (tt.has("rtm")){
                         JSONObject rtmjson = tt.getJSONObject("rtm");
                         if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
@@ -258,8 +268,20 @@ class RTMQuestProcessor extends RTMCore{
                             userMsg.fileInfo.isRTMaudio = true;
                             userMsg.fileInfo.lang = fileAttrs.getString("lang");
                             userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                            userMsg.fileInfo.codec = fileAttrs.getString("codec");
+                            userMsg.fileInfo.srate = fileAttrs.getInt("srate");
                         }
                     }
+                }
+                String realAttrs = "";
+                if (tt.has("custom")) {
+                    try {
+                        JSONObject custtomObject = tt.getJSONObject("custom");
+                        realAttrs = custtomObject.toString();
+                    } catch (JSONException ex) {
+                        realAttrs = "";
+                    }
+                    userMsg.attrs = realAttrs;
                 }
             } catch (JSONException e) {
                 ErrorRecorder.record("pushgroupmsg parse json error " + e.getMessage());
@@ -320,6 +342,7 @@ class RTMQuestProcessor extends RTMCore{
             String fileRecieve = quest.wantString("msg");
             String fileattrs = quest.wantString("attrs");
             try {
+                JSONObject tt = new JSONObject(fileattrs);
                 JSONObject kk = new JSONObject(fileRecieve);
                 fileInfo.url = kk.getString("url");
                 fileInfo.fileSize = kk.getLong("size");
@@ -328,7 +351,6 @@ class RTMQuestProcessor extends RTMCore{
 
                 userMsg.fileInfo = fileInfo;
                 if (mtype == MessageType.AUDIOFILE) {
-                    JSONObject tt = new JSONObject(fileattrs);
                     if (tt.has("rtm")){
                         JSONObject rtmjson = tt.getJSONObject("rtm");
                         if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
@@ -336,8 +358,20 @@ class RTMQuestProcessor extends RTMCore{
                             userMsg.fileInfo.isRTMaudio = true;
                             userMsg.fileInfo.lang = fileAttrs.getString("lang");
                             userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                            userMsg.fileInfo.codec = fileAttrs.getString("codec");
+                            userMsg.fileInfo.srate = fileAttrs.getInt("srate");
                         }
                     }
+                }
+                String realAttrs = "";
+                if (tt.has("custom")) {
+                    try {
+                        JSONObject custtomObject = tt.getJSONObject("custom");
+                        realAttrs = custtomObject.toString();
+                    } catch (JSONException ex) {
+                        realAttrs = "";
+                    }
+                    userMsg.attrs = realAttrs;
                 }
             } catch (JSONException e) {
                 ErrorRecorder.record("pushroommsg parse json error " + e.getMessage());
@@ -396,6 +430,7 @@ class RTMQuestProcessor extends RTMCore{
             String fileRecieve = quest.wantString("msg");
             String fileattrs = quest.wantString("attrs");
             try {
+                JSONObject tt = new JSONObject(fileattrs);
                 JSONObject kk = new JSONObject(fileRecieve);
                 fileInfo.url = kk.getString("url");
                 fileInfo.fileSize = kk.getLong("size");
@@ -404,7 +439,6 @@ class RTMQuestProcessor extends RTMCore{
 
                 userMsg.fileInfo = fileInfo;
                 if (mtype == MessageType.AUDIOFILE) {
-                    JSONObject tt = new JSONObject(fileattrs);
                     if (tt.has("rtm")){
                         JSONObject rtmjson = tt.getJSONObject("rtm");
                         if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
@@ -412,8 +446,20 @@ class RTMQuestProcessor extends RTMCore{
                             userMsg.fileInfo.isRTMaudio = true;
                             userMsg.fileInfo.lang = fileAttrs.getString("lang");
                             userMsg.fileInfo.duration = fileAttrs.getInt("duration");
+                            userMsg.fileInfo.codec = fileAttrs.getString("codec");
+                            userMsg.fileInfo.srate = fileAttrs.getInt("srate");
                         }
                     }
+                }
+                String realAttrs = "";
+                if (tt.has("custom")) {
+                    try {
+                        JSONObject custtomObject = tt.getJSONObject("custom");
+                        realAttrs = custtomObject.toString();
+                    } catch (JSONException ex) {
+                        realAttrs = "";
+                    }
+                    userMsg.attrs = realAttrs;
                 }
             } catch (JSONException e) {
                 ErrorRecorder.record("pushbroadcastmsg parse json error " + e.getMessage());

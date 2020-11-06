@@ -1,5 +1,7 @@
 package com.rtmsdk;
 
+import androidx.annotation.NonNull;
+
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
@@ -11,124 +13,55 @@ import java.util.HashSet;
 import java.util.Map;
 
 public class RTMRoom extends RTMFriend {
-    //重载
-    public void enterRoom(IRTMEmptyCallback callback, long roomId) {
-        enterRoom(callback, roomId, 0);
-    }
-
-    public RTMAnswer enterRoom(long roomId) {
-        return enterRoom(roomId, 0);
-    }
-
-    public void leaveRoom(IRTMEmptyCallback callback, long roomId) {
-        leaveRoom(callback, roomId, 0);
-    }
-
-    public RTMAnswer leaveRoom(long roomId){
-        return leaveRoom(roomId, 0);
-    }
-
-    public void getUserRooms(IRTMCallback<HashSet<Long>> callback) {
-        getUserRooms(callback, 0);
-    }
-
-    public MembersStruct getUserRooms(){
-        return getUserRooms(0);
-    }
-
-    public void setGroupInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo) {
-        setGroupInfo(callback, roomId, publicInfo, privateInfo, 0);
-    }
-
-    public RTMAnswer setRoomInfo(long roomId, String publicInfo, String privateInfo){
-        return setRoomInfo(roomId, publicInfo, privateInfo, 0);
-    }
-
-    public void setRoomInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo) {
-        setRoomInfo(callback,roomId,publicInfo,privateInfo,0);
-    }
-
-    public GroupInfoStruct getRoomInfo(long roomId){
-        return getRoomInfo(roomId,0);
-    }
-
-    public void getRoomInfo(final IRTMCallback<GroupInfoStruct> callback, long roomId) {
-        getRoomInfo(callback,roomId, 0);
-    }
-
-    public GroupInfoStruct getRoomPublicInfo(long roomId){
-        return getRoomPublicInfo(roomId, 0);
-    }
-
-    public void getRoomPublicInfo(IRTMCallback<String>  callback,long roomId){
-        getRoomPublicInfo(callback,roomId, 0);
-    }
-
-    public void getRoomsOpeninfo(IRTMCallback<Map<String, String>>  callback, HashSet<Long> rids) {
-        getRoomsOpeninfo(callback, rids, 0);
-    }
-
-    public PublicInfo getRoomsOpeninfo(HashSet<Long> uids) {
-        return getRoomsOpeninfo(uids, 0);
-    }
-
-    //重载end
-
-
     /**
      * 进入房间 async
-     * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback IRTMEmptyCallback回调
+     * @param roomId   房间id
      */
-    public void enterRoom(final IRTMEmptyCallback callback, long roomId, int timeout) {
+    public void enterRoom(@NonNull IRTMEmptyCallback callback, long roomId) {
         Quest quest = new Quest("enterroom");
         quest.param("rid", roomId);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 进入房间 sync
-     * @param roomId  房间id(NoNull)
-     * @param timeout 超时时间(秒)
+     * @param roomId  房间id
      */
-    public RTMAnswer enterRoom(long roomId, int timeout){
+    public RTMAnswer enterRoom(long roomId){
         Quest quest = new Quest("enterroom");
         quest.param("rid", roomId);
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 离开房间 async
-     * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback IRTMEmptyCallback回调
+     * @param roomId   房间id
      */
-    public void leaveRoom(IRTMEmptyCallback callback, long roomId, int timeout) {
+    public void leaveRoom(@NonNull IRTMEmptyCallback callback, long roomId) {
         Quest quest = new Quest("leaveroom");
         quest.param("rid", roomId);
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
 
     /**
      * 离开房间 sync
-     * @param roomId  房间id(NoNull)
-     * @param timeout 超时时间(秒)
+     * @param roomId  房间id
      */
-    public RTMAnswer leaveRoom(long roomId, int timeout) {
+    public RTMAnswer leaveRoom(long roomId) {
         Quest quest = new Quest("leaveroom");
         quest.param("rid", roomId);
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 获取用户所在的房间   async
-     * @param callback IRTMCallback回调(NoNull)
-     * @param timeout  超时时间（秒）
+     * @param callback IRTMCallback回调
      */
-    public void getUserRooms(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getUserRooms(@NonNull final IRTMCallback<HashSet<Long>> callback) {
         Quest quest = new Quest("getuserrooms");
 
         sendQuest(quest, new FunctionalAnswerCallback() {
@@ -139,18 +72,17 @@ public class RTMRoom extends RTMFriend {
                     groupIds = RTMUtils.wantLongHashSet(answer,"rooms");
                 callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取用户所在的房间   sync
-     * @param timeout   超时时间（秒）
      * @return  用户所在房间集合
      * */
-    public MembersStruct getUserRooms(int timeout){
+    public MembersStruct getUserRooms(){
         Quest quest = new Quest("getuserrooms");
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MembersStruct ret = new MembersStruct();
         ret.errorCode = result.errorCode;
@@ -162,13 +94,12 @@ public class RTMRoom extends RTMFriend {
 
     /**
      * 设置房间的公开信息或者私有信息 async
-     * @param callback  IRTMEmptyCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
+     * @param callback  IRTMEmptyCallback回调
+     * @param roomId   房间id
      * @param publicInfo    房间公开信息
      * @param privateInfo   房间 私有信息
-     * @param timeout   超时时间（秒）
      */
-    public void setRoomInfo(IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo, int timeout) {
+    public void setRoomInfo(@NonNull IRTMEmptyCallback callback, long roomId, String publicInfo, String privateInfo) {
         Quest quest = new Quest("setroominfo");
         quest.param("rid", roomId);
         if (publicInfo != null)
@@ -176,17 +107,16 @@ public class RTMRoom extends RTMFriend {
         if (privateInfo != null)
             quest.param("pinfo", privateInfo);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 设置房间的公开信息或者私有信息 sync
-     * @param roomId   房间id(NoNull)
+     * @param roomId   房间id
      * @param publicInfo    房间公开信息
      * @param privateInfo   房间 私有信息
-     * @param timeout   超时时间（秒）
      */
-    public RTMAnswer setRoomInfo(long roomId, String publicInfo, String privateInfo, int timeout){
+    public RTMAnswer setRoomInfo(long roomId, String publicInfo, String privateInfo){
         Quest quest = new Quest("setroominfo");
         quest.param("rid", roomId);
         if (publicInfo != null)
@@ -194,16 +124,15 @@ public class RTMRoom extends RTMFriend {
         if (privateInfo != null)
             quest.param("pinfo", privateInfo);
 
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 获取房间的公开信息或者私有信息 async
-     * @param callback  IRTMCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMCallback回调
+     * @param roomId   房间id
      */
-    public void getRoomInfo(final IRTMCallback<GroupInfoStruct> callback, final long roomId, int timeout) {
+    public void getRoomInfo(@NonNull final IRTMCallback<GroupInfoStruct> callback, final long roomId) {
         Quest quest = new Quest("getroominfo");
         quest.param("rid", roomId);
 
@@ -218,20 +147,19 @@ public class RTMRoom extends RTMFriend {
                 }
                 callback.onResult(RoomInfo, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取房间的公开信息或者私有信息 sync
-     * @param roomId   房间id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param roomId   房间id
      * @return  GroupInfoStruct结构
      */
-    public GroupInfoStruct getRoomInfo(long roomId, int timeout){
+    public GroupInfoStruct getRoomInfo(long roomId){
         Quest quest = new Quest("getroominfo");
         quest.param("rid", roomId);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct RoomInfo = new GroupInfoStruct();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -246,11 +174,10 @@ public class RTMRoom extends RTMFriend {
 
     /**
      * 获取房间的公开信息 async
-     * @param callback  IRTMCallback回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param callback  IRTMCallback回调
+     * @param roomId   房间id
      */
-    public void getRoomPublicInfo(final IRTMCallback<String>  callback, long roomId, int timeout) {
+    public void getRoomPublicInfo(@NonNull final IRTMCallback<String>  callback, long roomId) {
         Quest quest = new Quest("getroomopeninfo");
         quest.param("rid", roomId);
 
@@ -263,20 +190,19 @@ public class RTMRoom extends RTMFriend {
 
                 callback.onResult(publicInfo, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取房间的公开信息 sync
-     * @param roomId   房间id(NoNull)
-     * @param timeout   超时时间（秒）
+     * @param roomId   房间id
      * @return  GroupInfoStruct
      */
-    public GroupInfoStruct getRoomPublicInfo(long roomId, int timeout){
+    public GroupInfoStruct getRoomPublicInfo(long roomId){
         Quest quest = new Quest("getroomopeninfo");
         quest.param("rid", roomId);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct ret = new GroupInfoStruct();
         ret.errorCode = result.errorCode;
@@ -288,11 +214,10 @@ public class RTMRoom extends RTMFriend {
 
     /**
      * 获取其他用户的公开信息，每次最多获取100人
-     * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
+     * @param callback IRTMCallback<Map<String, String>>回调
      * @param rids     房间id集合
-     * @param timeout  超时时间(秒)
      */
-    public void getRoomsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> rids, int timeout) {
+    public void getRoomsOpeninfo(@NonNull final IRTMCallback<Map<String, String>> callback, HashSet<Long> rids) {
         Quest quest = new Quest("getroomsopeninfo");
         quest.param("rids",rids);
 
@@ -305,20 +230,19 @@ public class RTMRoom extends RTMFriend {
                 }
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 获取群组的公开信息，每次最多获取100人
      * @param rids        房间id集合
-     * @param timeout     超时时间(秒)
      *return              PublicInfo 结构
      */
-    public PublicInfo getRoomsOpeninfo(HashSet<Long> rids, int timeout) {
+    public PublicInfo getRoomsOpeninfo(@NonNull HashSet<Long> rids) {
         Quest quest = new Quest("getroomsopeninfo");
         quest.param("rids", rids);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         PublicInfo ret = new PublicInfo();
         ret.errorCode = result.errorCode;

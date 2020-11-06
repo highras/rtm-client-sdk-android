@@ -1,5 +1,7 @@
 package com.rtmsdk;
 
+import androidx.annotation.NonNull;
+
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
@@ -10,113 +12,57 @@ import com.rtmsdk.RTMStruct.*;
 import java.util.HashSet;
 
 public class RTMFriend extends RTMGroup {
-
-    //重载
-    public void addFriends(IRTMEmptyCallback callback, HashSet<Long> uids) {
-        addFriends(callback, uids, 0);
-    }
-
-    public RTMAnswer addFriends(HashSet<Long> uids) {
-        return addFriends(uids, 0);
-    }
-
-    public void deleteFriends(IRTMEmptyCallback callback, HashSet<Long> uids) {
-        deleteFriends(callback, uids, 0);
-    }
-
-    public RTMAnswer deleteFriends(HashSet<Long> uids){
-        return deleteFriends(uids, 0);
-    }
-
-    public void getFriends(IRTMCallback<HashSet<Long>> callback) {
-        getFriends(callback, 0);
-    }
-
-    public MembersStruct getFriends(){
-        return getFriends(0);
-    }
-
-    public void addBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids) {
-        addBlacklist(callback, uids, 0);
-    }
-
-    public RTMAnswer addBlacklist(HashSet<Long> uids){
-        return addBlacklist(uids, 0);
-    }
-
-    public void delBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids) {
-        delBlacklist(callback, uids, 0);
-    }
-
-    public RTMAnswer delBlacklist(HashSet<Long> uids){
-        return delBlacklist(uids, 0);
-    }
-
-    public void getBlacklist(IRTMCallback<HashSet<Long>> callback) {
-        getBlacklist(callback, 0);
-    }
-
-    public MembersStruct  getBlacklist(){
-        return getBlacklist(0);
-    }
-    //重载end
-
     /**
      * 添加好友 async
-     * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback IRTMEmptyCallback回调
+     * @param uids   用户id集合
      */
-    public void addFriends(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void addFriends(@NonNull IRTMEmptyCallback callback, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("addfriends");
         quest.param("friends", uids);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 添加好友 sync
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param uids   用户id集合
      */
-    public RTMAnswer addFriends(HashSet<Long> uids, int timeout){
+    public RTMAnswer addFriends(@NonNull HashSet<Long> uids){
         Quest quest = new Quest("addfriends");
         quest.param("friends", uids);
 
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 删除好友 async
-     * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback IRTMEmptyCallback回调
+     * @param uids   用户id集合
      */
-    public void deleteFriends(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void deleteFriends(@NonNull IRTMEmptyCallback callback, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("delfriends");
         quest.param("friends", uids);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 删除好友 sync
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param uids   用户id集合
      */
-    public RTMAnswer deleteFriends(HashSet<Long> uids, int timeout){
+    public RTMAnswer deleteFriends(@NonNull HashSet<Long> uids){
         Quest quest = new Quest("delfriends");
         quest.param("friends", uids);
 
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 查询自己好友 async
-     * @param callback MembersCallback回调(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback MembersCallback回调
      */
-    public void getFriends(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getFriends(@NonNull final IRTMCallback<HashSet<Long>> callback) {
         Quest quest = new Quest("getfriends");
 
         sendQuest(quest, new FunctionalAnswerCallback() {
@@ -128,18 +74,17 @@ public class RTMFriend extends RTMGroup {
                 }
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 查询自己好友 sync
-     * @param timeout  超时时间(秒)
      * @return 好友id集合
      */
-    public MembersStruct getFriends(int timeout){
+    public MembersStruct getFriends(){
         Quest quest = new Quest("getfriends");
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MembersStruct ret = new MembersStruct();
         ret.errorCode = result.errorCode;
@@ -151,60 +96,55 @@ public class RTMFriend extends RTMGroup {
 
     /**
      * 添加黑名单 async
-     * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback IRTMEmptyCallback回调
+     * @param uids   用户id集合
      */
-    public void addBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void addBlacklist(@NonNull IRTMEmptyCallback callback, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("addblacks");
         quest.param("blacks", uids);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 添加黑名单 sync
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param uids   用户id集合
      */
-    public RTMAnswer addBlacklist(HashSet<Long> uids, int timeout){
+    public RTMAnswer addBlacklist(@NonNull HashSet<Long> uids){
         Quest quest = new Quest("addblacks");
         quest.param("blacks", uids);
 
-       return sendQuestEmptyResult(quest, timeout);
+       return sendQuestEmptyResult(quest);
     }
 
     /**
      * 删除黑名单用户 async
-     * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback IRTMEmptyCallback回调
+     * @param uids   用户id集合
      */
-    public void delBlacklist(IRTMEmptyCallback callback, HashSet<Long> uids, int timeout) {
+    public void delBlacklist(@NonNull IRTMEmptyCallback callback, @NonNull HashSet<Long> uids) {
         Quest quest = new Quest("delblacks");
         quest.param("blacks", uids);
 
-        sendQuestEmptyCallback(callback, quest, timeout);
+        sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 删除黑名单用户 sync
-     * @param uids   用户id集合(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param uids   用户id集合
      */
-    public RTMAnswer delBlacklist(HashSet<Long> uids, int timeout){
+    public RTMAnswer delBlacklist(@NonNull HashSet<Long> uids){
         Quest quest = new Quest("delblacks");
         quest.param("blacks", uids);
 
-        return sendQuestEmptyResult(quest, timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     /**
      * 查询黑名单 async
-     * @param callback MembersCallback回调(NoNull)
-     * @param timeout  超时时间(秒)
+     * @param callback MembersCallback回调
      */
-    public void getBlacklist(final IRTMCallback<HashSet<Long>> callback, int timeout) {
+    public void getBlacklist(@NonNull final IRTMCallback<HashSet<Long>> callback) {
         Quest quest = new Quest("getblacks");
 
         sendQuest(quest, new FunctionalAnswerCallback() {
@@ -216,18 +156,17 @@ public class RTMFriend extends RTMGroup {
                 }
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     /**
      * 查询黑名单 sync
-     * @param timeout  超时时间(秒)
      * @return 黑名单id集合
      */
-    public MembersStruct getBlacklist(int timeout){
+    public MembersStruct getBlacklist(){
         Quest quest = new Quest("getblacks");
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MembersStruct ret = new MembersStruct();
         ret.errorCode = result.errorCode;

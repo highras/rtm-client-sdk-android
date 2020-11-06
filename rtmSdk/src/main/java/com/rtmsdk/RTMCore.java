@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.provider.Settings;
 
 import com.fpnn.sdk.ConnectionWillCloseCallback;
 import com.fpnn.sdk.ErrorCode;
@@ -23,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -65,7 +65,7 @@ class RTMCore  implements INetEvent{
     private AtomicBoolean running = new AtomicBoolean(true);
     private AtomicBoolean initCheckThread = new AtomicBoolean(false);
     private Thread checkThread;
-    private int maxReloginCount = 10;
+    private int maxReloginCount = 20;
 
     private RTMQuestProcessor processor;
     protected com.fpnn.sdk.ErrorRecorder errorRecorder = null;
@@ -102,6 +102,7 @@ class RTMCore  implements INetEvent{
         intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         stateReceiver = new NetStateReceiver();
         context.registerReceiver(new NetStateReceiver(),intentFilter);
+
     }
 
     void reloginEvent(final int count){
@@ -116,22 +117,19 @@ class RTMCore  implements INetEvent{
         else {
             if (Arrays.asList(finishCodeList).contains(loginAnswer.errorCode)){
                 isRelogin.set(false);
+                processor.sessionClosed(ErrorCode.FPNN_EC_OK.value());
                 reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num++);
                 return;
             }
             else {
-                if (count >= maxReloginCount) {
-                    isRelogin.set(false);
-                    reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num);
-                    return;
-                }
                if (reloginStartCallback.reloginWillStart(uid, loginAnswer, num++)) {
                     try {
-                        Thread.sleep(2 * 1000);
+                        Thread.sleep(1 * 1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
-                        reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num);
                         isRelogin.set(false);
+                        reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num++);
+                        processor.sessionClosed(ErrorCode.FPNN_EC_OK.value());
                         return;
                     }
                     reloginEvent(num);
@@ -139,7 +137,8 @@ class RTMCore  implements INetEvent{
                 else {
                     isRelogin.set(false);
                     reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num++);
-                }
+                    processor.sessionClosed(ErrorCode.FPNN_EC_OK.value());
+               }
             }
         }
     }
@@ -154,9 +153,9 @@ class RTMCore  implements INetEvent{
                 case NetUtils.NETWORK_MOBILE:
                 case NetUtils.NETWORK_WIFI:
                     if (lastNetType != netWorkState && rtmGate != null && autoConnect) {
-                        if (isRelogin.get() == true){
+                        if (isRelogin.get() == true)
                             return;
-                        }
+
                         isRelogin.set(true);
                         new Thread(new Runnable() {
                             @Override
@@ -195,6 +194,10 @@ class RTMCore  implements INetEvent{
         dispatch.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
         dispatch.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
         isRelogin.set(false);
+        if (RTMConfig.errorRecorder != null)
+        {
+            errorRecorder = RTMConfig.errorRecorder;
+        }
     }
 
     public void setErrorRecoder(com.fpnn.sdk.ErrorRecorder value){
@@ -244,7 +247,9 @@ class RTMCore  implements INetEvent{
     }
 
     synchronized protected ClientStatus getClientStatus() {
-        return status;
+        synchronized (interLocker) {
+            return status;
+        }
     }
 
     private boolean connectionIsAlive() {
@@ -292,6 +297,10 @@ class RTMCore  implements INetEvent{
             else
                 return null;
         }
+    }
+
+    Answer sendQuest(Quest quest) {
+        return sendQuest(quest,RTMConfig.globalQuestTimeoutSeconds);
     }
 
     Answer sendQuest(Quest quest, int timeout) {
@@ -363,7 +372,11 @@ class RTMCore  implements INetEvent{
         }
     }
 
-    void sendQuest(Quest quest, final FunctionalAnswerCallback callback, int timeout) {
+    void sendQuest(Quest quest, final FunctionalAnswerCallback callback) {
+        sendQuest(quest, callback, RTMConfig.globalQuestTimeoutSeconds);
+    }
+
+        void sendQuest(Quest quest, final FunctionalAnswerCallback callback, int timeout) {
         TCPClient client = getCoreClient();
         if (client == null) {
             final Answer answer = new Answer(quest);
@@ -378,20 +391,22 @@ class RTMCore  implements INetEvent{
 //                        }
 //                    });
         }
+        if (timeout <= 0)
+            timeout = RTMConfig.globalQuestTimeoutSeconds;
         client.sendQuest(quest, callback, timeout);
     }
 
-    void sendQuestEmptyCallback(final IRTMEmptyCallback callback, Quest quest, int timeout) {
+    void sendQuestEmptyCallback(final IRTMEmptyCallback callback, Quest quest) {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 callback.onResult(genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        }, RTMConfig.globalQuestTimeoutSeconds);
     }
 
-    RTMStruct.RTMAnswer sendQuestEmptyResult(Quest quest, int timeout){
-        Answer ret =  sendQuest(quest, timeout);
+    RTMStruct.RTMAnswer sendQuestEmptyResult(Quest quest){
+        Answer ret =  sendQuest(quest);
         if (ret == null)
             return genRTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(),"invalid connection");
         return genRTMAnswer(ret);
@@ -456,7 +471,12 @@ class RTMCore  implements INetEvent{
         running.set(true);
     }
 
-   boolean isNetWorkConnected() {
+    boolean isAirplaneModeOn() {
+        return android.provider.Settings.System.getInt(context.getContentResolver(),
+                Settings.Global.AIRPLANE_MODE_ON,0) != 0;
+    }
+
+    boolean isNetWorkConnected() {
         boolean isConnected = false;
         ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
@@ -493,17 +513,26 @@ class RTMCore  implements INetEvent{
             public void connectionWillClose(InetSocketAddress peerAddress, int _connectionId,boolean causedByError) {
                 if (connectionId != 0 && connectionId == _connectionId && closedCase != CloseType.ByUser && getClientStatus() != ClientStatus.Connecting) {
                     closeStatus();
-                    processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
-                    if (!autoConnect)
+                    if (!autoConnect) {
                         close();
+                        processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
+                    }
                     else
                     {
-                        if (closedCase == CloseType.ByServer)
+                        if (closedCase == CloseType.ByServer) {
+                            processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
                             return;
+                        }
                         if (isRelogin.get() == true){
                             return;
                         }
-                        else if(getClientStatus() == ClientStatus.Closed && isNetWorkConnected()){
+
+                        if (isAirplaneModeOn()) {
+                            processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
+                            return;
+                        }
+
+                        if(getClientStatus() == ClientStatus.Closed && isNetWorkConnected()){
                             isRelogin.set(true);
                             new Thread(new Runnable() {
                                 @Override

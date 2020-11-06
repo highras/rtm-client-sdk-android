@@ -4,27 +4,27 @@
      * @param userid/groupId/roomId
      * @param message   send messge
      * @param attrs     additional message
-     * @param timeout   timeout(seconds)
+     
      * @return          ModifyTimeStruct
      */
     
  send p2p chat
-    public ModifyTimeStruct sendChat(long uid, String message, String attrs, int timeout)     
+    public ModifyTimeStruct sendChat(long uid, String message, String attrs)     
      
 ssend chat in group
-    public ModifyTimeStruct sendGroupChat(long groupId, String message, String attrs, int timeout)
+    public ModifyTimeStruct sendGroupChat(long groupId, String message, String attrs)
 
 ssend chat in room
-    public ModifyTimeStruct sendRoomChat(long roomId, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendRoomChat(long roomId, String message, String attrs){
      
 send p2p control command
-    public ModifyTimeStruct sendCmd(long uid, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendCmd(long uid, String message, String attrs){
 
 ssend control command in group
-    public ModifyTimeStruct sendGroupCmd(long groupId, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendGroupCmd(long groupId, String message, String attrs){
 
 ssend control command in room
-    public ModifyTimeStruct sendRoomCmd(long roomId, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendRoomCmd(long roomId, String message, String attrs){
 
 
     /**
@@ -35,16 +35,16 @@ ssend control command in room
      * @param beginMsec begin time(millisecond)
      * @param endMsec   ent time(millisecond)
      * @param lastId    last message indexId
-     * @param timeout   timeout(seconds)
+     
      * return       HistoryMessageResult
      */
 
 
-    public HistoryMessageResult getP2PHistoryChat(long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getP2PHistoryChat(long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
-    public HistoryMessageResult getGroupHistoryChat(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getGroupHistoryChat(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
-    public HistoryMessageResult getRoomHistoryChat(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getRoomHistoryChat(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
 
     /**
@@ -54,51 +54,47 @@ ssend control command in room
      * @param beginMsec query begin time(millisecond)
      * @param endMsec   query end time(millisecond)
      * @param lastId    last message indexId
-     * @param timeout   timeout(seconds)
+     
      * return   HistoryMessageResult
      */
-    public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
     /*get server unread message(sync)
      * @param clear     if clear unread(default false)
-     * @param timeout   timeout(seconds)
+     
      * return           Unread struct
      */
-    public Unread getUnread( boolean clear, int timeout){
+    public Unread getUnread( boolean clear){
 
     /*clear unread 
-     * @param   timeout 
      * @return  RTMAnswer
      */
-    public RTMAnswer clearUnread(int timeout)
+    public RTMAnswer clearUnread()
 
     /**
      * sync(need config on console）
      * @param text          need translate message(NoNull)
      * @param destinationLanguage   
      * @param sourceLanguage        
-     * @param timeout              
      * @param type                  cha or mail。default 'chat'
      * @param profanity             sensitive filter option-off, censor，default：off if choose censor sensitive word will be replace '*'
      * @return                  TranslatedInfo
      */
     public TranslatedInfo translate(String text, String destinationLanguage, String sourceLanguage, 
-                         translateType type, ProfanityType profanity,int timeout){
+                         translateType type, ProfanityType profanity,){
 
      /**
      * sync
      * @param targetLanguage 
-     * @param timeout 
      */
-    public RTMAnswer setTranslatedLanguage(TranslateLang targetLanguage, int timeout){
+    public RTMAnswer setTranslatedLanguage(TranslateLang targetLanguage){
 
     /**
      *text detection sync(need config on console）
      * @param text          need check text 
-     * @param timeout       
      * @return              CheckResult
      */
-    public CheckResult textCheck(String text, int timeout)
+    public CheckResult textCheck(String text)
 ~~~
 
 
@@ -110,20 +106,19 @@ ssend control command in room
      * @param uid       userid/groupId/roomId
      * @param message   
      * @param attrs     additional message
-     * @param timeout   
      */
 
-    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs, int timeout)
+    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs)
      
-    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs, int timeout)
+    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs)
 
-    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs, int timeout){
+    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs){
      
-    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs, int timeout)
+    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs)
 
-    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs, int timeout)
+    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs)
 
-    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs, int timeout){
+    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs){
 
 
     /*
@@ -134,17 +129,17 @@ ssend control command in room
      * @param beginMsec query begin time(millisecond)
      * @param endMsec   query end time(millisecond)
      * @param lastId    last message indexId
-     * @param timeout   timeout(seconds)
+     
      * return   HistoryMessageResult
      */
 
-    public void getP2PHistoryChat(IRTMCallback<HistoryMessageResult> callback,  long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getP2PHistoryChat(IRTMCallback<HistoryMessageResult> callback,  long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
 
-    public void getGroupHistoryChat(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getGroupHistoryChat(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
 
-    public void getRoomHistoryChat(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getRoomHistoryChat(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
     /**
     * 
@@ -154,39 +149,39 @@ ssend control command in room
      * @param beginMsec query begin time(millisecond)
      * @param endMsec   query end time(millisecond)
      * @param lastId    last message indexId
-     * @param timeout   timeout(seconds)
+     
      */
-    public void getBroadcastHistoryChat(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getBroadcastHistoryChat(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
     /**
      *get unread from server(async)
      * @param callback  IRTMCallback<Unread>
      * @param clear     if clear remind(default false)
-     * @param timeout   timeout(seconds)
+     
      */
-    public void getUnread(final IRTMCallback<Unread> callback, boolean clear, int timeout)
+    public void getUnread(final IRTMCallback<Unread> callback, boolean clear)
 
     /**
      *clear unread(async)
      * @param callback EmptyCallback (NoNull)
-     * @param timeout   timeout(seconds)
+     
      */
-    public void clearUnread(IRTMEmptyCallback callback, int timeout)
+    public void clearUnread(IRTMEmptyCallback callback)
     
     /**
      * get uids and groupids when talk with me once(async)
      * @param callback UnreadCallback (NoNull)
-     * @param timeout   timeout(seconds)
+     
      */
-    public void getSession(final IRTMCallback<Unread> callback, int timeout)
+    public void getSession(final IRTMCallback<Unread> callback)
 
     /**
      * async
      * @param callback  IRTMEmptyCallback (NoNull)
      * @param targetLanguage    (NoNull)
-     * @param timeout   timeout(seconds)
+     
      */
-    public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage, int timeout)
+    public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage)
 
     /**
      *text translate async(need config text translate service on console）
@@ -194,20 +189,18 @@ ssend control command in room
      * @param text          need translate text(NoNull)
      * @param destinationLanguage   (NoNull)
      * @param sourceLanguage        
-     * @param timeout               timeout(seconds)
      * @param type                  cha or mail。default 'chat'
      * @param profanity             sensitive filter option-off or censor，default：off if choose censor sensitive word will be replace '*'
      */
-    public void translate(final IRTMCallback<TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage, int timeout,
+    public void translate(final IRTMCallback<TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage, ,
                              translateType type, ProfanityType profanity)
 
    /**
      * async(need config text check service on console）
      * @param callback      IRTMCallback<CheckResult> (NoNull)
      * @param text          need check text(NoNull)
-     * @param timeout       timeout(seconds)
      */
-    public void textCheck(final IRTMCallback<CheckResult> callback, String text, int timeout)
+    public void textCheck(final IRTMCallback<CheckResult> callback, String text)
 
 
     /**audio trans text sync

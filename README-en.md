@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.0.7'
+        api 'com.github.highras:rtm-android:2.0.8'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.0.7</version>
+        <version>2.0.8</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -65,6 +65,7 @@
             Log.i("log",String.format("Error: %s, exception: %s", message, e));
         }
     }
+    RTMClient.setErrorRecoder(new TestErrorRecorder())
     ~~~
 
 ### Demonstration
@@ -81,7 +82,7 @@ import com.rtmsdk.RTMAudio; //audio
     //-- sync
     client.login(String token, String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
     //-- Async
-    client.login(loginCallback callback, String token = "", String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
+    client.login(loginCallback callback, String token = "", TranslateLang lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
 
     if login successed
     client.sendChat/ client.sendMessage.....
@@ -96,6 +97,7 @@ import com.rtmsdk.RTMAudio; //audio
 - [Room/Group/Friend](doc-en/RTMRelationship.md)
 - [User-System](doc-en/RTMUserSystem.md)
 - [Audio](doc-en/RTMAudio.md)
+- [Translate language](https://wiki.ifunplus.cn/display/livedata/Speech+Recognition+API+V1)
 
 
 #### TestCase

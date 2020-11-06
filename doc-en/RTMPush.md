@@ -2,7 +2,7 @@
     //connection closed (if user set autoconnect then wiil be reconnect soon)
     public void sessionClosed(int ClosedByErrorCode){};
 
-    //be kicked out from server 
+    //be kicked by server 
     public void kickout(){};
 
     //be kicked out from room
@@ -21,13 +21,13 @@
     public void pushRoomCmd(RTMMessage msg){};
     public void pushBroadcastCmd(RTMMessage msg){};
 
-    //pushmsg (r according to messagetype you need just if messaget type is string it's in RTMMessage->stringMessage if it's binary it's in RTMMessage->binaryMessage)
+    //pushmsg (according to messagetype you need just if messaget type is string it's in RTMMessage->stringMessage if it's binary it's in RTMMessage->binaryMessage)
     public void pushMessage(RTMMessage msg){};
     public void pushGroupMessage(RTMMessage msg){};
     public void pushRoomMessage(RTMMessage msg){};
     public void pushBroadcastMessage(RTMMessage msg){};
 
-    //pushfile (real content is in RTMMessage->fileInfo)
+    //pushfile (real message is in RTMMessage->fileInfo)
     public void pushFile(RTMMessage msg){};
     public void pushGroupFile(RTMMessage msg){};
     public void pushRoomFile(RTMMessage msg){};

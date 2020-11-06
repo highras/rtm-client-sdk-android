@@ -17,7 +17,7 @@ import java.util.List;
 
 class RTMMessageCore extends RTMCore {
     //======================[ String message version ]================================//
-    private ModifyTimeStruct sendMsgSync(long id, byte mtype, Object message, Object attrs, int timeout, MessageCategories type) {
+    private ModifyTimeStruct sendMsgSync(long id, byte mtype, Object message, Object attrs,  MessageCategories type) {
         String method = "", toWhere = "";
         switch (type) {
             case GroupMessage:
@@ -42,7 +42,7 @@ class RTMMessageCore extends RTMCore {
         quest.param("msg", message);
         quest.param("attrs", attrs);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         if (answer == null)
             return genModifyAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
         else if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value())
@@ -74,7 +74,7 @@ class RTMMessageCore extends RTMCore {
         return genModifyAnswer(anser,0,0);
     }
 
-    private void sendMsgAsync(final IRTMDoubleValueCallback<Long,Long> callback, long id, byte mtype, Object message, String attrs, int timeout, MessageCategories type) {
+    private void sendMsgAsync(final IRTMDoubleValueCallback<Long,Long> callback, long id, byte mtype, Object message, String attrs, MessageCategories type) {
         String method = "", toWhere = "";
         switch (type) {
             case GroupMessage:
@@ -106,7 +106,7 @@ class RTMMessageCore extends RTMCore {
                     mtime = answer.wantLong("mtime");
                 callback.onResult(mtime, quest.wantLong("mid"),genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        }, RTMConfig.globalQuestTimeoutSeconds);
     }
 
 
@@ -145,6 +145,7 @@ class RTMMessageCore extends RTMCore {
             tmp.modifiedTime = RTMUtils.wantLong(value.get(7));
             try {
                 if (tmp.messageType >= MessageType.IMAGEFILE && tmp.messageType <= MessageType.NORMALFILE) {
+                    JSONObject tt = new JSONObject(tmp.attrs);
                     String fileinfo = String.valueOf(obj);
                     FileStruct fileInfo = new FileStruct();
                     JSONObject filemsg = new JSONObject(fileinfo);
@@ -154,18 +155,23 @@ class RTMMessageCore extends RTMCore {
                         fileInfo.surl = filemsg.getString("surl");
 
                     if (tmp.messageType == MessageType.AUDIOFILE) {
-                        JSONObject tt = new JSONObject(tmp.attrs);
                         if (tt.has("rtm")){
                             JSONObject rtmjson = tt.getJSONObject("rtm");
                             if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
                                 JSONObject fileAttrs = tt.getJSONObject("rtm");
                                 fileInfo.lang = fileAttrs.getString("lang");
                                 fileInfo.duration = fileAttrs.getInt("duration");
+                                fileInfo.codec = fileAttrs.getString("codec");
+                                fileInfo.srate = fileAttrs.getInt("srate");
                                 fileInfo.isRTMaudio = true;
                             }
                         }
                     }
                     tmp.fileInfo = fileInfo;
+                    String realAttrs = "";
+                    if (tt.has("custom"))
+                        realAttrs = tt.getJSONObject("custom").toString();
+                    tmp.attrs = realAttrs;
                 } else {
                     if (obj instanceof byte[])
                         tmp.binaryMessage = (byte[]) obj;
@@ -234,7 +240,7 @@ class RTMMessageCore extends RTMCore {
         }
     }
 
-    void getHistoryMessage(final IRTMCallback<HistoryMessageResult> callback, final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout, final MessageCategories type) {
+    void getHistoryMessage(final IRTMCallback<HistoryMessageResult> callback, final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes,  final MessageCategories type) {
         Quest quest = genGetMessageQuest(id, desc, count, beginMsec, endMsec, lastId, mtypes, type);
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
@@ -247,12 +253,12 @@ class RTMMessageCore extends RTMCore {
                 }
                 callback.onResult(result, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
-    HistoryMessageResult getHistoryMessage(final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout, MessageCategories type){
+    HistoryMessageResult getHistoryMessage(final long id, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes,  MessageCategories type){
         Quest quest = genGetMessageQuest(id, desc, count, beginMsec, endMsec, lastId, mtypes, type);
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         HistoryMessageResult result = buildHistoryMessageResult(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             if (type == DuplicatedMessageFilter.MessageCategories.P2PMessage)
@@ -279,24 +285,29 @@ class RTMMessageCore extends RTMCore {
                 if (message.messageType >= MessageType.IMAGEFILE && message.messageType <= MessageType.NORMALFILE) {
                     FileStruct fileInfo = new FileStruct();
                     try {
-                        JSONObject kk = new JSONObject(String.valueOf(obj));
-                        fileInfo.url = kk.getString("url");
-                        fileInfo.fileSize = kk.getLong("size");
-                        if (kk.has("surl"))
-                            fileInfo.surl = kk.getString("surl");
-
-                        if (message.messageType == MessageType.AUDIOFILE) {
                             JSONObject tt = new JSONObject(message.attrs);
-                            if (tt.has("rtm")){//rtm语音消息
-                                JSONObject fileAttrs = tt.getJSONObject("rtm");
-                                fileInfo.lang = fileAttrs.getString("lang");
-                                fileInfo.duration = fileAttrs.getInt("duration");
+                            JSONObject kk = new JSONObject(String.valueOf(obj));
+                            fileInfo.url = kk.getString("url");
+                            fileInfo.fileSize = kk.getLong("size");
+                            if (kk.has("surl"))
+                                fileInfo.surl = kk.getString("surl");
+
+                            if (message.messageType == MessageType.AUDIOFILE) {
+                                if (tt.has("rtm")){//rtm语音消息
+                                    JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                    fileInfo.lang = fileAttrs.getString("lang");
+                                    fileInfo.duration = fileAttrs.getInt("duration");
+                                }
                             }
-                        }
-                    } catch (JSONException e) {
+                            message.fileInfo = fileInfo;
+                            String realAttrs = "";
+                            if (tt.has("custom"))
+                                realAttrs = tt.getJSONObject("custom").toString();
+                                message.attrs = realAttrs;
+                    }
+                    catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    message.fileInfo = fileInfo;
                 }
                 else{
                     if (obj instanceof byte[]){
@@ -311,7 +322,7 @@ class RTMMessageCore extends RTMCore {
         return message;
     }
 
-    void getMessage(final IRTMCallback<SingleMessage> callback, long fromUid, long xid, long messageId, int type, int timeout) {
+    void getMessage(final IRTMCallback<SingleMessage> callback, long fromUid, long xid, long messageId, int type) {
         Quest quest = new Quest("getmsg");
         quest.param("mid", messageId);
         quest.param("xid", xid);
@@ -326,63 +337,63 @@ class RTMMessageCore extends RTMCore {
                     SingleMessage = buildSingleMessage(answer);
                 callback.onResult(SingleMessage, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
-    SingleMessage getMessage(long fromUid, long xid, long messageId, int type, int timeout){
+    SingleMessage getMessage(long fromUid, long xid, long messageId, int type){
         Quest quest = new Quest("getmsg");
         quest.param("mid", messageId);
         quest.param("xid", xid);
         quest.param("from", fromUid);
         quest.param("type", type);
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
 //        RTMAnswer result = genRTMAnswer(answer);
 
         return buildSingleMessage(answer);
     }
 
-    void delMessage(UserInterface.IRTMEmptyCallback callback, long fromUid, long xid, long messageId, int type, int timeout) {
+    void delMessage(UserInterface.IRTMEmptyCallback callback, long fromUid, long xid, long messageId, int type) {
         Quest quest = new Quest("delmsg");
         quest.param("mid", messageId);
         quest.param("xid", xid);
         quest.param("from", fromUid);
         quest.param("type", type);
 
-        sendQuestEmptyCallback(callback,quest,timeout);
+        sendQuestEmptyCallback(callback,quest);
     }
 
-    RTMAnswer delMessage(long fromUid, long xid, long messageId, int type, int timeout){
+    RTMAnswer delMessage(long fromUid, long xid, long messageId, int type){
         Quest quest = new Quest("delmsg");
         quest.param("mid", messageId);
         quest.param("xid", xid);
         quest.param("from", fromUid);
         quest.param("type", type);
 
-        return sendQuestEmptyResult(quest,timeout);
+        return sendQuestEmptyResult(quest);
     }
 
     //======================[ String message version ]================================//
-    void internalSendMessage(IRTMDoubleValueCallback<Long,Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
+    void internalSendMessage(IRTMDoubleValueCallback<Long,Long> callback, long toid, byte mtype, Object message, String attrs,  MessageCategories msgType) {
         if (mtype <= MessageType.NORMALFILE){
             callback.onResult(0L,0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value()));
             return;
         }
-        sendMsgAsync(callback, toid, mtype, message, attrs, timeout, msgType);
+        sendMsgAsync(callback, toid, mtype, message, attrs,  msgType);
     }
 
-    ModifyTimeStruct internalSendMessage(long toid, byte mtype, Object message, String attrs, int timeout,MessageCategories msgType) {
+    ModifyTimeStruct internalSendMessage(long toid, byte mtype, Object message, String attrs, MessageCategories msgType) {
         if (mtype <= MessageType.NORMALFILE)
             return genModifyAnswer(RTMErrorCode.RTM_EC_INVALID_FILE_MTYPE.value());
-        return sendMsgSync(toid, mtype, message, attrs, timeout, msgType);
+        return sendMsgSync(toid, mtype, message, attrs,  msgType);
     }
 
-    void internalSendChat(IRTMDoubleValueCallback<Long,Long> callback, long toid, byte mtype, Object message, String attrs, int timeout, MessageCategories msgType) {
-        sendMsgAsync(callback, toid, mtype, message, attrs, timeout, msgType);
+    void internalSendChat(IRTMDoubleValueCallback<Long,Long> callback, long toid, byte mtype, Object message, String attrs,  MessageCategories msgType) {
+        sendMsgAsync(callback, toid, mtype, message, attrs,  msgType);
     }
 
-    ModifyTimeStruct internalSendChat(long toid, byte mtype, Object message, String attrs, int timeout,MessageCategories msgType) {
-        return sendMsgSync(toid, mtype, message, attrs, timeout, msgType);
+    ModifyTimeStruct internalSendChat(long toid, byte mtype, Object message, String attrs, MessageCategories msgType) {
+        return sendMsgSync(toid, mtype, message, attrs,  msgType);
     }
 }
 

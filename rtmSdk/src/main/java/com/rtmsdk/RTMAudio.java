@@ -5,15 +5,12 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
-import com.fpnn.sdk.proto.MessagePayloadPacker;
 import com.livedata.audioConvert.AudioConvert;
 import com.rtmsdk.RTMStruct.RTMAudioStruct;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -95,6 +92,7 @@ public class RTMAudio {
     };
     private IAudioAction audioAction = null;
     private TranscribeLang lang = TranscribeLang.EN_US;
+    private int gatherInterva = 200;
     //    private AudioTrack mPlayer;
     private MediaRecorder mRecorder = null;
     private String audioDir = "";
@@ -104,6 +102,7 @@ public class RTMAudio {
     private int defaultBitRate = 16000;
     private int audioChannel = 1;
     private AmrBroad play = new AmrBroad();
+
 
     public static RTMAudio getInstance() {
         if (instance == null) {
@@ -189,6 +188,10 @@ public class RTMAudio {
 
     public void setLang(TranscribeLang lang){
         this.lang = lang;
+    }
+
+    public void setGatherInterva(int time){
+        gatherInterva = time;
     }
 
     public String getLang(){
@@ -284,7 +287,7 @@ public class RTMAudio {
             if (audioAction !=null){
                 audioAction.listenVolume(db);
             }
-            handler.postDelayed(mUpdateMicStatusTimer, 500);
+            handler.postDelayed(mUpdateMicStatusTimer, gatherInterva);
         }
     }
 

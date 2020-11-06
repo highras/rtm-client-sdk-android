@@ -5,27 +5,26 @@
      * @param uid/groupId/roomId     用户id/群组Id/房间Id(NoNull)
      * @param message   聊天消息(NoNull)
      * @param attrs     客户端自定义信息
-     * @param timeout   超时时间(秒)
      * @return          ModifyTimeStruct结构
      */
     
 发送p2p聊天消息
-    public ModifyTimeStruct sendChat(long uid, String message, String attrs, int timeout)     
+    public ModifyTimeStruct sendChat(long userId, String message, String attrs)     
      
 发送群组聊天消息
-    public ModifyTimeStruct sendGroupChat(long groupId, String message, String attrs, int timeout)
+    public ModifyTimeStruct sendGroupChat(long groupId, String message, String attrs)
 
 发送房间聊天消息
-    public ModifyTimeStruct sendRoomChat(long roomId, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendRoomChat(long roomId, String message, String attrs){
      
 发送p2p指令
-    public ModifyTimeStruct sendCmd(long uid, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendCmd(long uid, String message, String attrs){
 
 发送群组指令
-    public ModifyTimeStruct sendGroupCmd(long groupId, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendGroupCmd(long groupId, String message, String attrs){
 
 发送房间指令
-    public ModifyTimeStruct sendRoomCmd(long roomId, String message, String attrs, int timeout){
+    public ModifyTimeStruct sendRoomCmd(long roomId, String message, String attrs){
 
 
 以下接口统一参数说明
@@ -37,18 +36,17 @@
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息索引id(第一次默认填0)
-     * @param timeout   超时时间(秒)
      * return       HistoryMessageResult结构
      */
 
 获得p2p历史聊天记录
-    public HistoryMessageResult getP2PHistoryChat(long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getP2PHistoryChat(long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
 获得群组历史聊天记录
-    public HistoryMessageResult getGroupHistoryChat(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getGroupHistoryChat(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
 获得房间历史聊天记录
-    public HistoryMessageResult getRoomHistoryChat(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getRoomHistoryChat(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
 
     /**
@@ -58,51 +56,45 @@
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息索引id(第一次默认填0)
-     * @param timeout   超时时间(秒)
      * return   HistoryMessageResult
      */
-    public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout){
+    public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
     /*获取服务器未读消息(sync)
      * @param clear     是否清除离线提醒(默认false)
-     * @param timeout   超时时间(秒)
      * return           Unread 结构
      */
-    public Unread getUnread( boolean clear, int timeout){
+    public Unread getUnread( boolean clear){
 
     /*清除离线提醒
-     * @param timeout   超时时间(秒)
      * @return  RTMAnswer
      */
-    public RTMAnswer clearUnread(int timeout)
+    public RTMAnswer clearUnread()
 
     /**
      *文本翻译 sync(调用此接口需在管理系统启用翻译系统）
      * @param text          需要翻译的内容(NoNull)
      * @param destinationLanguage   目标语言(NoNull)
-     * @param sourceLanguage        源文本语言
-     * @param timeout               超时时间(秒)
+     * @param sourceLanguage        源文本语言(语言详见https://wiki.ifunplus.cn/display/livedata/Speech+Recognition+API+V1)
      * @param type                  可选值为chat或mail。如未指定，则默认使用'chat'
      * @param profanity             对翻译结果进行敏感语过滤。设置为以下2项之一: off, censor，默认：off
      * @return                  TranslatedInfo结构
      */
     public TranslatedInfo translate(String text, String destinationLanguage, String sourceLanguage, 
-                         translateType type, ProfanityType profanity,int timeout){
+                         translateType type, ProfanityType profanity,){
 
      /**
      * 设置翻译的目标语言 sync
      * @param targetLanguage    目标语言(NoNull)
-     * @param timeout   超时时间(秒)
      */
-    public RTMAnswer setTranslatedLanguage(String targetLanguage, int timeout){
+    public RTMAnswer setTranslatedLanguage(String targetLanguage){
 
     /**
      *文本检测 sync(调用此接口需在管理系统启用文本审核系统）
      * @param text          需要检测的文本(NoNull)
-     * @param timeout       超时时间(秒)
      * @return              CheckResult结构
      */
-    public CheckResult textCheck(String text, int timeout)
+    public CheckResult textCheck(String text)
 ~~~
 
 
@@ -115,25 +107,24 @@
      * @param uid       uid/groupId/roomId  目标用户id/群组id/房间id(NoNull)
      * @param message   聊天消息(NoNull)
      * @param attrs     附加信息
-     * @param timeout   超时时间(秒)
      */
 发送p2p聊天消息
-    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs, int timeout)
+    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs)
      
 发送群组聊天消息
-    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs, int timeout)
+    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs)
 
 发送房间聊天消息
-    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs, int timeout){
+    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs){
      
 发送p2p指令
-    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs, int timeout)
+    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message, String attrs)
 
 发送群组指令
-    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs, int timeout)
+    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message, String attrs)
 
 发送房间指令
-    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs, int timeout){
+    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message, String attrs){
 
 以下接口统一参数说明
     /*
@@ -144,16 +135,15 @@
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息的索引id
-     * @param timeout   超时时间(秒)
      */
 获得p2p历史聊天消息
-    public void getP2PHistoryChat(IRTMCallback<HistoryMessageResult> callback,  long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getP2PHistoryChat(IRTMCallback<HistoryMessageResult> callback,  long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
 获得群组历史聊天消息
-    public void getGroupHistoryChat(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getGroupHistoryChat(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
 获得房间历史聊天消息
-    public void getRoomHistoryChat(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getRoomHistoryChat(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
     /**
     * 获得广播历史聊天消息
@@ -163,39 +153,34 @@
      * @param beginMsec 开始时间戳(毫秒)
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息的索引id
-     * @param timeout   超时时间(秒)
      */
-    public void getBroadcastHistoryChat(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId, int timeout)
+    public void getBroadcastHistoryChat(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
     /**
      *获取服务器未读消息(async)
      * @param callback  IRTMCallback<Unread> 回调
      * @param clear     是否清除离线提醒(默认false)
-     * @param timeout   超时时间(秒)
      */
-    public void getUnread(final IRTMCallback<Unread> callback, boolean clear, int timeout)
+    public void getUnread(final IRTMCallback<Unread> callback, boolean clear)
 
     /**
      *清除离线提醒 async
      * @param callback EmptyCallback回调(NoNull)
-     * @param timeout   超时时间(秒)
      */
-    public void clearUnread(IRTMEmptyCallback callback, int timeout)
+    public void clearUnread(IRTMEmptyCallback callback)
     
     /**
      * 获取和自己有过会话的用户uid和群组id集合 async
      * @param callback UnreadCallback回调(NoNull)
-     * @param timeout   超时时间(秒)
      */
-    public void getSession(final IRTMCallback<Unread> callback, int timeout)
+    public void getSession(final IRTMCallback<Unread> callback)
 
     /**
      *设置目标翻译语言 async
      * @param callback  IRTMEmptyCallback回调(NoNull)
      * @param targetLanguage    目标语言(NoNull)
-     * @param timeout   超时时间(秒)
      */
-    public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage, int timeout)
+    public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage)
 
     /**
      *文本翻译 async(调用此接口需在管理系统启用翻译系统）
@@ -203,20 +188,18 @@
      * @param text          需要翻译的内容(NoNull)
      * @param destinationLanguage   目标语言(NoNull)
      * @param sourceLanguage        源文本语言
-     * @param timeout               超时时间(秒)
      * @param type                  可选值为chat或mail。如未指定，则默认使用'chat'
      * @param profanity             对翻译结果进行敏感语过滤。设置为以下2项之一: off, censor，默认：off
      */
-    public void translate(final IRTMCallback<TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage, int timeout,
+    public void translate(final IRTMCallback<TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage,
                              translateType type, ProfanityType profanity)
 
    /**
      *文本检测 async(调用此接口需在管理系统启用文本审核系统）
      * @param callback      IRTMCallback<CheckResult>回调(NoNull)
      * @param text          需要检测的文本(NoNull)
-     * @param timeout       超时时间(秒)
      */
-    public void textCheck(final IRTMCallback<CheckResult> callback, String text, int timeout)
+    public void textCheck(final IRTMCallback<CheckResult> callback, String text)
 
 
     /**语音转文字 sync

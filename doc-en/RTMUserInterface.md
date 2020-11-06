@@ -3,12 +3,12 @@
    //relogin start callback function  this willbe call relgion starting
     //reloginWillStart param userid answer-relogin result  reloginCount-relogin times
     public interface  IReloginStart{
-        boolean reloginWillStart(long uid, RTMAnswer answer, int reloginCount);
+        boolean reloginWillStart(long userid, RTMAnswer answer, int reloginCount);
     }
 
-    //
+    //relogin final result if successful == false mean relogin final failed
     public interface  IReloginCompleted{
-        void   reloginCompleted(long uid, boolean successfulm, RTMAnswer answer, int reloginCount);
+        void   reloginCompleted(long uid, boolean successful, RTMAnswer answer, int reloginCount);
     }
 
     public interface IRTMEmptyCallback {
@@ -34,7 +34,7 @@ public class RTMStruct {
 
     // Sensitive word  filte type
     public enum ProfanityType {
-        Off, //no  filte
+        Off, //no  filter
         Censor //if have Sensitive word the result will be replace '*'
     }
 
@@ -55,7 +55,7 @@ public class RTMStruct {
         }
     }
 
-    //if successful errorCode is 0 other else have mistake the errorMsg has detail messaget
+    //if successful errorCode is 0 other else have mistake ;the errorMsg has detail info
     public static class RTMAnswer
     {
         public int errorCode = -1;
@@ -174,19 +174,25 @@ public class RTMStruct {
 
     public static class AttrsStruct extends RTMAnswer{
         public List<Map<String, String>> attrs;
+        //  the map has some default key
+        //  ce：connetction's endpoint，if kickout this endpoint you can use kickout function
+        //  login：login time
+        //  my：current connection's attrs
     }
 
     public static class PublicInfo extends RTMAnswer{
         public Map<String, String> publicInfos; //group/room/user's public info
     }
 
-    public static class FileStruct{ 
+    public static class FileStruct{
         public String url;     //file's url
-        public int duration;   //voice duration
-        public long fileSize; 
-        public String lang; 
-        public String surl;    //thumbnail url
-        public boolean isRTMaudio = false;
+        public String surl;    //thumbnail url if file is picture this value will be set
+        public long fileSize;  //byte
+        public boolean isRTMaudio = false; //is rtm audio
+        public String lang;    //voice language if isRTMaudio ==true this value will be set
+        public int duration;   //voice duration if isRTMaudio ==true this value will be set
+        public String codec;   //voice codec if isRTMaudio ==true this value will be set
+        public int srate;       //SAMPLE RATE if isRTMaudio ==true this value will be set
     }
 }
 

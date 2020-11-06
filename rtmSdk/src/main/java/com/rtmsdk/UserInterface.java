@@ -12,7 +12,7 @@ public class UserInterface {
 
     //重连完成
     public interface  IReloginCompleted{
-        void   reloginCompleted(long uid, boolean successfulm, RTMAnswer answer, int reloginCount);
+        void   reloginCompleted(long uid, boolean successful, RTMAnswer answer, int reloginCount);
     }
 
     //返回空结果的回调接口

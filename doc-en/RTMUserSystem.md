@@ -9,158 +9,138 @@
      *kick another connection（you can kickout another connection when mutli login） async
      * @param callback IRTMEmptyCallback (NoNull)
      * @param endpoint  another connection address(NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public void kickout(final IRTMEmptyCallback callback, String endpoint, int timeout)
+    public void kickout(final IRTMEmptyCallback callback, String endpoint)
 
     /**
      *kick another connection（you can kickout another connection when mutli login sync
      * @param endpoint  another connection address(NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public RTMAnswer kickout(String endpoint, int timeout)
+    public RTMAnswer kickout(String endpoint)
 
 
     /**
      *add key_value （save current connection） async
      * @param callback IRTMEmptyCallback (NoNull)
      * @param attrs     additional message (NoNull)
-     * @param timeout    timeoout(seconds)
+     
      */
-    public void addAttributes(final IRTMEmptyCallback callback, Map<String, String> attrs, int timeout)
+    public void addAttributes(final IRTMEmptyCallback callback, Map<String, String> attrs)
 
     /**
      *add key_value （save current connection） async
      * @param attrs     additional message(NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public RTMAnswer addAttributes(Map<String, String> attrs, int timeout)
+    public RTMAnswer addAttributes(Map<String, String> attrs)
 
     /**
      * get user attributes async
      * @param callback  IRTMCallback<List<Map<String, String>>> (NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public void getAttributes(final IRTMCallback<List<Map<String, String>>> callback, int timeout) 
+    public void getAttributes(final IRTMCallback<List<Map<String, String>>> callback) 
 
     /**
      *get user attributes async
-     * @param timeout    timeoout(seconds)
      * @return          List<Map<String, String>>
      */
-    public AttrsStruct getAttributes(int timeout)
+    public AttrsStruct getAttributes()
 
     /**
      * add debug log
      * @param callback  IRTMEmptyCallback (notnull)
      * @param message   
      * @param attrs     additional message
-     * @param timeout   timeoout(seconds)
      */
-    public void addDebugLog(IRTMEmptyCallback callback, String message, String attrs, int timeout) 
+    public void addDebugLog(IRTMEmptyCallback callback, String message, String attrs) 
 
     /**
      * add debug log sync
      * @param message   
      * @param attrs     additional message
-     * @param timeout   timeoout(seconds)
      * @return          RTMAnswer
      */
-    public RTMAnswer addDebugLog(String message, String attrs, int timeout)
+    public RTMAnswer addDebugLog(String message, String attrs)
 
     /**
      * async
      * @param  callback  IRTMEmptyCallback 
      * @param appType     (NoNull)
      * @param deviceToken  (NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public void addDevice(IRTMEmptyCallback callback, String appType, String deviceToken, int timeout) 
+    public void addDevice(IRTMEmptyCallback callback, String appType, String deviceToken) 
 
     /**
      * async
      * @param appType    (NoNull)
      * @param deviceToken (NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public RTMAnswer addDevice(String appType, String deviceToken, int timeout)
+    public RTMAnswer addDevice(String appType, String deviceToken)
 
     /**
      * async
      * @param  callback  IRTMEmptyCallback 
      * @param deviceToken  (NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public void RemoveDevice(final IRTMEmptyCallback callback, String deviceToken, int timeout)
+    public void RemoveDevice(final IRTMEmptyCallback callback, String deviceToken)
 
     /**
      * async
      * @param deviceToken (NoNull)
-     * @param timeout    timeoout(seconds)
      */
-    public RTMAnswer RemoveDevice(String deviceToken, int timeout)
+    public RTMAnswer RemoveDevice(String deviceToken)
 
 
     /**
      * query users if online   async
      * @param callback IRTMCallback (NoNull)
      * @param uids    
-     * @param timeout  timeoout(seconds)
      */
-    public void getOnlineUsers(final IRTMCallback<HashSet<Long>> callback, HashSet<Long> uids, int timeout)
+    public void getOnlineUsers(final IRTMCallback<HashSet<Long>> callback, HashSet<Long> uids)
 
     /**
      * query users if online   async
-     * @param timeout    timeoout(seconds)
      *return MembersStruct
      */
-    public MembersStruct getOnlineUsers(HashSet<Long> checkUids, int timeout)
+    public MembersStruct getOnlineUsers(HashSet<Long> checkUids)
 
     /**
      * set public info and private info async
      * @param callback    IRTMEmptyCallback (NoNull)
      * @param publicInfo  
      * @param privateInfo
-     * @param timeout     timeoout(seconds)
      */
-    public void setUserInfo(IRTMEmptyCallback callback, String publicInfo, String privateInfo, int timeout)
+    public void setUserInfo(IRTMEmptyCallback callback, String publicInfo, String privateInfo)
 
     /**
      * set public info and private info sync
      * @param publicInfo  
      * @param privateInfo 
-     * @param timeout     timeoout(seconds)
      */
-    public RTMAnswer setUserInfo(String publicInfo, String privateInfo, int timeout)
+    public RTMAnswer setUserInfo(String publicInfo, String privateInfo)
 
     /**
      * get public info and private info async
      * @param callback DoubleStringCallback (NoNull)
-     * @param timeout  timeoout(seconds)
-
      */
-    public void getUserInfo(final IRTMCallback<GroupInfoStruct> callback, int timeout)
+    public void getUserInfo(final IRTMCallback<GroupInfoStruct> callback)
 
     /**
      * get public info and private info sync
-     * @param timeout     timeoout(seconds)
      * @return  GroupInfoStruct
      */
-    public GroupInfoStruct getUserInfo(int timeout)
+    public GroupInfoStruct getUserInfo()
 
     /**
      * et other users public info，max 100
      * @param callback UserAttrsCallback (NoNull)
      * @param uids    
-     * @param timeout   timeoout(seconds)
      */
-    public void getUserPublicInfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> uids, int timeout)
+    public void getUserPublicInfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> uids)
 
     /**
      * get other users public info，max 100
      * @param uids       
-     * @param timeout      timeoout(seconds)
      *return        UserPublicInfo
      */
-    public UserPublicInfo getUserPublicInfo(HashSet<Long> uids, int timeout)
+    public UserPublicInfo getUserPublicInfo(HashSet<Long> uids)
 ~~~

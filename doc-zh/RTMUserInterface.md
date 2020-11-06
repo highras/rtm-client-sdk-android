@@ -6,9 +6,9 @@
         boolean reloginWillStart(long uid, RTMAnswer answer, int reloginCount);
     }
 
-    //重连完成
+    //重连完成(如果 successful 为false表示最终重连失败,answer会有详细的错误码和错和错误信息 为true表示重连成功)
     public interface  IReloginCompleted{
-        void   reloginCompleted(long uid, boolean successfulm, RTMAnswer answer, int reloginCount);
+        void   reloginCompleted(long uid, boolean successful, RTMAnswer answer, int reloginCount);
     }
 
     //返回空结果的回调接口
@@ -175,6 +175,10 @@ public class RTMStruct {
 
     public static class AttrsStruct extends RTMAnswer{
         public List<Map<String, String>> attrs;
+        //  map中自动添加如下几个参数：
+        //  ce：链接的endpoint，需要让其下线可以调用kickout
+        //  login：登录时间，utc时间戳
+        //  my：当前链接的attrs
     }
 
     public static class PublicInfo extends RTMAnswer{
@@ -183,11 +187,12 @@ public class RTMStruct {
 
     public static class FileStruct{ //serverpush的文件结构
         public String url;     //文件的url地址 图片/语音/视频/普通文件
-        public int duration;   //语音长度(毫秒) 如果是rtm语音消息 会有此值
         public long fileSize;  //文件大小(字节)
-        public String lang;    //语言 如果是rtm语音消息 会有此值
-        public String surl;    //缩略图的url地址 如果是图片类型 会有此值
         public boolean isRTMaudio = false; //是否是rtm语音消息
+        public String lang;    //语言 如果是rtm语音消息 会有此值
+        public int duration;   //语音长度(毫秒) 如果是rtm语音消息 会有此值
+        public String codec;   //语音编码 如果是rtm语音消息 会有此值
+        public int srate;       //语音采样率 如果是rtm语音消息 会有此值
     }
 }
 

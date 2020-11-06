@@ -3,7 +3,7 @@ package com.rtmsdk;
 import com.fpnn.sdk.ErrorRecorder;
 
 public class RTMConfig {
-    public static final String SDKVersion = "2.0.7";
+    public static final String SDKVersion = "2.0.8";
     public static final String InterfaceVersion = "2.3.0";
 
     static int lostConnectionAfterLastPingInSeconds = 60;

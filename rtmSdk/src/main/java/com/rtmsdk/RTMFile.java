@@ -1,5 +1,7 @@
 package com.rtmsdk;
 
+import androidx.annotation.NonNull;
+
 import com.fpnn.sdk.ConnectionConnectedCallback;
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.ErrorRecorder;
@@ -175,7 +177,7 @@ class RTMFile extends RTMSystem {
             md5.update(md5Hex.getBytes("UTF-8"));
             md5Binary = md5.digest();
             md5Hex = RTMUtils.bytesToHexString(md5Binary, true);
-            JSONObject allatrrs =new JSONObject();
+            JSONObject allatrrs = new JSONObject();
 
             if (info.attrs != null)
                 allatrrs.put("custom",info.attrs);
@@ -193,6 +195,8 @@ class RTMFile extends RTMSystem {
                 rtmAttrs.put("duration",info.audioAttrs.duration);
                 rtmAttrs.put("ext","amr");
                 rtmAttrs.put("type","audiomsg");
+                rtmAttrs.put("codec","AMR_WB");
+                rtmAttrs.put("srate",16000);
             }
             allatrrs.put("rtm",rtmAttrs);
             fileAttrs = allatrrs.toString();
@@ -324,8 +328,9 @@ class RTMFile extends RTMSystem {
 
     
     //===========================[ Real Send File ]=========================//
-   void realSendFile(final UserInterface.IRTMDoubleValueCallback<Long,Long> callback, FileTokenType tokenType, long targetId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, int timeout, RTMAudioStruct audioAttrs) {
-        byte fileType = (byte)mtype.value();
+   private void realSendFile(final UserInterface.IRTMDoubleValueCallback<Long,Long> callback, FileTokenType tokenType, long targetId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, RTMAudioStruct audioAttrs) {
+       int timeout = RTMConfig.globalFileQuestTimeoutSeconds;
+       byte fileType = (byte)mtype.value();
         if (fileType < MessageType.IMAGEFILE || fileType > MessageType.NORMALFILE) {
             callback.onResult(0L,0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_MTYPE.value()));
             return ;
@@ -371,7 +376,8 @@ class RTMFile extends RTMSystem {
         }, tokenType, info.xid, timeout);
     }
 
-  ModifyTimeStruct realSendFile(FileTokenType tokenType, long targetId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, int timeout, RTMAudioStruct audioAttrs){
+  private ModifyTimeStruct realSendFile(FileTokenType tokenType, long targetId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, RTMAudioStruct audioAttrs){
+        int timeout = RTMConfig.globalFileQuestTimeoutSeconds;
         ModifyTimeStruct ret = new ModifyTimeStruct();
         byte fileType = (byte)mtype.value();
         //----------[ 1. check mtype ]---------------//
@@ -455,7 +461,7 @@ class RTMFile extends RTMSystem {
             info.audioAttrs = audioAttrs;
 
             Quest quest = buildSendFileQuest(info);
-            Answer answer = fileClient.sendQuest(quest, timeout);
+            Answer answer = fileClient.sendQuest(quest, RTMConfig.globalFileQuestTimeoutSeconds);
 
             if (answer.isErrorAnswer()){
                 ret.errorCode = answer.getErrorCode();
@@ -479,83 +485,83 @@ class RTMFile extends RTMSystem {
 
     /**
      * 发送p2p文件 async
-     * @param callback  IRTMDoubleValueCallback<Long,Long>接口回调(NoNull)
-     * @param peerUid   目标uid(NoNull)
-     * @param mtype     消息类型(NoNull)
-     * @param fileContent   文件内容(NoNull)
-     * @param filename      文件名字(NoNull)
+     * @param callback  IRTMDoubleValueCallback<Long,Long>接口回调
+     * @param peerUid   目标uid
+     * @param mtype     消息类型
+     * @param fileContent   文件内容
+     * @param filename      文件名字
      * @param attrs 文件属性信息
      * @param audioInfo rtm语音结构
      */
-    public void sendFile(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long peerUid, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, RTMAudioStruct audioInfo) {
-        realSendFile(callback, FileTokenType.P2P, peerUid, mtype, fileContent, filename, attrs,RTMConfig.globalFileQuestTimeoutSeconds,audioInfo);
+    public void sendFile(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long peerUid, @NonNull FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, RTMAudioStruct audioInfo) {
+        realSendFile(callback, FileTokenType.P2P, peerUid, mtype, fileContent, filename, attrs,audioInfo);
     }
 
     /**
      * 发送p2p文件 sync
-     * @param peerUid   目标uid(NoNull)
-     * @param mtype     消息类型(NoNull)
-     * @param fileContent   文件内容(NoNull)
-     * @param filename      文件名字(NoNull)
+     * @param peerUid   目标uid
+     * @param mtype     消息类型
+     * @param fileContent   文件内容
+     * @param filename      文件名字
      * @param attrs 文件属性信息
      * @param audioInfo rtm语音结构
      */
-    public ModifyTimeStruct sendFile(long peerUid, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
-        return realSendFile(FileTokenType.P2P, peerUid, mtype, fileContent, filename, attrs, RTMConfig.globalFileQuestTimeoutSeconds,audioInfo);
+    public ModifyTimeStruct sendFile(long peerUid, @NonNull FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
+        return realSendFile(FileTokenType.P2P, peerUid, mtype, fileContent, filename, attrs,audioInfo);
     }
 
     /**
      * 发送群组文件 async
-     * @param callback  IRTMCallback<Long>接口回调(NoNull)
-     * @param groupId   群组id(NoNull)
-     * @param mtype     消息类型(NoNull)
-     * @param fileContent   文件内容(NoNull)
-     * @param filename      文件名字(NoNull)
+     * @param callback  IRTMDoubleValueCallback<Long,Long>接口回调
+     * @param groupId   群组id
+     * @param mtype     消息类型
+     * @param fileContent   文件内容
+     * @param filename      文件名字
      * @param attrs 文件属性信息
      * @param audioInfo rtm语音结构
      */
-    public void  sendGroupFile(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
-        realSendFile(callback, FileTokenType.Group, groupId, mtype, fileContent, filename, attrs, RTMConfig.globalFileQuestTimeoutSeconds,audioInfo);
+    public void  sendGroupFile(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
+        realSendFile(callback, FileTokenType.Group, groupId, mtype, fileContent, filename, attrs,audioInfo);
     }
 
     /**
      * 发送群组文件 sync
-     * @param groupId   群组id(NoNull)
-     * @param mtype     消息类型(NoNull)
-     * @param fileContent   文件内容(NoNull)
-     * @param filename      文件名字(NoNull)
+     * @param groupId   群组id
+     * @param mtype     消息类型
+     * @param fileContent   文件内容
+     * @param filename      文件名字
      * @param attrs 文件属性信息
      * @param audioInfo rtm语音结构
      */
-    public ModifyTimeStruct sendGroupFile(long groupId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
-        return realSendFile(FileTokenType.Group, groupId, mtype, fileContent, filename, attrs, RTMConfig.globalFileQuestTimeoutSeconds,audioInfo);
+    public ModifyTimeStruct sendGroupFile(long groupId, @NonNull FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
+        return realSendFile(FileTokenType.Group, groupId, mtype, fileContent, filename, attrs,audioInfo);
     }
 
     /**
      * 发送房间文件 async
-     * @param callback  IRTMCallback<Long>接口回调(NoNull)
-     * @param roomId   房间id(NoNull)
-     * @param mtype     消息类型(NoNull)
-     * @param fileContent   文件内容(NoNull)
-     * @param filename      文件名字(NoNull)
+     * @param callback  IRTMDoubleValueCallback<Long,Long>接口回调
+     * @param roomId   房间id
+     * @param mtype     消息类型
+     * @param fileContent   文件内容
+     * @param filename      文件名字
      * @param attrs 文件属性信息
      * @param audioInfo rtm语音结构
      */
-    public void  sendRoomFile(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
-        realSendFile(callback, FileTokenType.Room, roomId, mtype, fileContent, filename, attrs, RTMConfig.globalFileQuestTimeoutSeconds,audioInfo);
+    public void  sendRoomFile(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId,@NonNull  FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
+        realSendFile(callback, FileTokenType.Room, roomId, mtype, fileContent, filename, attrs,audioInfo);
     }
 
     /**
      * 发送房间文件 sync
-     * @param roomId   房间id(NoNull)
-     * @param mtype     消息类型(NoNull)
-     * @param fileContent   文件内容(NoNull)
-     * @param filename      文件名字(NoNull)
+     * @param roomId   房间id
+     * @param mtype     消息类型
+     * @param fileContent   文件内容
+     * @param filename      文件名字
      * @param attrs 文件属性信息
      * @param audioInfo rtm语音结构
      */
     public ModifyTimeStruct sendRoomFile(long roomId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs,RTMAudioStruct audioInfo){
-        return realSendFile(FileTokenType.Room, roomId, mtype, fileContent, filename, attrs, RTMConfig.globalFileQuestTimeoutSeconds,audioInfo);
+        return realSendFile(FileTokenType.Room, roomId, mtype, fileContent, filename, attrs,audioInfo);
     }
 }
 

@@ -10,27 +10,26 @@
      * @param mtype     消息类型
      * @param message   消息内容(NoNull)
      * @param attrs     客户端自定义信息
-     * @param timeout   超时时间(秒)
      * @return          ModifyTimeStruct结构
      */
 发送p2p消息   
-    public ModifyTimeStruct sendMessage(long uid, byte mtype, String message, String attrs, int timeout)
+    public ModifyTimeStruct sendMessage(long uid, byte mtype, String message, String attrs)
 
 发送群组消息
-    public ModifyTimeStruct sendGroupMessage(long groupId, byte mtype, String message, String attrs, int timeout)
+    public ModifyTimeStruct sendGroupMessage(long groupId, byte mtype, String message, String attrs)
 
 发送房间消息
-    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, String message, String attrs, int timeout)
+    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, String message, String attrs)
 
 
 发送p2p二进制消息
-    public ModifyTimeStruct sendMessage(long uid, byte mtype, byte[] message, String attrs, int timeout)
+    public ModifyTimeStruct sendMessage(long uid, byte mtype, byte[] message, String attrs)
 
 发送群组二进制消息
-    public ModifyTimeStruct sendGroupMessage(long groupId, byte mtype, byte[] message, String attrs, int timeout)
+    public ModifyTimeStruct sendGroupMessage(long groupId, byte mtype, byte[] message, String attrs)
 
 发送房间二进制消息
-    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, byte[] message, String attrs, int timeout)
+    public ModifyTimeStruct sendRoomMessage(long roomId, byte mtype, byte[] message, String attrs)
 
 
 以下接口统一参数说明
@@ -43,17 +42,16 @@
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
-     * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
 获得p2p历史记录
-    public HistoryMessageResult getP2PHistoryMessage( long peerUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout)
+    public HistoryMessageResult getP2PHistoryMessage( long peerUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes)
 
 获得群组历史记录
-    public HistoryMessageResult getGroupHistoryMessage(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout)
+    public HistoryMessageResult getGroupHistoryMessage(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes)
 
 获得房间历史记录
-    public HistoryMessageResult   getRoomHistoryMessage(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout)
+    public HistoryMessageResult   getRoomHistoryMessage(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes)
 
     /**
      *获取广播历史消息(async)
@@ -63,10 +61,9 @@
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
-     * @param timeout   超时时间(秒)
      * @return          HistoryMessageResult
      */
-    public HistoryMessageResult getBroadcastHistoryMessage( boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout)
+    public HistoryMessageResult getBroadcastHistoryMessage( boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes)
 
 
 以下接口统一参数说明
@@ -74,33 +71,31 @@
      * @param messageId   消息id(NoNull)
      * @param fromUid   发送者id(NoNull)
      * @param toUid/groupId/roomId  目标用户id/群组id/房间id(NoNull)
-     * @param timeout   超时时间(秒)
      */
 
 获取p2p单条消息
-    public SingleMessage getP2PMessage(long fromUid, long toUid, long messageId, int timeout)
+    public SingleMessage getP2PMessage(long fromUid, long toUid, long messageId)
 
 获取群组单条消息
-    public SingleMessage getGroupMessage(long fromUid, long groupId, long messageId, int timeout)
+    public SingleMessage getGroupMessage(long fromUid, long groupId, long messageId)
 
 获取房间单条消息
-    public SingleMessage getRoomMessage(long fromUid, long roomId, long messageId, int timeout)
+    public SingleMessage getRoomMessage(long fromUid, long roomId, long messageId)
 
 删除p2p单条消息
-    public RTMAnswer deleteP2PMessage(long fromUid, long toUid, long messageId, int timeout)
+    public RTMAnswer deleteP2PMessage(long fromUid, long toUid, long messageId)
 
 删除群组单条消息
-    public RTMAnswer deleteGroupMessage(long fromUid, long groupId, long messageId, int timeout)
+    public RTMAnswer deleteGroupMessage(long fromUid, long groupId, long messageId)
 
 删除房间单条消息
-    public RTMAnswer deleteRoomMessage(long fromUid, long roomId, long messageId, int timeout)
+    public RTMAnswer deleteRoomMessage(long fromUid, long roomId, long messageId)
 
      /*获取广播单条聊天消息 sync
      * @param messageId   消息id(NoNull)
      * @param fromUid   发送者id(NoNull)
-     * @param timeout   超时时间(秒)
      */
-    public SingleMessage getBroadcastMessage(long messageId, int timeout)
+    public SingleMessage getBroadcastMessage(long messageId)
 ~~~
 
 
@@ -115,24 +110,23 @@
      * @param mtype     消息类型
      * @param message   p2p消息(NoNull)
      * @param attrs     客户端自定义属性信息
-     * @param timeout   超时时间(秒)
      */
      
 发送p2p消息
-    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, String message, String attrs, int timeout) 
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, String message, String attrs) 
      
 发送群组消息
-    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message, String attrs, int timeout) 
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, String message, String attrs) 
 
 发送房间消息
-    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message, String attrs, int timeout) 
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, String message, String attrs) 
      
     //binary message
-    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, byte[] message, String attrs, int timeout) 
+    public void sendMessage(IRTMDoubleValueCallback<Long,Long> callback, long uid, byte mtype, byte[] message, String attrs) 
 
-    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] message, String attrs, int timeout) 
+    public void sendGroupMessage(IRTMDoubleValueCallback<Long,Long> callback, long groupId, byte mtype, byte[] message, String attrs) 
 
-    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] message, String attrs, int timeout) 
+    public void sendRoomMessage(IRTMDoubleValueCallback<Long,Long> callback, long roomId, byte mtype, byte[] message, String attrs) 
 
 以下接口统一参数说明
     /**
@@ -144,17 +138,16 @@
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
-     * @param timeout   超时时间(秒)
      */
 
 获得p2p历史消息
-    public void getP2PHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long peerUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) 
+    public void getP2PHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long peerUid, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes) 
 
 获得群组历史消息
-    public void getGroupHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) 
+    public void getGroupHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes) 
 
 获得房间历史消息
-    public void getRoomHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) 
+    public void getRoomHistoryMessage(IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes) 
 
     /**
      *获取广播历史消息(async)
@@ -165,9 +158,8 @@
      * @param endMsec   结束时间戳(毫秒)
      * @param lastId    最后一条消息索引id
      * @param mtypes    查询历史消息类型
-     * @param timeout   超时时间(秒)
      */
-    public void getBroadcastHistoryMessage(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes, int timeout) 
+    public void getBroadcastHistoryMessage(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId, List<Byte> mtypes) 
 
 以下接口统一参数说明
     /**
@@ -176,33 +168,31 @@
      * @param fromUid   发送者id(NoNull)
      * @param toUid     接收者id(NoNull)
      * @param messageId   消息id(NoNull)
-     * @param timeout   超时时间(秒)
      */
 
 获取p2p单条聊天消息
-    public void getP2PMessage(IRTMCallback<SingleMessage> callback, long fromUid, long toUid, long messageId, int timeout) 
+    public void getP2PMessage(IRTMCallback<SingleMessage> callback, long fromUid, long toUid, long messageId) 
 
 获取群组单条聊天消息
-    public void getGroupMessage(IRTMCallback<SingleMessage> callback, long fromUid, long groupId, long messageId, int timeout) 
+    public void getGroupMessage(IRTMCallback<SingleMessage> callback, long fromUid, long groupId, long messageId) 
 
 获取房间单条聊天消息
-    public void getRoomMessage(IRTMCallback<SingleMessage> callback, long fromUid, long roomId, long messageId, int timeout) 
+    public void getRoomMessage(IRTMCallback<SingleMessage> callback, long fromUid, long roomId, long messageId) 
 
 删除p2p单条消息
-    public void deleteP2PMessage(IRTMEmptyCallback callback, long fromUid, long toUid, long messageId,  int timeout) 
+    public void deleteP2PMessage(IRTMEmptyCallback callback, long fromUid, long toUid, long messageId,  ) 
 
 获取群组单条聊天消息
-    public void deleteGroupMessage(IRTMEmptyCallback callback, long fromUid, long groupId, long messageId,  int timeout) 
+    public void deleteGroupMessage(IRTMEmptyCallback callback, long fromUid, long groupId, long messageId,  ) 
 
 获取房间单条聊天消息
-    public void deleteRoomMessage(IRTMEmptyCallback callback, long fromUid, long RoomId, long messageId,  int timeout) 
+    public void deleteRoomMessage(IRTMEmptyCallback callback, long fromUid, long RoomId, long messageId,  ) 
 
 
     /**
      *获取广播单条聊天消息 async
      * @param callback IRTMCallback<SingleMessage>回调(NoNull)
      * @param messageId   消息id(NoNull)
-     * @param timeout   超时时间(秒)
      */
-    public void getBroadcastMessage(IRTMCallback<SingleMessage> callback, long messageId, int timeout) 
+    public void getBroadcastMessage(IRTMCallback<SingleMessage> callback, long messageId) 
 ~~~
