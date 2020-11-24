@@ -1,6 +1,6 @@
 ~~~ c++
     //链接断开 (如果设置重连 会自动连接)
-    public void sessionClosed(int ClosedByErrorCode){};
+    public void rtmConnectClose(int ClosedByErrorCode){};
 
     //被踢
     public void kickout(){};
