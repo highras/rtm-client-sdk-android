@@ -7,7 +7,7 @@
 - [TestCase](#testcase)
 
 ## AndroidVersionSupport
-- lowest Android version is 4.4
+- lowest Android version is 4.1
 - support fpnn ecc encryption(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### Depends
