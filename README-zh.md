@@ -7,7 +7,7 @@
 - [测试案例](#测试案例)
 
 ### 版本支持
-- 最低支持Android版本为4.4
+- 最低支持Android版本为4.1
 - 支持fpnn ecc加密(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### 依赖集成
@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.0.8'
+        api 'com.github.highras:rtm-android:2.3.0'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.0.8</version>
+        <version>2.3.0</version>
         <type>pom</type>
     </dependency>
     ~~~
