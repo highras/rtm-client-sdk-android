@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.0.8</version>
+        <version>2.3.0</version>
         <type>pom</type>
     </dependency>
     ~~~
