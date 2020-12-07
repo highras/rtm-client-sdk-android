@@ -39,7 +39,7 @@ public class RTMUtils {
             }
             return map;
         }
-        catch (NoSuchElementException e)
+        catch (Exception e)
         {
             ErrorRecorder.record(e.getMessage());
         }
@@ -62,7 +62,7 @@ public class RTMUtils {
                     list.add(Long.valueOf(String.valueOf(value)));
             }
         }
-        catch (NoSuchElementException e)
+        catch (Exception e)
         {
             ErrorRecorder.record(e.getMessage());
         }
@@ -84,7 +84,7 @@ public class RTMUtils {
                     list.add(Integer.valueOf(String.valueOf(value)));
             }
         }
-        catch (NoSuchElementException e)
+        catch (Exception e)
         {
             ErrorRecorder.record(e.getMessage());
         }
@@ -93,25 +93,34 @@ public class RTMUtils {
     static void getIntList(Message message,String key, List<Integer> list) {
         if (message == null)
             return;
-        List<Object> attrsList = (List<Object>)message.get(key);
-        for (Object value : attrsList) {
-            if (value instanceof Integer)
-                list.add(((Integer) value).intValue());
-            else if (value instanceof Long)
-                list.add(((Long) value).intValue());
-            else if (value instanceof BigInteger)
-                list.add(((BigInteger) value).intValue());
-            else
-                list.add(Integer.valueOf(String.valueOf(value)));
+        try {
+
+            List<Object> attrsList = (List<Object>) message.get(key);
+            for (Object value : attrsList) {
+                if (value instanceof Integer)
+                    list.add(((Integer) value).intValue());
+                else if (value instanceof Long)
+                    list.add(((Long) value).intValue());
+                else if (value instanceof BigInteger)
+                    list.add(((BigInteger) value).intValue());
+                else
+                    list.add(Integer.valueOf(String.valueOf(value)));
+            }
+        }catch (Exception e){
+            ErrorRecorder.record(e.getMessage());
         }
     }
 
     static void getStringList(Message message,String key, List<String> list) {
         if (message == null)
             return;
-        List<Object> attrsList = (List<Object>)message.get(key);
-        for (Object value : attrsList) {
-            list.add(String.valueOf(value));
+        try {
+            List<Object> attrsList = (List<Object>) message.get(key);
+            for (Object value : attrsList) {
+                list.add(String.valueOf(value));
+            }
+        }catch (Exception e){
+            ErrorRecorder.record(e.getMessage());
         }
     }
 
@@ -122,7 +131,7 @@ public class RTMUtils {
             for (Object value : attrsList)
                 attributes.add(new HashMap<>((Map<String, String>) value));
         }
-        catch (NoSuchElementException e)
+        catch (Exception e)
         {
             ErrorRecorder.record(e.getMessage());
         }
@@ -144,7 +153,7 @@ public class RTMUtils {
                     uids.add(Long.valueOf(String.valueOf(value)));
             }
         }
-        catch (NoSuchElementException e)
+        catch (Exception e)
         {
             ErrorRecorder.record(e.getMessage());
         }

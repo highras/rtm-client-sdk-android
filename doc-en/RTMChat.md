@@ -59,9 +59,27 @@ ssend control command in room
      */
     public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
+    /**get p2p urnead count(sync)
+     * @param uids      user ids(get user ids by getsession)
+     * @param lastMessageTime (ms)(default user last logout time)
+     * @param messageTypes (default chat message types, not included customize message type)
+     *return        UnreadNum
+     */
+    public UnreadNum getP2PUnread(HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes)
+    
+    
+    /**get group urnead count （sync）
+     * @param gids  group ids(get group ids by getsession)
+     * @param lastMessageTime (ms)(default user last logout time)
+     * @param messageTypes (default chat message types, not included customize message type)
+     *return        Map<String, Integer>> ey-grouprid，value-unread count
+     */
+    public UnreadNum getGroupUnread(HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes)
+
+
+
     /*get server unread message(sync)
-     * @param clear     if clear unread(default false)
-     
+     * @param clear     if clear unread(default true)
      * return           Unread struct
      */
     public Unread getUnread( boolean clear){
@@ -85,9 +103,9 @@ ssend control command in room
 
      /**
      * sync
-     * @param targetLanguage 
+     * @param targetLanguage (the language refer to TranslateLang.java)
      */
-    public RTMAnswer setTranslatedLanguage(TranslateLang targetLanguage){
+    public RTMAnswer setTranslatedLanguage(String targetLanguage){
 
     /**
      *text detection sync(need config on console）
@@ -153,18 +171,38 @@ ssend control command in room
      */
     public void getBroadcastHistoryChat(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
+
+    /**
+     *get p2p urnead count(async)
+     * @param callback   IRTMCallback<Map<String, Integer>> key-userid，value-unread count
+     * @param     uids   user ids(get user ids by getsession)
+     * @param lastMessageTime (ms)(default user last logout time)
+     * @param messageTypes (default chat message types, not included customize message type)
+     */
+    public void getP2PUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids,long lastMessageTime, List<Byte> messageTypes) 
+    
+    
+    
+     /**
+     *get group unread count(async)
+     * @param callback   IIRTMCallback<Map<String, Integer>> key-groupid，value-unread count
+     * @param     gids   group ids((get group ids by getsession))   
+     * @param lastMessageTime(ms)(default user last logout time)
+     * @param messageTypes (default chat message types, not included customize message type)
+     */
+    public void getGroupUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids,long lastMessageTime, List<Byte> messageTypes) 
+    
+
     /**
      *get unread from server(async)
      * @param callback  IRTMCallback<Unread>
-     * @param clear     if clear remind(default false)
-     
+     * @param clear     if clear remind(default true)
      */
     public void getUnread(final IRTMCallback<Unread> callback, boolean clear)
 
     /**
      *clear unread(async)
      * @param callback EmptyCallback (NoNull)
-     
      */
     public void clearUnread(IRTMEmptyCallback callback)
     
@@ -178,7 +216,7 @@ ssend control command in room
     /**
      * async
      * @param callback  IRTMEmptyCallback (NoNull)
-     * @param targetLanguage    (NoNull)
+     * @param targetLanguage    (the language refer to TranslateLang.java)(NoNull)
      
      */
     public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage)
@@ -203,11 +241,11 @@ ssend control command in room
     public void textCheck(final IRTMCallback<CheckResult> callback, String text)
 
 
-    /**audio trans text sync
+    /**audio trans text async
      * @param content   audio message(NoNull)
      * @param lang      audio lang(NoNull)
      * @param codec     audio codec("AMR_WB")
      * @param srate     sampling rate(16000)
      */
-    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, TranscribeLang lang, String codec, int srate) 
+    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, String lang, String codec, int srate) 
 ~~~

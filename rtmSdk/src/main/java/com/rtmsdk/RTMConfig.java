@@ -3,20 +3,20 @@ package com.rtmsdk;
 import com.fpnn.sdk.ErrorRecorder;
 
 public class RTMConfig {
-    public static final String SDKVersion = "2.0.8";
-    public static final String InterfaceVersion = "2.3.0";
+    public static final String SDKVersion = "2.3.0";
+    public static final String InterfaceVersion = "2.4.0";
 
-    static int lostConnectionAfterLastPingInSeconds = 60;
+    static int lostConnectionAfterLastPingInSeconds = 120;
     static int globalConnectTimeoutSeconds = 30;
     static int globalQuestTimeoutSeconds = 30;
     static int fileGateClientHoldingSeconds = 150;
     static int globalFileQuestTimeoutSeconds = 120;
     static int globalTranslateQuestTimeoutSeconds = 120;
-    static ErrorRecorder errorRecorder = null;
+    static ErrorRecorder errorRecorder = new ErrorRecorder();
 
     public int maxPingInterval;
-    public int globalConnectTimeout;
     public int globalQuestTimeout;
+    public int globalConnectTimeout;
     public int fileClientHoldingSeconds;
     public int globalFileQuestTimeout;
     public int globalTranslateQuestTimeout;

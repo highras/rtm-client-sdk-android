@@ -1,7 +1,10 @@
 ~~~ java
 
    //relogin start callback function  this willbe call relgion starting
-    //reloginWillStart param userid answer-relogin result  reloginCount-relogin times
+    //userid- user id
+    // answer-relogin result  
+    // reloginCount-relogin times
+    //user need add some restrict for relogin  such as relogin max times， relogin interval seconds
     public interface  IReloginStart{
         boolean reloginWillStart(long userid, RTMAnswer answer, int reloginCount);
     }
@@ -70,6 +73,12 @@ public class RTMStruct {
         }
     }
 
+    //unread num struct
+    public static class UnreadNum extends RTMAnswer
+    {
+        public HashMap<String, Integer> unreadInfo; //key-uid/groupid value-unread number
+    }
+    
     //
     public static class Unread extends RTMAnswer
     {

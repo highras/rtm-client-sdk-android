@@ -5,6 +5,7 @@ import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.fpnn.sdk.ConnectionWillCloseCallback;
 import com.fpnn.sdk.ErrorCode;
@@ -22,7 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,7 +45,7 @@ class RTMCore  implements INetEvent{
     //-------------[ Fields ]--------------------------//
     public static INetEvent mINetEvent;
     private NetStateReceiver stateReceiver;
-    private Object interLocker;
+    private final Object interLocker =  new Object();
     private long pid;
     private long uid;
     private String token;
@@ -65,16 +65,17 @@ class RTMCore  implements INetEvent{
     private AtomicBoolean running = new AtomicBoolean(true);
     private AtomicBoolean initCheckThread = new AtomicBoolean(false);
     private Thread checkThread;
-    private int maxReloginCount = 20;
 
     private RTMQuestProcessor processor;
-    protected com.fpnn.sdk.ErrorRecorder errorRecorder = null;
+    protected com.fpnn.sdk.ErrorRecorder errorRecorder = (ErrorRecorder)ErrorRecorder.getInstance();
 
     private TCPClient dispatch;
     private TCPClient rtmGate;
     private Map<String, Map<TCPClient, Long>> fileGates;
     private int connectionId = 0;
     private boolean authFinish = false;
+    private RTMStruct.RTMAnswer lastReloginAnswer = new RTMStruct.RTMAnswer();
+    private boolean noNetWorkNotify = false;
 
     private IReloginStart reloginStartCallback;
     private IReloginCompleted reloginCompletedCallback;
@@ -82,8 +83,6 @@ class RTMCore  implements INetEvent{
         {
             add(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value());
             add(RTMErrorCode.RTM_EC_PROJECT_BLACKUSER.value());
-            add(RTMErrorCode.RTM_EC_ADMIN_LOGIN.value());
-            add(RTMErrorCode.RTM_EC_INVALID_PID_OR_UID.value());
         }
     };
 
@@ -101,45 +100,45 @@ class RTMCore  implements INetEvent{
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         stateReceiver = new NetStateReceiver();
-        context.registerReceiver(new NetStateReceiver(),intentFilter);
-
+        context.registerReceiver(stateReceiver,intentFilter);
     }
 
-    void reloginEvent(final int count){
+    void reloginEvent(int count){
+//        isRelogin.set(true);
         int num = count;
         Map<String, String> kk = loginAttrs;
-        RTMStruct.RTMAnswer loginAnswer = login(token, TranslateLang.getByName(lang), kk, loginAddresType);
-        if(loginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
-            isRelogin.set(false);
-            reloginCompletedCallback.reloginCompleted(uid, true, loginAnswer, num++);
-            return;
-        }
-        else {
-            if (Arrays.asList(finishCodeList).contains(loginAnswer.errorCode)){
+        if (reloginStartCallback.reloginWillStart(uid, lastReloginAnswer, num)) {
+            lastReloginAnswer = login(token, lang, kk, loginAddresType);
+            if(lastReloginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
                 isRelogin.set(false);
-                processor.sessionClosed(ErrorCode.FPNN_EC_OK.value());
-                reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num++);
+                reloginCompletedCallback.reloginCompleted(uid, true, lastReloginAnswer, num);
                 return;
             }
             else {
-               if (reloginStartCallback.reloginWillStart(uid, loginAnswer, num++)) {
+                if (finishCodeList.contains(lastReloginAnswer.errorCode)){
+                    isRelogin.set(false);
+                    reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
+                    return;
+                }
+                else {
+                    if (!isRelogin.get()) {
+                        reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
+                        return;
+                    }
                     try {
                         Thread.sleep(1 * 1000);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
                         isRelogin.set(false);
-                        reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num++);
-                        processor.sessionClosed(ErrorCode.FPNN_EC_OK.value());
+                        reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
                         return;
                     }
-                    reloginEvent(num);
+                    reloginEvent(++num);
                 }
-                else {
-                    isRelogin.set(false);
-                    reloginCompletedCallback.reloginCompleted(uid, false, loginAnswer, num++);
-                    processor.sessionClosed(ErrorCode.FPNN_EC_OK.value());
-               }
             }
+        }
+        else {
+            isRelogin.set(false);
+            reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, --num);
         }
     }
 
@@ -149,11 +148,16 @@ class RTMCore  implements INetEvent{
                 case NetUtils.NETWORK_NONE:
 //                    close();
                     //                sayBye(true);
+                    noNetWorkNotify = true;
+//                    if (isRelogin.get()){
+//                        isRelogin.set(false);
+//                    }
                     break;
                 case NetUtils.NETWORK_MOBILE:
                 case NetUtils.NETWORK_WIFI:
-                    if (lastNetType != netWorkState && rtmGate != null && autoConnect) {
-                        if (isRelogin.get() == true)
+                    noNetWorkNotify = false;
+                    if (lastNetType != netWorkState && autoConnect) {
+                        if (isRelogin.get())
                             return;
 
                         isRelogin.set(true);
@@ -164,12 +168,12 @@ class RTMCore  implements INetEvent{
                                     sayBye(new IRTMEmptyCallback() {
                                         @Override
                                         public void onResult(RTMStruct.RTMAnswer answer) {
-                                            reloginEvent(0);
+                                            reloginEvent(1);
                                         }
                                     });
                                 }
                                 else
-                                    reloginEvent(0);
+                                    reloginEvent(1);
                             }
                         }).start();
                     }
@@ -180,23 +184,22 @@ class RTMCore  implements INetEvent{
     }
 
     void RTMInit(String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor) {
-        this.pid = pid;
-        this.uid = uid;
-        autoConnect = false;
+        try {
+            this.pid = pid;
+            this.uid = uid;
+            autoConnect = false;
 
-        interLocker = new Object();
-        fileGates = new HashMap<>();
+            fileGates = new HashMap<>();
+            processor = new RTMQuestProcessor();
+            processor.SetProcessor(serverPushProcessor);
 
-        processor = new RTMQuestProcessor();
-        processor.SetProcessor(serverPushProcessor);
-
-        dispatch = TCPClient.create(endpoint, true);
-        dispatch.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
-        dispatch.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
-        isRelogin.set(false);
-        if (RTMConfig.errorRecorder != null)
-        {
-            errorRecorder = RTMConfig.errorRecorder;
+            dispatch = TCPClient.create(endpoint, true);
+            dispatch.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
+            dispatch.setQuestTimeout(RTMConfig.globalConnectTimeoutSeconds);
+            isRelogin.set(false);
+        }
+        catch (Exception ex){
+            Log.e("rtmsdk","RTMInit error " + ex.getMessage());
         }
     }
 
@@ -206,7 +209,8 @@ class RTMCore  implements INetEvent{
         synchronized (interLocker) {
             errorRecorder = value;
             processor.SetErrorRecorder(value);
-            dispatch.SetErrorRecorder(value);
+            if (dispatch != null)
+                dispatch.SetErrorRecorder(value);
         }
     }
 
@@ -230,7 +234,7 @@ class RTMCore  implements INetEvent{
             fis.close();
             baos.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            errorRecorder.recordError("RTMInit error " + e.getMessage());
         }
     }
 
@@ -311,7 +315,11 @@ class RTMCore  implements INetEvent{
         Answer answer = null;
         try {
             answer = client.sendQuest(quest, timeout);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
+            if (errorRecorder != null)
+                errorRecorder.recordError(e);
+            answer = new Answer(quest);
+            answer.fillErrorInfo(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),e.getMessage());
             Thread.currentThread().interrupt();
         }
         return answer;
@@ -341,8 +349,11 @@ class RTMCore  implements INetEvent{
 
     void realClose(){
         closedCase = CloseType.ByUser;
-        if (autoConnect)
-            context.unregisterReceiver(stateReceiver);
+        try {
+            if (stateReceiver != null)
+                context.unregisterReceiver(stateReceiver);
+        } catch ( IllegalArgumentException e){
+        }
         close();
     }
 
@@ -363,11 +374,10 @@ class RTMCore  implements INetEvent{
             }, 5);
         } else {
             try {
-                Answer heh = client.sendQuest(quest,5);
+                client.sendQuest(quest,5);
                 close();
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
+                close();
             }
         }
     }
@@ -376,10 +386,10 @@ class RTMCore  implements INetEvent{
         sendQuest(quest, callback, RTMConfig.globalQuestTimeoutSeconds);
     }
 
-        void sendQuest(Quest quest, final FunctionalAnswerCallback callback, int timeout) {
+    void sendQuest(Quest quest, final FunctionalAnswerCallback callback, int timeout) {
         TCPClient client = getCoreClient();
+        final Answer answer = new Answer(quest);
         if (client == null) {
-            final Answer answer = new Answer(quest);
             answer.fillErrorInfo(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(),"invalid connection");
             callback.onAnswer(answer,answer.getErrorCode());//当前线程
             return;
@@ -393,7 +403,13 @@ class RTMCore  implements INetEvent{
         }
         if (timeout <= 0)
             timeout = RTMConfig.globalQuestTimeoutSeconds;
-        client.sendQuest(quest, callback, timeout);
+        try {
+            client.sendQuest(quest, callback, timeout);
+        }
+        catch (Exception e){
+            answer.fillErrorInfo(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value(),e.getMessage());
+            callback.onAnswer(answer, answer.getErrorCode());
+        }
     }
 
     void sendQuestEmptyCallback(final IRTMEmptyCallback callback, Quest quest) {
@@ -481,12 +497,10 @@ class RTMCore  implements INetEvent{
         ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
             NetworkInfo activeInfo = cm.getActiveNetworkInfo();
-            if (activeInfo != null && activeInfo.isAvailable() && activeInfo.isConnected()) {
+            if (activeInfo != null && activeInfo.isAvailable() && activeInfo.isConnected())
                 isConnected = true;
-            }
-            return isConnected;
         }
-        return false;
+        return isConnected;
     }
 
     //-------------[ Auth(Login) utilies functions ]--------------------------//
@@ -512,34 +526,39 @@ class RTMCore  implements INetEvent{
             @Override
             public void connectionWillClose(InetSocketAddress peerAddress, int _connectionId,boolean causedByError) {
                 if (connectionId != 0 && connectionId == _connectionId && closedCase != CloseType.ByUser && getClientStatus() != ClientStatus.Connecting) {
-                    closeStatus();
+                    close();
+                    processor.rtmConnectClose(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
                     if (!autoConnect) {
-                        close();
-                        processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
+                        return;
                     }
                     else
                     {
-                        if (closedCase == CloseType.ByServer) {
-                            processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
-                            return;
-                        }
-                        if (isRelogin.get() == true){
+                        if (closedCase == CloseType.ByServer || isRelogin.get()) {
                             return;
                         }
 
                         if (isAirplaneModeOn()) {
-                            processor.sessionClosed(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
                             return;
                         }
 
-                        if(getClientStatus() == ClientStatus.Closed && isNetWorkConnected()){
-                            isRelogin.set(true);
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    reloginEvent(0);
-                                }
-                            }).start();
+                        if(getClientStatus() == ClientStatus.Closed){
+                            try {
+                                Thread.sleep(2* 1000);//处理一些特殊情况
+                                if (noNetWorkNotify)
+                                    return;
+                                if (isRelogin.get() || getClientStatus() == ClientStatus.Connected)
+                                    return;
+                                isRelogin.set(true);
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        reloginEvent(1);
+                                    }
+                                }).start();
+                            }
+                            catch (Exception e){
+                                errorRecorder.recordError(" relogin error " + e.getMessage());
+                            }
                         }
                     }
                 }
@@ -573,7 +592,7 @@ class RTMCore  implements INetEvent{
         if (attr != null)
             qt.param("attrs", attr);
         try {
-            Answer answer = rtmGate.sendQuest(qt);
+            Answer answer = rtmGate.sendQuest(qt,RTMConfig.globalConnectTimeoutSeconds);
 
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
@@ -602,9 +621,9 @@ class RTMCore  implements INetEvent{
             connectionId = rtmGate.getConnectionId();
             return genRTMAnswer(answer);
         }
-        catch (InterruptedException  ex){
+        catch (Exception  ex){
             closeStatus();
-            return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value());
+            return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),ex.getMessage());
         }
     }
 
@@ -622,87 +641,112 @@ class RTMCore  implements INetEvent{
         if (attr != null)
             qt.param("attrs", attr);
 
-
         rtmGate.sendQuest(qt, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                    closeStatus();
-                    callback.onResult(genRTMAnswer(answer,errorCode));
-                } else if (!answer.wantBoolean("ok")) {
-                    if (retry) {
+                try {
+                    if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
                         closeStatus();
-                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"retry failed auth failed token maybe expired"));
-                    } else {
-                        String endpoint = answer.getString("gate");
-                        if (endpoint.equals("")) {
+                        callback.onResult(genRTMAnswer(answer, errorCode));
+                    } else if (!answer.wantBoolean("ok")) {
+                        if (retry) {
                             closeStatus();
-                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"auth failed token maybe expired"));
+                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "retry failed auth failed token maybe expired"));
                         } else {
-                            rtmGate = TCPClient.create(endpoint);
-                            auth(callback, token, attr, true);
+                            String endpoint = answer.getString("gate");
+                            if (endpoint.equals("")) {
+                                closeStatus();
+                                callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "auth failed token maybe expired"));
+                            } else {
+                                rtmGate = TCPClient.create(endpoint);
+                                auth(callback, token, attr, true);
+                            }
                         }
+                    } else {
+                        synchronized (interLocker) {
+                            status = ClientStatus.Connected;
+                        }
+                        processor.setLastPingTime(RTMUtils.getCurrentSeconds());
+                        checkRoutineInit();
+                        authFinish = true;
+                        connectionId = rtmGate.getConnectionId();
+                        callback.onResult(genRTMAnswer(errorCode));
                     }
                 }
-                else{
-                    synchronized (interLocker) {
-                        status = ClientStatus.Connected;
-                    }
-                    processor.setLastPingTime(RTMUtils.getCurrentSeconds());
-                    checkRoutineInit();
-                    authFinish = true;
-                    connectionId = rtmGate.getConnectionId();
-                    callback.onResult(genRTMAnswer(errorCode));
+                catch (Exception e){
+                    callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),e.getMessage()));
                 }
             }
         }, 0);
     }
 
-    void login(final IRTMEmptyCallback callback, final String token, final TranslateLang lang, final String addressType, final Map<String, String> attr) {
-        synchronized (interLocker) {
-            if (status == ClientStatus.Connected || status == ClientStatus.Connecting) {
+    void login(final IRTMEmptyCallback callback, final String token, final String lang, final String addressType, final Map<String, String> attr) {
+        try {
+            synchronized (interLocker) {
+                if (status == ClientStatus.Connected || status == ClientStatus.Connecting) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_OK.value()));
+                        }
+                    }).start();
+                    return;
+                }
+                status = ClientStatus.Connecting;
+            }
+
+            if (dispatch == null) {
+                closeStatus();
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value()));
+                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), "rtmclient not init success"));
                     }
                 }).start();
                 return;
             }
-            status = ClientStatus.Connecting;
-        }
-        this.token =  token;
-        if (lang == null)
-            this.lang = "";
-        else
-            this.lang = lang.getName();
-        this.loginAddresType = addressType;
-        this.loginAttrs = attr;
-        closedCase = CloseType.None;
+            this.token = token;
+            if (lang == null)
+                this.lang = "";
+            else
+                this.lang = lang;
+            this.loginAddresType = addressType;
+            this.loginAttrs = attr;
+            closedCase = CloseType.None;
 
-        if (rtmGate != null){
-            auth(callback, token, attr);
-        }
-        else {
-            AsyncFetchRtmGateEndpoint(addressType, new FunctionalAnswerCallback() {
-                @Override
-                public void onAnswer(Answer answer, int errorCode) {
-                    if (errorCode != ErrorCode.FPNN_EC_OK.value())
-                        callback.onResult(genRTMAnswer(errorCode));
-                    else {
-                        String endpoint = answer.getString("endpoint");
-                        if (endpoint.equals("")) {
+            if (rtmGate != null) {
+                auth(callback, token, attr);
+            } else {
+                AsyncFetchRtmGateEndpoint(addressType, new FunctionalAnswerCallback() {
+                    @Override
+                    public void onAnswer(Answer answer, int errorCode) {
+                        if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
+                            closeStatus();
                             callback.onResult(genRTMAnswer(errorCode));
-                        } else {
-                            dispatch.close();
-                            rtmGate = TCPClient.create(endpoint);
-                            ConfigRtmGateClient(rtmGate);
-                            auth(callback, token, attr);
+                        }
+                        else {
+                            String endpoint = answer.getString("endpoint");
+                            if (endpoint.equals("")) {
+                                closeStatus();
+                                callback.onResult(genRTMAnswer(errorCode));
+                            } else {
+                                dispatch.close();
+                                rtmGate = TCPClient.create(endpoint);
+                                ConfigRtmGateClient(rtmGate);
+                                auth(callback, token, attr);
+                            }
                         }
                     }
-                }
-            }, RTMConfig.globalQuestTimeoutSeconds);
+                }, RTMConfig.globalConnectTimeoutSeconds);
+            }
         }
+        catch (final Exception ex){
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), "rtm login error " + ex.getMessage()));
+                }
+            }).start();        }
     }
 
     private  void closeStatus()
@@ -712,32 +756,36 @@ class RTMCore  implements INetEvent{
         }
     }
 
-    RTMStruct.RTMAnswer login(String token, TranslateLang lang, Map<String, String> attr, String addressType) {
-        if (lang == null)
-            this.lang = "";
-        else
-            this.lang = lang.getName();
-        this.token =  token;
-        this.loginAddresType = addressType;
-        this.loginAttrs = attr;
-        closedCase = CloseType.None;
-
-        synchronized (interLocker) {
-            if (status == ClientStatus.Connected || status == ClientStatus.Connecting)
-                return genRTMAnswer(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value());
-
-            status = ClientStatus.Connecting;
-        }
-
-        if (rtmGate != null){
-            return auth(token, attr);
-        }
-        Quest quest = new Quest("which");
-        quest.param("what", "rtmGated");
-        quest.param("addrType", addressType);
-        quest.param("proto", "tcp");
+    RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
         try {
-            Answer answer = dispatch.sendQuest(quest);
+            if (lang == null)
+                this.lang = "";
+            else
+                this.lang = lang;
+            this.token =  token;
+            this.loginAddresType = addressType;
+            this.loginAttrs = attr;
+            closedCase = CloseType.None;
+
+            synchronized (interLocker) {
+                if (status == ClientStatus.Connected || status == ClientStatus.Connecting)
+                    return genRTMAnswer(ErrorCode.FPNN_EC_OK.value());
+
+                status = ClientStatus.Connecting;
+            }
+
+            if (rtmGate != null){
+                return auth(token, attr);
+            }
+            if (dispatch == null){
+                closeStatus();
+                return  genRTMAnswer(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value(),"rtmclient not init success");
+            }
+            Quest quest = new Quest("which");
+            quest.param("what", "rtmGated");
+            quest.param("addrType", addressType);
+            quest.param("proto", "tcp");
+            Answer answer = dispatch.sendQuest(quest,RTMConfig.globalConnectTimeoutSeconds);
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
                 return genRTMAnswer(answer);
@@ -745,19 +793,17 @@ class RTMCore  implements INetEvent{
 
             String endpoint = answer.getString("endpoint");
             if (endpoint.equals("")) {
-                return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value());
+                closeStatus();
+                return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),"rtmgate not get");
                 //返回错误码
-            } else {
-                rtmGate = TCPClient.create(endpoint);
             }
-
+            rtmGate = TCPClient.create(endpoint);
             dispatch.close();
             ConfigRtmGateClient(rtmGate);
             return auth(token, attr);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             closeStatus();
-            Thread.currentThread().interrupt();
-            return  genRTMAnswer(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value());
+            return  genRTMAnswer(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value(),e.getMessage());
         }
     }
 

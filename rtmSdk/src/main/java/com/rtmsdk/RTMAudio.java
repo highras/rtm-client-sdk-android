@@ -56,7 +56,12 @@ class AmrBroad implements Runnable {
     {
         if(mAudioTrack == null)
             return;
-        mAudioTrack.stop();
+        try {
+            mAudioTrack.stop();
+        }
+        catch (IllegalStateException e) {
+            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+        }
         mAudioTrack.release();
         mAudioTrack = null;
     }
@@ -98,7 +103,7 @@ public class RTMAudio {
     private String audioDir = "";
     private File recordFile;
     private int minSampleRate = 16000;
-    private int maxDurSeconds = 60;
+    private int maxDurSeconds = 300;
     private int defaultBitRate = 16000;
     private int audioChannel = 1;
     private AmrBroad play = new AmrBroad();
@@ -118,6 +123,9 @@ public class RTMAudio {
 
     private RTMAudio(){
 
+    }
+    public void setMaxDurSeconds(int millTime){
+        maxDurSeconds = millTime;
     }
 
     public short[] getRawData(byte[] amrSrc) {
@@ -306,7 +314,20 @@ public class RTMAudio {
             return;
         }
         if (mRecorder != null){
-            mRecorder.stop();
+            try {
+                mRecorder.stop();
+                mRecorder.setOnErrorListener(null);
+                mRecorder.setOnInfoListener(null);
+                mRecorder.setPreviewDisplay(null);
+                mRecorder.stop();
+            } catch (IllegalStateException e) {
+                Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            }
+            catch (RuntimeException e) {
+                Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            } catch (Exception e) {
+                Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            }
             mRecorder.release();
             mRecorder = null;
         }
@@ -344,8 +365,16 @@ public class RTMAudio {
         if (mRecorder == null)
             return null;
         try {
+            mRecorder.setOnErrorListener(null);
+            mRecorder.setOnInfoListener(null);
+            mRecorder.setPreviewDisplay(null);
             mRecorder.stop();
         } catch (IllegalStateException e) {
+            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+        }
+        catch (RuntimeException e) {
+            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+        } catch (Exception e) {
             Log.e("rtmaudio","stopRecord error " + e.getMessage());
         }
 
@@ -374,20 +403,20 @@ public class RTMAudio {
         }
     }
 
-    public void broadAduio(byte[] amrData) {
+    public void broadAudio(byte[] amrData) {
         short[] data = getRawData(amrData);
         play.start(data);
     }
 
-    public void broadAduio() {
-        broadAduio(recordFile);
+    public void broadAudio() {
+        broadAudio(recordFile);
     }
 
-    public void broadAduio(File file) {
-        broadAduio(fileToByteArray(file));
+    public void broadAudio(File file) {
+        broadAudio(fileToByteArray(file));
     }
 
-    public void stopAduio() {
+    public void stopAudio() {
         play.stop();
     }
 }

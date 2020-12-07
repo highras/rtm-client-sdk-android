@@ -6,10 +6,11 @@
         void stopRecord();
         void broadAudio();
         void broadFinish();
+        void listenVolume();
 ~~~
 
 #### API
-public void broadAduio(byte[] amrData) {
+public void broadAudio(byte[] amrData) {
 public void startRecord();
 public RTMAudioStruct stopRecord()
 
@@ -21,6 +22,6 @@ public RTMAudioStruct stopRecord()
     audioManage.stopRecord();  //结束录音
     rtmclient.sendfile/sendgroufile/sendroomfile
     
-    audioManage.broadAduio(data)
+    audioManage.broadAudio(data)
 
 

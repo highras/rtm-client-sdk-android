@@ -30,7 +30,7 @@ public class RTMClient extends RTMChat {
             errDesc += " IRTMQuestProcessor is null";
 
         if (!errDesc.equals(""))
-            throw new IllegalArgumentException(errDesc);
+            errorRecorder.recordError("rtmclient init error " + errDesc);
         this.pid = pid;
         this.uid = uid;
         this.endpoint = endpoint;
@@ -61,34 +61,33 @@ public class RTMClient extends RTMChat {
     }
 
     public RTMStruct.RTMAnswer  login(String token) {
-        return login(token, TranslateLang.NONE, null,"ipv4");
-    }
-
-
-    /**
-     *rtmclient登陆  sync
-     * @param token     用户token
-     * @param lang      用户语言(当项目启用了自动翻译  如果客户端设置了语言会收到翻译后的结果 不设置语言或者为空则不会自动翻译,后续可以通过setlang设置)
-     * @param attr      登陆附加信息
-     * @param addressType   链接类型 "ipv4"-ip地址 "domain"-域名
-     */
-    public RTMStruct.RTMAnswer login(String token, TranslateLang lang, Map<String, String> attr, String addressType) {
-        return super.login(token, lang, attr, addressType);
+        return login(token, "", null,"ipv4");
     }
 
     public void login(IRTMEmptyCallback callback, String token) {
-        super.login(callback, token, TranslateLang.NONE, "ipv4",null);
+        super.login(callback, token, "", "ipv4",null);
     }
 
     /**
-     *rtmclient登陆  async
+     *rtm登陆  sync
+     * @param token     用户token
+     * @param lang      用户语言(详见TranslateLang.java枚举列表)(当项目启用了自动翻译  如果客户端设置了语言会收到翻译后的结果 不设置语言或者为空则不会自动翻译,后续可以通过setTranslatedLanguage设置)
+     * @param attr      登陆附加信息
+     * @param addressType   连接网关的类型 "ipv4"-ip地址 "domain"-域名
+     */
+    public RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
+        return super.login(token, lang, attr, addressType);
+    }
+
+    /**
+     *rtm登陆  async
      * @param callback  登陆结果回调
      * @param token     用户token
-     * @param lang      用户语言(当项目启用了自动翻译  如果客户端设置了语言会收到翻译后的结果 不设置语言或者为空则不会自动翻译,后续可以通过setlang设置)
+     * @param lang      用户语言(详见TranslateLang.java枚举列表)(当项目启用了自动翻译  如果客户端设置了语言会收到翻译后的结果 不设置语言或者为空则不会自动翻译,后续可以通过setTranslatedLanguage设置)
      * @param attr      登陆附加信息
-     * @param addressType   链接类型 "ipv4"-ip地址 "domain"-域名
+     * @param addressType   连接网关的类型 "ipv4"-ip地址 "domain"-域名
      */
-    public void login(IRTMEmptyCallback callback,String token, TranslateLang lang, Map<String, String> attr, String addressType) {
+    public void login(IRTMEmptyCallback callback,String token, String lang, Map<String, String> attr, String addressType) {
         super.login(callback, token, lang, addressType, attr);
     }
 

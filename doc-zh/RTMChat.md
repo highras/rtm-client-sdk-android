@@ -61,7 +61,7 @@
     public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId){
 
     /*获取服务器未读消息(sync)
-     * @param clear     是否清除离线提醒(默认false)
+     * @param clear     是否清除离线提醒(默认true)
      * return           Unread 结构
      */
     public Unread getUnread( boolean clear){
@@ -85,7 +85,7 @@
 
      /**
      * 设置翻译的目标语言 sync
-     * @param targetLanguage    目标语言(NoNull)
+     * @param targetLanguage    目标语言(详见TranslateLang.java语言列表)
      */
     public RTMAnswer setTranslatedLanguage(String targetLanguage){
 
@@ -95,6 +95,16 @@
      * @return              CheckResult结构
      */
     public CheckResult textCheck(String text)
+    
+    
+     /**语音转文字 sync
+     * @param content   语音内容
+     * @param lang      语言(详见TranscribeLang.java枚举值)
+     * @param codec     音频格式("AMR_WB")
+     * @param srate     采样率(16000)
+     * return           AudioTextStruct结构
+     */
+    public AudioTextStruct audioToText(@NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) 
 ~~~
 
 
@@ -156,10 +166,51 @@
      */
     public void getBroadcastHistoryChat(IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId)
 
+
+    /**
+     *获取p2p未读条目数(sync)
+     * @param uids      用户id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     *return        UnreadNum结构
+     */
+    public UnreadNum getP2PUnread(HashSet<Long> uids, long lastMessageTime, HashSet<Integer> messageTypes)
+    
+    
+      /**
+     *获取群组未读条目数(sync)
+     * @param gids      群组id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     *  return UnreadNum结构
+     */
+    public UnreadNum getGroupUnread(HashSet<Long> gids, long lastMessageTime, HashSet<Integer> messageTypes)
+    
+    
+    /**
+     *获取p2p未读条目数(async)
+     * @param callback   IRTMCallback<Map<String, Integer>> 用户id，未读消息条目数
+     * @param uids      用户id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     */
+    public void getP2PUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids,long lastMessageTime, HashSet<Integer> messageTypes) 
+    
+    
+     /**
+     *获取群组未读条目数(async)
+     * @param callback   IRTMCallback<Map<String, Integer>> 群组id，未读消息条目数
+     * @param gids      群组id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     */
+    public void getGroupUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids,long lastMessageTime, HashSet<Integer> messageTypes) 
+    
+    
     /**
      *获取服务器未读消息(async)
      * @param callback  IRTMCallback<Unread> 回调
-     * @param clear     是否清除离线提醒(默认false)
+     * @param clear     是否清除离线提醒(默认true)
      */
     public void getUnread(final IRTMCallback<Unread> callback, boolean clear)
 
@@ -178,7 +229,7 @@
     /**
      *设置目标翻译语言 async
      * @param callback  IRTMEmptyCallback回调(NoNull)
-     * @param targetLanguage    目标语言(NoNull)
+     * @param targetLanguage    目标语言(详见TranslateLang.java语言列表)
      */
     public void setTranslatedLanguage(IRTMEmptyCallback callback, String targetLanguage)
 
@@ -202,11 +253,11 @@
     public void textCheck(final IRTMCallback<CheckResult> callback, String text)
 
 
-    /**语音转文字 sync
+    /**语音转文字 async
      * @param content   语音内容(NoNull)
-     * @param lang      语言(NoNull)
+     * @param lang      语言(详见TranscribeLang.java枚举值)
      * @param codec     音频格式("AMR_WB")
      * @param srate     采样率(16000)
      */
-    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, TranscribeLang lang, String codec, int srate) 
+    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, String lang, String codec, int srate) 
 ~~~

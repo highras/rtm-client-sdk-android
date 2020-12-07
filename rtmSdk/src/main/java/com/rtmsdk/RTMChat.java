@@ -11,7 +11,11 @@ import com.rtmsdk.UserInterface.*;
 import com.rtmsdk.DuplicatedMessageFilter.MessageCategories;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 class RTMChat extends RTMRoom {
     private String defaultCodec = "AMR_WB";
@@ -88,11 +92,11 @@ class RTMChat extends RTMRoom {
     }
 
     public void getUnread(IRTMCallback<Unread> callback) {
-        getUnread(callback, false);
+        getUnread(callback, true);
     }
 
     public Unread getUnread(){
-        return getUnread(false);
+        return getUnread(true);
     }
 
 
@@ -112,38 +116,71 @@ class RTMChat extends RTMRoom {
         return translate(text, targetLanguage, "", transtype, protype);
     }
 
-    public void audioCheckURL(IRTMCallback<CheckResult> callback, String url, TranscribeLang lang) {
+    public void audioCheckURL(IRTMCallback<CheckResult> callback, String url, String lang) {
         audioCheckURL(callback, url, lang,defaultCodec,sample_rate);
     }
 
-    public void audioCheck(IRTMCallback<CheckResult> callback, byte[] content, TranscribeLang lang) {
+    public void audioCheck(IRTMCallback<CheckResult> callback, byte[] content, String lang) {
         audioCheck(callback, content, lang,defaultCodec,sample_rate);
     }
 
-    public CheckResult audioCheckURL(String url, TranscribeLang lang){
+    public CheckResult audioCheckURL(String url, String lang){
         return audioCheckURL(url, lang,defaultCodec,sample_rate);
     }
 
-    public CheckResult audioCheck(byte[] content, TranscribeLang lang){
+    public CheckResult audioCheck(byte[] content, String lang){
         return audioCheck(content, lang,defaultCodec,sample_rate);
     }
 
-    public void audioToTextURL(IRTMCallback<AudioTextStruct> callback, String url, TranscribeLang lang) {
+    public void audioToTextURL(IRTMCallback<AudioTextStruct> callback, String url, String lang) {
         audioToTextURL(callback, url, lang,defaultCodec,sample_rate);
     }
 
-    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, TranscribeLang lang) {
+    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, String lang) {
         audioToText(callback, content, lang,defaultCodec,sample_rate);
     }
 
-    public AudioTextStruct audioToTextURL(String url, TranscribeLang lang){
+    public AudioTextStruct audioToTextURL(String url, String lang){
         return audioToTextURL(url, lang,defaultCodec,sample_rate);
     }
 
-    public AudioTextStruct audioToText(byte[] content, TranscribeLang lang){
+    public AudioTextStruct audioToText(byte[] content, String lang){
         return audioToText(content, lang,defaultCodec,sample_rate);
     }
-    //重载end
+
+    public UnreadNum getGroupUnread(HashSet<Long>gids) {
+        return getGroupUnread(gids, 0, null);
+    }
+
+
+    public UnreadNum getGroupUnread(HashSet<Long>gids, List<Byte> messageTypes) {
+        return getGroupUnread(gids,0,messageTypes);
+    }
+
+    public UnreadNum getP2PUnread(HashSet<Long>uids) {
+        return getP2PUnread(uids,0, null);
+    }
+
+    public UnreadNum getP2PUnread(HashSet<Long>uids, List<Byte> messageTypes) {
+        return getP2PUnread(uids,0, messageTypes);
+    }
+
+    public void getP2PUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids){
+        getP2PUnread(callback,uids,0,null);
+    }
+
+    public void getP2PUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids, List<Byte> messageTypes){
+        getP2PUnread(callback,uids,0,messageTypes);
+    }
+
+    public void getGroupUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids) {
+        getGroupUnread(callback,gids,0, null);
+    }
+
+    public void getGroupUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long>gids,List<Byte> messageTypes) {
+        getGroupUnread(callback,gids,0, messageTypes);
+    }
+        //重载end
 
     /**图片检测 async(调用此接口需在管理系统启用图片审核系统)
      * @param callback  IRTMCallback<CheckResult>回调
@@ -178,38 +215,38 @@ class RTMChat extends RTMRoom {
     /**语音检测 async(调用此接口需在管理系统启用语音审核系统)
      * @param callback  IRTMCallback<CheckResult>回调
      * @param url       语音url地址
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举列表)
      * @param codec     音频格式
      */
-    public void audioCheckURL(@NonNull IRTMCallback<CheckResult> callback, @NonNull String url, @NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public void audioCheckURL(@NonNull IRTMCallback<CheckResult> callback, @NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         checkContentAsync(callback, url, CheckSourceType.URL, CheckType.AUDIO, "", lang,codec, srate);
     }
 
     /**语音检测 async
      * @param callback  IRTMCallback<CheckResult>回调
      * @param content   语音内容
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举列表)
      * @param codec     音频格式
      */
-    public void audioCheck(@NonNull IRTMCallback<CheckResult> callback, @NonNull byte[] content,@NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public void audioCheck(@NonNull IRTMCallback<CheckResult> callback, @NonNull byte[] content,@NonNull String lang, @NonNull String codec, int srate) {
         checkContentAsync(callback, content, CheckSourceType.CONTENT, CheckType.AUDIO, "", lang, codec, srate);
     }
 
     /**语音检测 sync
      * @param url    语音url地址
-     * @param lang   语言
+     * @param lang   语言(详见TranscribeLang.java枚举列表)
      * @param codec  音频格式
      */
-    public CheckResult audioCheckURL(@NonNull String url, @NonNull TranscribeLang lang, @NonNull String codec,int srate) {
+    public CheckResult audioCheckURL(@NonNull String url, @NonNull String lang, @NonNull String codec,int srate) {
         return checkContentSync(url, CheckSourceType.URL, CheckType.AUDIO, "", lang, codec, srate);
     }
 
     /**语音检测 sync
      * @param content   语音内容
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举列表)
      * @param codec     音频格式
      */
-    public CheckResult audioCheck(@NonNull byte[] content,@NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public CheckResult audioCheck(@NonNull byte[] content,@NonNull String lang, @NonNull String codec, int srate) {
         return checkContentSync(content, CheckSourceType.CONTENT, CheckType.AUDIO, "", lang,codec, srate);
     }
 
@@ -251,44 +288,44 @@ class RTMChat extends RTMRoom {
     /**语音转文字 async(调用此接口需在管理系统启用语音识别系统) codec为空则默认为AMR_WB,srate为0或者空则默认为16000
      * @param callback  IRTMCallback<AudioTextStruct>回调
      * @param url       语音url地址
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举值)
      * @param codec     音频格式
      * @param srate     采样率
      */
-    public void audioToTextURL(@NonNull IRTMCallback<AudioTextStruct> callback, @NonNull String url, @NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public void audioToTextURL(@NonNull IRTMCallback<AudioTextStruct> callback, @NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         audioToTextAsync(callback, url,CheckSourceType.URL, lang, codec, srate);
     }
 
     /**语音转文字 sync
      * @param url       语音url地址
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举值)
      * @param codec     音频格式("AMR_WB")
      * @param srate     采样率(16000)
      * return           AudioTextStruct结构
      */
-    public AudioTextStruct audioToTextURL(@NonNull String url, @NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public AudioTextStruct audioToTextURL(@NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         return audioToTextSync(url, CheckSourceType.URL, lang, codec, srate);
     }
 
     /**语音转文字 async
      * @param callback  IRTMCallback<AudioTextStruct>
      * @param content   语音内容
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举值)
      * @param codec     音频格式("AMR_WB")
      * @param srate     采样率(16000)
      */
-    public void audioToText(@NonNull IRTMCallback<AudioTextStruct> callback, @NonNull byte[] content, @NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public void audioToText(@NonNull IRTMCallback<AudioTextStruct> callback, @NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
         audioToTextAsync(callback, content, CheckSourceType.CONTENT, lang, codec, srate);
     }
 
     /**语音转文字 sync
      * @param content   语音内容
-     * @param lang      语言
+     * @param lang      语言(详见TranscribeLang.java枚举值)
      * @param codec     音频格式("AMR_WB")
      * @param srate     采样率(16000)
      * return           AudioTextStruct结构
      */
-    public AudioTextStruct audioToText(@NonNull byte[] content, @NonNull TranscribeLang lang, @NonNull String codec, int srate) {
+    public AudioTextStruct audioToText(@NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
         return audioToTextSync(content, CheckSourceType.CONTENT, lang, codec, srate);
     }
 
@@ -551,9 +588,69 @@ class RTMChat extends RTMRoom {
     }
 
     /**
+     *获取p2p未读条目数(async)
+     * @param callback   IRTMCallback<Map<String, Integer>> 用户id，未读消息条目数
+     * @param uids      用户id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，不包含自定义的type)
+     */
+    public void getP2PUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids,long lastMessageTime, List<Byte> messageTypes) {
+        Quest quest = new Quest("getp2punread");
+        quest.param("uids",uids);
+        if (lastMessageTime != 0)
+            quest.param("mtime",lastMessageTime);
+        if (messageTypes != null)
+            quest.param("mtypes",messageTypes);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                HashMap<String, Integer> p2pUnread = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    p2pUnread = new HashMap<>();
+                    Map<String, Integer> ob = (Map<String, Integer>)answer.want("p2p");
+                    for (String uid:ob.keySet())
+                        p2pUnread.put(uid,ob.get(uid));
+                }
+                callback.onResult(p2pUnread, genRTMAnswer(answer,errorCode));
+            }
+        });
+    }
+
+    /**
+     *获取群组未读条目数(async)
+     * @param callback   IRTMCallback<Map<String, Integer>> 群组id，未读消息条目数
+     * @param gids      群组id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，不包含自定义的type)
+     */
+    public void getGroupUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids,long lastMessageTime, List<Byte> messageTypes) {
+        Quest quest = new Quest("getgroupunread");
+        quest.param("gids", gids);
+        if (lastMessageTime != 0)
+            quest.param("mtime",lastMessageTime);
+        if (messageTypes != null)
+            quest.param("mtypes",messageTypes);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                HashMap<String, Integer> p2pUnread = null;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    p2pUnread = new HashMap<>();
+                    Map<String, Integer> ob = (Map<String, Integer>)answer.want("group");
+                    for (String uid:ob.keySet())
+                        p2pUnread.put(uid,ob.get(uid));
+                }
+                callback.onResult(p2pUnread, genRTMAnswer(answer,errorCode));
+            }
+        });
+    }
+
+    /**
      *获取服务器未读消息(async)
      * @param callback  IRTMCallback<Unread> 回调
-     * @param clear     是否清除离线提醒(如果不传 默认为false)
+     * @param clear     是否清除离线提醒(如果不传 默认为true)
      */
     public void getUnread(@NonNull final IRTMCallback<Unread> callback, boolean clear) {
         Quest quest = new Quest("getunread");
@@ -578,7 +675,7 @@ class RTMChat extends RTMRoom {
     }
 
     /*获取服务器未读消息(sync)
-     * @param clear     是否清除离线提醒(默认为false)
+     * @param clear     是否清除离线提醒(默认为true)
      * return           Unread 结构
      */
     public Unread getUnread( boolean clear){
@@ -600,6 +697,69 @@ class RTMChat extends RTMRoom {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         return ret;
+    }
+
+
+    /**
+     *获取群组未读条目数(sync)
+     * @param gids      群组id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天和文件相关消息类型，不包含自定义的type)
+     *  return UnreadNum结构
+     */
+    public UnreadNum getGroupUnread(@NonNull HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes) {
+        Quest quest = new Quest("getgroupunread");
+        quest.param("gids",gids);
+        if (lastMessageTime != 0)
+            quest.param("mtime",lastMessageTime);
+        if (messageTypes != null)
+            quest.param("mtypes",messageTypes);
+
+        Answer answer = sendQuest(quest);
+        RTMAnswer result = genRTMAnswer(answer);
+        UnreadNum res = new UnreadNum();
+        HashMap<String, Integer> groupUnread = new HashMap<>();
+
+        if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            Map<String, Integer> ob = (Map<String, Integer>)answer.want("group");
+            for (String uid:ob.keySet())
+                groupUnread.put(uid,ob.get(uid));
+        }
+        res.unreadInfo = groupUnread;
+        res.errorCode = result.errorCode;
+        res.errorMsg = result.errorMsg;
+        return res;
+    }
+
+    /**
+     *获取p2p未读条目数(async)
+     * @param uids      用户id集合(建议通过getSession接口获取)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天和文件相关消息类型，不包含自定义的type)
+     *return        UnreadNum结构
+     */
+    public UnreadNum getP2PUnread(@NonNull HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes) {
+        Quest quest = new Quest("getp2punread");
+        quest.param("uids",uids);
+        if (lastMessageTime != 0)
+            quest.param("mtime",lastMessageTime);
+        if (messageTypes != null)
+            quest.param("mtypes",messageTypes);
+
+        Answer answer = sendQuest(quest);
+        RTMAnswer result = genRTMAnswer(answer);
+        UnreadNum res = new UnreadNum();
+        HashMap<String, Integer> p2pUnread = new HashMap<>();
+
+        if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            Map<String, Integer> ob = (Map<String, Integer>)answer.want("p2p");
+            for (String uid:ob.keySet())
+                p2pUnread.put(uid,ob.get(uid));
+        }
+        res.unreadInfo = p2pUnread;
+        res.errorCode = result.errorCode;
+        res.errorMsg = result.errorMsg;
+        return res;
     }
 
     /**
@@ -669,22 +829,27 @@ class RTMChat extends RTMRoom {
     /**
      *设置目标翻译语言 async
      * @param callback  IRTMEmptyCallback回调
-     * @param targetLanguage    目标语言
-     
+     * @param targetLanguage    目标语言(详见TranslateLang.java语言列表)
      */
-    public void setTranslatedLanguage(@NonNull IRTMEmptyCallback callback, TranslateLang targetLanguage) {
+    public void setTranslatedLanguage(@NonNull IRTMEmptyCallback callback, String targetLanguage) {
+        String slang ="";
+        if (targetLanguage!=null)
+            slang = targetLanguage;
         Quest quest = new Quest("setlang");
-        quest.param("lang", targetLanguage.getName());
+        quest.param("lang", slang);
         sendQuestEmptyCallback(callback, quest);
     }
 
     /**
      * 设置翻译的目标语言 sync
-     * @param targetLanguage    目标语言
+     * @param targetLanguage    目标语言(详见TranslateLang.java语言列表)
      */
     public RTMAnswer setTranslatedLanguage(String targetLanguage){
+        String slang ="";
+        if (targetLanguage!=null)
+            slang = targetLanguage;
         Quest quest = new Quest("setlang");
-        quest.param("lang", targetLanguage);
+        quest.param("lang", slang);
         return sendQuestEmptyResult(quest);
     }
 
@@ -845,7 +1010,7 @@ class RTMChat extends RTMRoom {
         });
     }
 
-    private void audioToTextAsync(final IRTMCallback<AudioTextStruct> callback, Object content, CheckSourceType type,TranscribeLang lang, String codec, int srate)
+    private void audioToTextAsync(final IRTMCallback<AudioTextStruct> callback, Object content, CheckSourceType type,String lang, String codec, int srate)
     {
         Quest quest = new Quest("speech2text");
         quest.param("audio", content);
@@ -853,7 +1018,7 @@ class RTMChat extends RTMRoom {
             quest.param("type", 1);
         else if (type == CheckSourceType.CONTENT)
             quest.param("type", 2);
-        quest.param("lang", lang.getName());
+        quest.param("lang", lang);
         quest.param("codec", codec);
         quest.param("srate", srate);
 
@@ -871,7 +1036,7 @@ class RTMChat extends RTMRoom {
         }, RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
-    private AudioTextStruct audioToTextSync(Object content, CheckSourceType type,TranscribeLang lang, String codec, int srate)
+    private AudioTextStruct audioToTextSync(Object content, CheckSourceType type, String lang, String codec, int srate)
     {
         Quest quest = new Quest("speech2text");
         quest.param("audio", content);
@@ -879,7 +1044,7 @@ class RTMChat extends RTMRoom {
             quest.param("type", 1);
         else if (type == CheckSourceType.CONTENT)
             quest.param("type", 2);
-        quest.param("lang", lang.getName());
+        quest.param("lang", lang);
         quest.param("codec", codec);
         quest.param("srate", srate);
 
@@ -896,7 +1061,7 @@ class RTMChat extends RTMRoom {
     }
 
 
-    private void checkContentAsync(final IRTMCallback<CheckResult> callback, Object content, CheckSourceType type, CheckType checkType,String videoName, TranscribeLang lang, String codec, int srate)
+    private void checkContentAsync(final IRTMCallback<CheckResult> callback, Object content, CheckSourceType type, CheckType checkType,String videoName, String lang, String codec, int srate)
     {
         String method = "", rucankey = "";
         int sourfeType = 1;
@@ -923,7 +1088,7 @@ class RTMChat extends RTMRoom {
             quest.param("videoName", videoName);
         }
         else if (checkType == CheckType.AUDIO) {
-            quest.param("lang", lang.getName());
+            quest.param("lang", lang);
             quest.param("codec", codec);
             quest.param("srate", srate);
         }
@@ -946,7 +1111,7 @@ class RTMChat extends RTMRoom {
         }, RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
-    private CheckResult checkContentSync(Object content, CheckSourceType type,CheckType checkType,String videoName, TranscribeLang lang, String codec, int srate)
+    private CheckResult checkContentSync(Object content, CheckSourceType type,CheckType checkType,String videoName, String lang, String codec, int srate)
     {
         String method = "", rucankey = "";
         int sourfeType = 1;
@@ -973,7 +1138,7 @@ class RTMChat extends RTMRoom {
             quest.param("videoName", videoName);
         }
         else if (checkType == CheckType.AUDIO) {
-            quest.param("lang", lang.getName());
+            quest.param("lang", lang);
             quest.param("codec", codec);
             quest.param("srate", srate);
         }

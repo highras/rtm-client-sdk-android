@@ -17,8 +17,11 @@ import java.util.List;
 
 class RTMMessageCore extends RTMCore {
     //======================[ String message version ]================================//
-    private ModifyTimeStruct sendMsgSync(long id, byte mtype, Object message, Object attrs,  MessageCategories type) {
-        String method = "", toWhere = "";
+    private ModifyTimeStruct sendMsgSync(long id, byte mtype, Object message, String attrs,  MessageCategories type) {
+        String method = "", toWhere = "",att = "";
+        if (attrs !=null)
+            att = attrs;
+
         switch (type) {
             case GroupMessage:
                 method = "sendgroupmsg";
@@ -40,7 +43,7 @@ class RTMMessageCore extends RTMCore {
         quest.param("mid", messageId);
         quest.param("mtype", mtype);
         quest.param("msg", message);
-        quest.param("attrs", attrs);
+        quest.param("attrs", att);
 
         Answer answer = sendQuest(quest);
         if (answer == null)
@@ -75,7 +78,9 @@ class RTMMessageCore extends RTMCore {
     }
 
     private void sendMsgAsync(final IRTMDoubleValueCallback<Long,Long> callback, long id, byte mtype, Object message, String attrs, MessageCategories type) {
-        String method = "", toWhere = "";
+        String method = "", toWhere = "", att = "";
+        if (attrs != null)
+            att = attrs;
         switch (type) {
             case GroupMessage:
                 method = "sendgroupmsg";
@@ -96,7 +101,7 @@ class RTMMessageCore extends RTMCore {
         quest.param("mid", mid);
         quest.param("mtype", mtype);
         quest.param("msg", message);
-        quest.param("attrs", attrs);
+        quest.param("attrs", att);
 
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
@@ -145,32 +150,38 @@ class RTMMessageCore extends RTMCore {
             tmp.modifiedTime = RTMUtils.wantLong(value.get(7));
             try {
                 if (tmp.messageType >= MessageType.IMAGEFILE && tmp.messageType <= MessageType.NORMALFILE) {
-                    JSONObject tt = new JSONObject(tmp.attrs);
                     String fileinfo = String.valueOf(obj);
                     FileStruct fileInfo = new FileStruct();
+                    tmp.fileInfo = fileInfo;
+                    JSONObject tt = new JSONObject(tmp.attrs);
                     JSONObject filemsg = new JSONObject(fileinfo);
-                    fileInfo.url = filemsg.getString("url");
+                    fileInfo.url = filemsg.optString("url");
                     fileInfo.fileSize = filemsg.getLong("size");
                     if (filemsg.has("surl"))
-                        fileInfo.surl = filemsg.getString("surl");
+                        fileInfo.surl = filemsg.optString("surl");
 
                     if (tmp.messageType == MessageType.AUDIOFILE) {
                         if (tt.has("rtm")){
                             JSONObject rtmjson = tt.getJSONObject("rtm");
                             if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
                                 JSONObject fileAttrs = tt.getJSONObject("rtm");
-                                fileInfo.lang = fileAttrs.getString("lang");
-                                fileInfo.duration = fileAttrs.getInt("duration");
-                                fileInfo.codec = fileAttrs.getString("codec");
-                                fileInfo.srate = fileAttrs.getInt("srate");
+                                fileInfo.lang = fileAttrs.optString("lang");
+                                fileInfo.duration = fileAttrs.optInt("duration");
+                                fileInfo.codec = fileAttrs.optString("codec");
+                                fileInfo.srate = fileAttrs.optInt("srate");
                                 fileInfo.isRTMaudio = true;
                             }
                         }
                     }
-                    tmp.fileInfo = fileInfo;
                     String realAttrs = "";
-                    if (tt.has("custom"))
-                        realAttrs = tt.getJSONObject("custom").toString();
+                    if (tt.has("custom")) {
+                        try {
+                            JSONObject custtomObject = tt.getJSONObject("custom");
+                            realAttrs = custtomObject.toString();
+                        } catch (Exception ex) {
+                            realAttrs = "";
+                        }
+                    }
                     tmp.attrs = realAttrs;
                 } else {
                     if (obj instanceof byte[])
@@ -181,8 +192,7 @@ class RTMMessageCore extends RTMCore {
             }
             catch (Exception e)
             {
-                e.printStackTrace();
-                continue;
+                errorRecorder.recordError("buildHistoryMessageResult parse json failed " + e.getMessage());
             }
             result.messages.add(tmp);
         }
@@ -284,29 +294,35 @@ class RTMMessageCore extends RTMCore {
                 Object obj = answer.want("msg");
                 if (message.messageType >= MessageType.IMAGEFILE && message.messageType <= MessageType.NORMALFILE) {
                     FileStruct fileInfo = new FileStruct();
+                    message.fileInfo = fileInfo;
                     try {
                             JSONObject tt = new JSONObject(message.attrs);
                             JSONObject kk = new JSONObject(String.valueOf(obj));
-                            fileInfo.url = kk.getString("url");
-                            fileInfo.fileSize = kk.getLong("size");
+                            fileInfo.url = kk.optString("url");
+                            fileInfo.fileSize = kk.optLong("size");
                             if (kk.has("surl"))
-                                fileInfo.surl = kk.getString("surl");
+                                fileInfo.surl = kk.optString("surl");
 
                             if (message.messageType == MessageType.AUDIOFILE) {
                                 if (tt.has("rtm")){//rtm语音消息
                                     JSONObject fileAttrs = tt.getJSONObject("rtm");
-                                    fileInfo.lang = fileAttrs.getString("lang");
-                                    fileInfo.duration = fileAttrs.getInt("duration");
+                                    fileInfo.lang = fileAttrs.optString("lang");
+                                    fileInfo.duration = fileAttrs.optInt("duration");
                                 }
                             }
-                            message.fileInfo = fileInfo;
                             String realAttrs = "";
-                            if (tt.has("custom"))
-                                realAttrs = tt.getJSONObject("custom").toString();
-                                message.attrs = realAttrs;
+                            if (tt.has("custom")) {
+                                try {
+                                    JSONObject customObject = tt.getJSONObject("custom");
+                                    realAttrs = customObject.toString();
+                                } catch (Exception ex) {
+                                    realAttrs = "";
+                                }
+                            }
+                        message.attrs = realAttrs;
                     }
                     catch (JSONException e) {
-                        e.printStackTrace();
+                        errorRecorder.recordError("buildSingleMessage error " + e.getMessage());
                     }
                 }
                 else{

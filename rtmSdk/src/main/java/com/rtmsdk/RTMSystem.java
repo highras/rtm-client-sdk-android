@@ -18,14 +18,21 @@ class RTMSystem extends RTMUser {
     /** 断开rtm
      */
     public void bye() {
-        sayBye(true);
+        bye(true);
     }
 
+    /**
+     *
+     * @param async 同步或者异步断开
+     */
+    public void bye(boolean async) {
+        sayBye(async);
+    }
 
     /**
      *踢掉一个链接（只对多用户登录有效，不能踢掉自己，可以用来实现同类设备，只容许一个登录） async
      * @param callback IRTMEmptyCallback回调
-     * @param endpoint  另一个用户的地址
+     * @param endpoint  另一个用户的地址(用户的地址可以通过 getAttributes拿到)
      */
     public void kickout(@NonNull IRTMEmptyCallback callback, String endpoint) {
         Quest quest = new Quest("kickout");
@@ -35,7 +42,7 @@ class RTMSystem extends RTMUser {
 
     /**
      *踢掉一个链接（只对多用户登录有效，不能踢掉自己，可以用来实现同类设备，只容许一个登录） sync
-     * @param endpoint  另一个用户的地址
+     * @param endpoint  另一个用户的地址(用户的地址可以通过 getAttributes拿到)
      */
     public RTMAnswer kickout(String endpoint){
         Quest quest = new Quest("kickout");

@@ -15,6 +15,8 @@ import com.rtmsdk.UserInterface.IRTMDoubleValueCallback;
 import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 class RTMFile extends RTMSystem {
@@ -22,15 +24,6 @@ class RTMFile extends RTMSystem {
         void onResult(String str1, String str2, int errorCode);
     }
 
-   class TimeOutStruct {
-        public int timeout;
-        public long lastActionTimestamp;
-
-        TimeOutStruct(int timeout, long lastActionTimestamp) {
-            this.timeout = timeout;
-            this.lastActionTimestamp = lastActionTimestamp;
-        }
-    }
 
     enum FileTokenType {
         P2P,
@@ -149,13 +142,6 @@ class RTMFile extends RTMSystem {
     }
 
     //===========================[ File Utilies ]=========================//
-    private void updateTimeout(TimeOutStruct refTime) {
-        long currMsec = RTMUtils.getCurrentMilliseconds();
-
-        refTime.timeout -= (int) ((currMsec - refTime.lastActionTimestamp) / 1000);
-
-        refTime.lastActionTimestamp = currMsec;
-    }
 
     private String extraFileExtension(String filename) {
         int idx = filename.lastIndexOf('.');
@@ -168,7 +154,7 @@ class RTMFile extends RTMSystem {
     private String buildFileAttrs(SendFileInfo info) {
         String fileAttrs = "";
         try {
-            MessageDigest   md5 = MessageDigest.getInstance("MD5");
+            MessageDigest  md5 = MessageDigest.getInstance("MD5");
             md5.update(info.fileContent);
             byte[] md5Binary = md5.digest();
             String md5Hex = RTMUtils.bytesToHexString(md5Binary, true) + ":" + info.token;
@@ -201,7 +187,7 @@ class RTMFile extends RTMSystem {
             allatrrs.put("rtm",rtmAttrs);
             fileAttrs = allatrrs.toString();
         } catch (Exception e) {
-            e.printStackTrace();
+            errorRecorder.recordError("buildFileAttrs error " + e.getMessage());
         }
         return fileAttrs;
     }
@@ -238,15 +224,6 @@ class RTMFile extends RTMSystem {
     }
 
     private int sendFileWithClient(final SendFileInfo info, final TCPClient client) {
-        TimeOutStruct mytime = new TimeOutStruct(info.remainTimeout, info.lastActionTimestamp);
-        updateTimeout(mytime);
-
-        info.remainTimeout = mytime.timeout;
-        info.lastActionTimestamp = mytime.lastActionTimestamp;
-
-        if (info.remainTimeout <= 0)
-            return ErrorCode.FPNN_EC_CORE_TIMEOUT.value();
-
         final Quest quest = buildSendFileQuest(info);
 
         client.sendQuest(quest, new FunctionalAnswerCallback() {
@@ -320,7 +297,7 @@ class RTMFile extends RTMSystem {
             if (err == ErrorCode.FPNN_EC_OK.value())
                 return;
             else
-                ErrorRecorder.getInstance().recordError("send file error");
+                errorRecorder.recordError("send file error");
         } else
             info.callback.onResult(0L,0L,genRTMAnswer(errorCode));
     }
@@ -342,7 +319,7 @@ class RTMFile extends RTMSystem {
            if (!RTMAudio.getInstance().checkAudio(audioAttrs.audioData)) {
                ModifyTimeStruct tt = new ModifyTimeStruct();
                tt.errorCode = RTMErrorCode.RTM_EC_INVALID_FILE_OR_SIGN_OR_TOKEN.value();
-               tt.errorMsg = RTMErrorCode.getMsg(RTMErrorCode.RTM_EC_INVALID_FILE_OR_SIGN_OR_TOKEN.value());
+               tt.errorMsg = "invalid audio type";
                callback.onResult(0L, 0L, tt);
                return;
            }
@@ -370,7 +347,6 @@ class RTMFile extends RTMSystem {
                     getFileTokenCallback(inFile, token, endpoint, errorCode);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    e.printStackTrace();
                 }
             }
         }, tokenType, info.xid, timeout);
@@ -392,7 +368,7 @@ class RTMFile extends RTMSystem {
       if (audioAttrs!=null && audioAttrs.audioData != null) {
           if (!RTMAudio.getInstance().checkAudio(audioAttrs.audioData)) {
               ret.errorCode = RTMErrorCode.RTM_EC_INVALID_FILE_OR_SIGN_OR_TOKEN.value();
-              ret.errorMsg = RTMErrorCode.getMsg(RTMErrorCode.RTM_EC_INVALID_FILE_OR_SIGN_OR_TOKEN.value());
+              ret.errorMsg = "invalid audio type";
               return ret;
           }
           fileType = MessageType.AUDIOFILE;
@@ -401,7 +377,6 @@ class RTMFile extends RTMSystem {
       }
 
         //----------[ 2. Get File Token ]---------------//
-        long lastActionTimestamp = RTMUtils.getCurrentMilliseconds();
 
         StringBuilder token = new StringBuilder();
         StringBuilder endpoint = new StringBuilder();
@@ -412,16 +387,6 @@ class RTMFile extends RTMSystem {
             return ret;
         }
         String realEndpoint = endpoint.toString();
-
-        //----------[ 2.1 check timeout ]---------------//
-
-        TimeOutStruct mytime = new TimeOutStruct(timeout, lastActionTimestamp);
-        updateTimeout(mytime);
-        if (mytime.timeout <= 0){
-            ret.errorCode = ErrorCode.FPNN_EC_CORE_TIMEOUT.value();
-            ret.errorMsg = "fileToken timeout";
-            return ret;
-        }
 
         //----------[ 3. fetch file gate client ]---------------//
         try {
@@ -438,15 +403,6 @@ class RTMFile extends RTMSystem {
                     ret.errorMsg = "invalid conection";
                     return ret;
                 }
-            }
-
-            //----------[ 3.2 check timeout ]---------------//
-
-            updateTimeout(mytime);
-            if (mytime.timeout <= 0){
-                ret.errorCode = ErrorCode.FPNN_EC_CORE_TIMEOUT.value();
-                ret.errorMsg = "fecthFileGateClient timeout";
-                return ret;
             }
 
             //----------[ 4. build quest ]---------------//

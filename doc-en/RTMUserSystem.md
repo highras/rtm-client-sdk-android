@@ -1,6 +1,6 @@
 ~~~ c++
-    /** close rtm
-     * @param async //
+    /** loginout
+     * @param async 
      */
     public void bye(boolean async)
 
@@ -36,6 +36,10 @@
     /**
      * get user attributes async
      * @param callback  IRTMCallback<List<Map<String, String>>> (NoNull)
+             //  the map has some default key
+            //  ce：connetction's endpoint，if kickout this endpoint you can use kickout function
+            //  login：login time
+            //  my：current connection's attrs
      */
     public void getAttributes(final IRTMCallback<List<Map<String, String>>> callback) 
 

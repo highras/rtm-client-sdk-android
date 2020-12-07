@@ -7,7 +7,7 @@
 ~~~
 
 #### API
-public void broadAduio(byte[] amrData) {
+public void broadAudio(byte[] amrData) {
 public void startRecord();
 public RTMAudioStruct stopRecord()
 
@@ -18,5 +18,7 @@ public RTMAudioStruct stopRecord()
     audioManage.startRecord();
     audioManage.stopRecord();
     rtmclient.sendfile/sendgroupfile/sendroomfile
+
+    audioManage.broadAudio(data)
 
 

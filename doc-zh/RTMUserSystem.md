@@ -1,5 +1,5 @@
 ~~~ c++
-    /** 断开rtm
+    /** 用户下线
      * @param async //是否同步等待
      */
     public void bye(boolean async)
@@ -8,13 +8,13 @@
     /**
      *踢掉一个链接（只对多用户登录有效，不能踢掉自己，可以用来实现同类设备，只容许一个登录） async
      * @param callback IRTMEmptyCallback回调(NoNull)
-     * @param endpoint  另一个用户的地址(NoNull)
+     * @param endpoint  另一个用户的地址(NoNull)(用户的地址可以通过 getAttributes拿到)
      */
     public void kickout(final IRTMEmptyCallback callback, String endpoint)
 
     /**
      *踢掉一个链接（只对多用户登录有效，不能踢掉自己，可以用来实现同类设备，只容许一个登录） sync
-     * @param endpoint  另一个用户的地址(NoNull)
+     * @param endpoint  另一个用户的地址(NoNull)(用户的地址可以通过 getAttributes拿到)
      */
     public RTMAnswer kickout(String endpoint)
 
@@ -34,13 +34,17 @@
 
     /**
      * 获取用户属性 async
-     * @param callback  用户属性回调(NoNull)
+     * @param callback  用户属性回调 其中map的key
+     *                  map中自动添加如下几个参数：
+     *                  ce：链接的endpoint，需要让其下线可以调用kickout
+     *                  login：登录时间，utc时间戳
+     *                  my：当前链接的attrs
      */
     public void getAttributes(final IRTMCallback<List<Map<String, String>>> callback) 
 
     /**
      *获取用户属性 async
-     * @return          List<Map<String, String>>
+     * @return         AttrsStruct结构
      */
     public AttrsStruct getAttributes()
 

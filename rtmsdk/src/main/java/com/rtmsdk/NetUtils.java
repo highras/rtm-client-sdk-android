@@ -29,8 +29,15 @@ public class NetUtils {
         // 得到连接管理器对象
         ConnectivityManager connectivityManager = (ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        NetworkInfo activeNetworkInfo = null;
+        try {
+            if (connectivityManager !=null)
+                activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        }
+        catch (Exception e)
+        {
+            ;
+        }
 
         if (activeNetworkInfo != null && activeNetworkInfo.isConnected()) {
 
@@ -43,38 +50,5 @@ public class NetUtils {
             return NETWORK_NONE;
         }
         return NETWORK_NONE;
-    }
-
-    public static boolean isConnectingToInternet(Context context){
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        NetworkInfo gprsInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-
-        // 判断是否是Connected事件
-        boolean wifiConnected = false;
-        boolean gprsConnected = false;
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            wifiConnected = true;
-        }
-        if (gprsInfo != null && gprsInfo.isConnected()) {
-            gprsConnected = true;
-        }
-        if (wifiConnected || gprsConnected) {
-            return true;
-        }
-
-        // 判断是否是Disconnected事件，注意：处于中间状态的事件不上报给应用！上报会影响体验
-        boolean wifiDisconnected = false;
-        boolean gprsDisconnected = false;
-        if (wifiInfo == null || wifiInfo != null && wifiInfo.getState() == NetworkInfo.State.DISCONNECTED) {
-            wifiDisconnected = true;
-        }
-        if (gprsInfo == null || gprsInfo != null && gprsInfo.getState() == NetworkInfo.State.DISCONNECTED) {
-            gprsDisconnected = true;
-        }
-        if (wifiDisconnected && gprsDisconnected) {
-            return false;
-        }
-        return true;
     }
 }

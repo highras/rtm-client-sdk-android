@@ -3,6 +3,7 @@ package com.rtmsdk;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,7 @@ public class RTMStruct {
     public static class RTMAudioStruct {
         public  int duration; //语音时长
         public String lang; //语种
-        public byte audioData[];// 语音内容
+        public byte[] audioData;// 语音内容
         public File file;//语音文件路径
     }
 
@@ -49,7 +50,7 @@ public class RTMStruct {
     {
         public int errorCode = -1;
         public String errorMsg = "";
-        RTMAnswer(){};
+        RTMAnswer(){}
         RTMAnswer(int _code, String msg){
             errorCode = _code;
             errorMsg = msg;
@@ -65,6 +66,13 @@ public class RTMStruct {
         public List<Long> p2pList; //uid集合
         public List<Long> groupList;//群组id集合
     }
+
+    //未读消息条目数结构
+    public static class UnreadNum extends RTMAnswer
+    {
+        public HashMap<String, Integer> unreadInfo; //uid/groupid集合
+    }
+
 
     public static class MessageType
     {
@@ -187,10 +195,10 @@ public class RTMStruct {
 
     public static class TranslatedInfo extends RTMAnswer//聊天消息结构
     {
-        public String source; //原语言
-        public String target; //翻译的目标语言
-        public String sourceText; //原文本
-        public String targetText; //设置自动翻译后的目标文本
+        public String source = ""; //原语言
+        public String target = ""; //翻译的目标语言
+        public String sourceText = ""; //原文本
+        public String targetText = ""; //设置自动翻译后的目标文本
     }
 
     public static class CheckResult extends RTMAnswer{ //文本/语音/图片/视频检测结构
@@ -201,14 +209,14 @@ public class RTMStruct {
     }
 
     public static class GroupInfoStruct extends RTMAnswer{
-        public String  publicInfo; //群组/房间公开信息
-        public String  privateInfo; //群组/房间私有信息
+        public String  publicInfo = ""; //群组/房间公开信息
+        public String  privateInfo = ""; //群组/房间私有信息
     }
 
 
     public static class AudioTextStruct extends RTMAnswer{
-        public String  text; //语音转文字的结果
-        public String  lang; //语音转文字的语言
+        public String  text = ""; //语音转文字的结果
+        public String  lang = ""; //语音转文字的语言
     }
 
 
@@ -247,13 +255,13 @@ public class RTMStruct {
     }
 
     public static class FileStruct{ //serverpush的文件结构
-        public String url;     //文件的url地址 图片/语音/视频/普通文件
-        public long fileSize;  //文件大小(字节)
-        public String surl;    //缩略图的url地址 如果是图片类型 会有此值
+        public String url = "";     //文件的url地址 图片/语音/视频/普通文件
+        public long fileSize = 0;  //文件大小(字节)
+        public String surl = "";    //缩略图的url地址 如果是图片类型 会有此值
         public boolean isRTMaudio = false; //是否是rtm语音消息
-        public String lang;    //语言 如果是rtm语音消息 会有此值
-        public int duration;   //语音长度(毫秒) 如果是rtm语音消息 会有此值
-        public String codec;   //语音编码 如果是rtm语音消息 会有此值
-        public int srate;       //语音采样率 如果是rtm语音消息 会有此值
+        public String lang = "";    //语言 如果是rtm语音消息 会有此值
+        public int duration = 0;   //语音长度(毫秒) 如果是rtm语音消息 会有此值
+        public String codec = "";   //语音编码 如果是rtm语音消息 会有此值
+        public int srate = 0;       //语音采样率 如果是rtm语音消息 会有此值
     }
 }

@@ -3,6 +3,7 @@ package com.rtmsdk;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 class DuplicatedMessageFilter {
     public enum MessageCategories {
@@ -57,9 +58,11 @@ class DuplicatedMessageFilter {
     private final int expireSeconds = 20 * 60;
 
     private Map<MessageIdUnit, Long> midCache;
+    private Object locker;
 
     public DuplicatedMessageFilter() {
         midCache = new HashMap<>();
+        locker = new Object();
     }
 
     public boolean CheckMessage(MessageCategories type, long uid, long mid) {
@@ -67,16 +70,17 @@ class DuplicatedMessageFilter {
     }
 
     public boolean CheckMessage(MessageCategories type, long uid, long mid, long bizId) {
-        long now = RTMUtils.getCurrentSeconds();
-        MessageIdUnit unit = new MessageIdUnit(type, bizId, uid, mid);
-        if (midCache.containsKey(unit)) {
-            midCache.put(unit, now);
-            return false;
-        }
-        else {
-            midCache.put(unit, now);
-            ClearExpired(now);
-            return true;
+        synchronized (locker) {
+            long now = RTMUtils.getCurrentSeconds();
+            MessageIdUnit unit = new MessageIdUnit(type, bizId, uid, mid);
+            if (midCache.containsKey(unit)) {
+                midCache.put(unit, now);
+                return false;
+            } else {
+                midCache.put(unit, now);
+                ClearExpired(now);
+                return true;
+            }
         }
     }
 

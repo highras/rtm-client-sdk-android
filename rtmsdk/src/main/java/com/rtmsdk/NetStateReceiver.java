@@ -14,7 +14,9 @@ class NetStateReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Objects.equals(intent.getAction(), ConnectivityManager.CONNECTIVITY_ACTION)) {
+        Object b= ConnectivityManager.CONNECTIVITY_ACTION;
+        Object a= intent.getAction();
+        if ((a == b) || (a != null && a.equals(b))) {
             int netWorkState = NetUtils.getNetWorkState(context);
             if (LAST_TYPE != netWorkState) {
                 LAST_TYPE = netWorkState;
