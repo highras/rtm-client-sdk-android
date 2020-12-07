@@ -1,4 +1,4 @@
-### android-rtm-sdk Documentation
+### android-rtm-sdk 使用文档
 - [AndroidVersionSupport](#androidversionsupport)
 - [Depends](#depends)
 - [Instructions](#instructions)
@@ -7,7 +7,7 @@
 - [TestCase](#testcase)
 
 ## AndroidVersionSupport
-- lowest Android version is 4.1
+- lowest Android version is 4.1(api16)
 - support fpnn ecc encryption(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### Depends
@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.0'
+        api 'com.github.highras:rtm-android:2.3.1'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.0</version>
+        <version>2.3.1</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -82,7 +82,7 @@ import com.rtmsdk.RTMAudio; //audio
     //-- sync
     client.login(String token, String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
     //-- Async
-    client.login(loginCallback callback, String token = "", TranslateLang lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
+    client.login(loginCallback callback, String token = "", String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
 
     if login successed
     client.sendChat/ client.sendMessage.....
@@ -97,8 +97,6 @@ import com.rtmsdk.RTMAudio; //audio
 - [Room/Group/Friend](doc-en/RTMRelationship.md)
 - [User-System](doc-en/RTMUserSystem.md)
 - [Audio](doc-en/RTMAudio.md)
-- [Translate language](https://wiki.ifunplus.cn/display/livedata/Speech+Recognition+API+V1)
-
 
 #### TestCase
 - [Case](app/src/main/java/com/rtm)

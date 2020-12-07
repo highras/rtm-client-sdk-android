@@ -7,7 +7,7 @@
 - [测试案例](#测试案例)
 
 ### 版本支持
-- 最低支持Android版本为4.1
+- 最低支持Android版本为4.1(api16)
 - 支持fpnn ecc加密(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### 依赖集成
@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.0'
+        api 'com.github.highras:rtm-android:2.3.1'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.0</version>
+        <version>2.3.1</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -82,7 +82,7 @@ import com.rtmsdk.RTMAudio; //语音相关功能
     //-- sync
     client.login(String token, String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
     //-- Async
-    client.login(loginCallback callback, String token = "", TranslateLang lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
+    client.login(loginCallback callback, String token = "", String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
     
     login成功后可以正常调用rtm相关接口
     client.sendChat/ client.sendMessage.....
@@ -97,7 +97,6 @@ import com.rtmsdk.RTMAudio; //语音相关功能
 - [房间/群组/好友接口](doc-zh/RTMRelationship.md)
 - [用户系统命令接口](doc-zh/RTMUserSystem.md)
 - [语音接口](doc-zh/RTMAudio.md)
-- [翻译语言/语言识别语言](https://wiki.ifunplus.cn/display/livedata/Speech+Recognition+API+V1)
 
 
 #### 测试案例
