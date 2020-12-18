@@ -149,6 +149,34 @@
      */
     public RTMAnswer leaveRoom(long roomId)
 
+
+
+    /**
+     * get all room members  sync
+     * @param roomId
+     */
+    public MembersStruct getRoomMembers(long roomId) 
+    
+    /**
+     * get all room members async
+     * @param callback IRTMCallback<Integer>
+     * @param roomId   
+     */
+    public void getRoomCount(@NonNull final IRTMCallback<Integer> callback, long roomId)
+
+    /**
+     * get members count in room sync
+     * @param roomId
+     */
+    public MemberCount getRoomCount(long roomId) 
+
+    /**
+     * get members count in room async
+     * @param callback IRTMCallback<HashSet<Long>> 
+     * @param roomId   
+     */
+    public void getRoomMembers(@NonNull final IRTMCallback<HashSet<Long>> callback, long roomId)
+    
     /**
      * Get user's rooms    async
      * @param callback IRTMCallback (NoNull)

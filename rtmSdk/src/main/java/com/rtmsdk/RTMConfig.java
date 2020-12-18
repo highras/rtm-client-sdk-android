@@ -3,10 +3,10 @@ package com.rtmsdk;
 import com.fpnn.sdk.ErrorRecorder;
 
 public class RTMConfig {
-    public static final String SDKVersion = "2.3.0";
+    public static final String SDKVersion = "2.3.2";
     public static final String InterfaceVersion = "2.4.0";
 
-    static int lostConnectionAfterLastPingInSeconds = 120;
+    static int lostConnectionAfterLastPingInSeconds = 60;
     static int globalConnectTimeoutSeconds = 30;
     static int globalQuestTimeoutSeconds = 30;
     static int fileGateClientHoldingSeconds = 150;
@@ -23,7 +23,7 @@ public class RTMConfig {
     public ErrorRecorder defaultErrorRecorder;
 
     public RTMConfig() {
-        maxPingInterval = 120;
+        maxPingInterval = 60;
         globalQuestTimeout = 30;
         globalConnectTimeout = 30;
         fileClientHoldingSeconds = 150;

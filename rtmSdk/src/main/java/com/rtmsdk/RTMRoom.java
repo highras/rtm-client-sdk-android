@@ -9,6 +9,7 @@ import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.UserInterface.*;
 import com.rtmsdk.RTMStruct.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -48,6 +49,82 @@ public class RTMRoom extends RTMFriend {
 
 
     /**
+     * 获取房间中的所有member sync(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param roomId  房间id
+     */
+    public MembersStruct getRoomMembers(long roomId) {
+        Quest quest = new Quest("getroommembers");
+        quest.param("rid",roomId);
+        Answer answer = sendQuest(quest);
+        RTMAnswer result = genRTMAnswer(answer);
+        MembersStruct ret = new MembersStruct();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
+            ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+        return ret;
+    }
+
+    /**
+     * 获取房间中的所有人数 async(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param callback IRTMEmptyCallback回调
+     * @param roomId   房间id
+     */
+    public void getRoomCount(@NonNull final IRTMCallback<Integer> callback, long roomId) {
+        Quest quest = new Quest("getroomcount");
+        quest.param("rid",roomId);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                int count = 0;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value())
+                    count = answer.wantInt("cn");
+                callback.onResult(count, genRTMAnswer(answer,errorCode));
+            }
+        });
+    }
+
+
+    /**
+     * 获取房间中的所有人数 sync(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param roomId  房间id
+     */
+    public MemberCount getRoomCount(long roomId) {
+        Quest quest = new Quest("getroomcount");
+        quest.param("rid",roomId);
+        Answer answer = sendQuest(quest);
+        RTMAnswer result = genRTMAnswer(answer);
+        MemberCount ret = new MemberCount();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
+            ret.count = answer.wantInt("cn");
+        return ret;
+    }
+
+    /**
+     * 获取房间中的所有member async(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param callback IRTMEmptyCallback回调
+     * @param roomId   房间id
+     */
+    public void getRoomMembers(@NonNull final IRTMCallback<HashSet<Long>> callback, long roomId) {
+        Quest quest = new Quest("getroommembers");
+        quest.param("rid",roomId);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                HashSet<Long> uIds = new HashSet<>();
+                if (errorCode == ErrorCode.FPNN_EC_OK.value())
+                    uIds = RTMUtils.wantLongHashSet(answer,"uids");
+                callback.onResult(uIds, genRTMAnswer(answer,errorCode));
+            }
+        });
+    }
+
+
+    /**
      * 离开房间 sync
      * @param roomId  房间id
      */
@@ -67,7 +144,7 @@ public class RTMRoom extends RTMFriend {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> groupIds = null;
+                HashSet<Long> groupIds = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     groupIds = RTMUtils.wantLongHashSet(answer,"rooms");
                 callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
@@ -139,9 +216,8 @@ public class RTMRoom extends RTMFriend {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                GroupInfoStruct RoomInfo = null;
+                GroupInfoStruct RoomInfo = new GroupInfoStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    RoomInfo = new GroupInfoStruct();
                     RoomInfo.publicInfo = answer.wantString("oinfo");
                     RoomInfo.privateInfo = answer.wantString("pinfo");
                 }
@@ -224,7 +300,7 @@ public class RTMRoom extends RTMFriend {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Map<String, String> attributes = null;
+                Map<String, String> attributes = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     attributes = RTMUtils.wantStringMap(answer, "info");
                 }

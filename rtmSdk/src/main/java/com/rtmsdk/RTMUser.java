@@ -13,6 +13,7 @@ import com.rtmsdk.RTMStruct.PublicInfo;
 import com.rtmsdk.UserInterface.IRTMCallback;
 import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class RTMUser extends RTMData {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> onlineUids = null;
+                HashSet<Long> onlineUids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     onlineUids = RTMUtils.wantLongHashSet(answer, "uids");
                 }
@@ -139,7 +140,7 @@ public class RTMUser extends RTMData {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Map<String, String> attributes = null;
+                Map<String, String> attributes = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     attributes = RTMUtils.wantStringMap(answer, "info");
                 }

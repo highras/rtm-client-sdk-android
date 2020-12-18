@@ -9,6 +9,7 @@ import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.UserInterface.*;
 import com.rtmsdk.RTMStruct.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -78,7 +79,7 @@ class RTMGroup extends RTMFile {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> uids = null;
+                HashSet<Long> uids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     uids  = RTMUtils.wantLongHashSet(answer,"uids");
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
@@ -107,7 +108,7 @@ class RTMGroup extends RTMFile {
     }
 
     /**
-     * 获取其他用户的公开信息，每次最多获取100人
+     * 获取其他用户的公开信息，每次最多获取100个群组
      * @param callback IRTMCallback<Map<String, String>>回调
      * @param gids     房间id集合
      */
@@ -118,7 +119,7 @@ class RTMGroup extends RTMFile {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Map<String, String> attributes = null;
+                Map<String, String> attributes = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     attributes = RTMUtils.wantStringMap(answer, "info");
                 }
@@ -128,7 +129,7 @@ class RTMGroup extends RTMFile {
     }
 
     /**
-     * 获取群组的公开信息，每次最多获取100人
+     * 获取群组的公开信息，每次最多获取100个群组
      * @param gids        群组id集合
      *return              PublicInfo 结构
      */
@@ -157,7 +158,7 @@ class RTMGroup extends RTMFile {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> groupIds = null;
+                HashSet<Long> groupIds =new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     groupIds = RTMUtils.wantLongHashSet(answer,"gids");
                 callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
@@ -230,9 +231,8 @@ class RTMGroup extends RTMFile {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                GroupInfoStruct groupInfo = null;
+                GroupInfoStruct groupInfo = new GroupInfoStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    groupInfo = new GroupInfoStruct();
                     groupInfo.publicInfo = answer.wantString("oinfo");
                     groupInfo.privateInfo = answer.wantString("pinfo");
                 }

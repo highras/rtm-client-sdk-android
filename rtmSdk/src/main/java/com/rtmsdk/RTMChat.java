@@ -605,9 +605,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashMap<String, Integer> p2pUnread = null;
+                HashMap<String, Integer> p2pUnread = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    p2pUnread = new HashMap<>();
                     Map<String, Integer> ob = (Map<String, Integer>)answer.want("p2p");
                     for (String uid:ob.keySet())
                         p2pUnread.put(uid,ob.get(uid));
@@ -635,9 +634,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashMap<String, Integer> p2pUnread = null;
+                HashMap<String, Integer> p2pUnread = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    p2pUnread = new HashMap<>();
                     Map<String, Integer> ob = (Map<String, Integer>)answer.want("group");
                     for (String uid:ob.keySet())
                         p2pUnread.put(uid,ob.get(uid));
@@ -659,9 +657,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Unread ret = null;
+                Unread ret = new Unread();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    ret = new Unread();
                     List<Long> p2pList = new ArrayList<>();
                     List<Long> groupList = new ArrayList<>();
                     RTMUtils.wantLongList(answer,"p2p", p2pList);
@@ -786,9 +783,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Unread ret = null;
+                Unread ret = new Unread();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    ret = new Unread();
                     List<Long> p2pList = new ArrayList<>();
                     List<Long> groupList = new ArrayList<>();
                     RTMUtils.wantLongList(answer,"p2p", p2pList);
@@ -890,9 +886,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                TranslatedInfo tm = null;
+                TranslatedInfo tm = new TranslatedInfo();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    tm = new TranslatedInfo();
                     tm.source = answer.wantString("source");
                     tm.target = answer.wantString("target");
                     tm.sourceText = answer.wantString("sourceText");
@@ -994,9 +989,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                CheckResult checkResult = null;
+                CheckResult checkResult = new CheckResult();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    checkResult = new CheckResult();
                     List<Integer> tags = new ArrayList<>();
                     List<String> wlist = new ArrayList<>();
                     checkResult.text = answer.getString("text");
@@ -1025,9 +1019,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                AudioTextStruct audioTextStruct = null;
+                AudioTextStruct audioTextStruct = new AudioTextStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    audioTextStruct = new AudioTextStruct();
                     audioTextStruct.text = answer.getString("text");
                     audioTextStruct.lang = answer.getString("lang");
                 }
@@ -1096,9 +1089,8 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                CheckResult checkResult = null;
+                CheckResult checkResult = new CheckResult();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    checkResult = new CheckResult();
                     checkResult.result = answer.wantInt("result");
                     if (checkResult.result == 2){
                         List<Integer> tags = new ArrayList<>();

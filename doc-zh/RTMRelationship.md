@@ -18,14 +18,14 @@
 
 
     /**
-     * 获取其他用户的公开信息，每次最多获取100人
+     * 获取其他用户的公开信息，每次最多获取100个群组
      * @param callback IRTMCallback<Map<String, String>>回调(NoNull)
      * @param gids     房间id集合
      */
     public void getGroupsOpeninfo(final IRTMCallback<Map<String, String>> callback, HashSet<Long> gids) 
     
         /**
-     * 获取群组的公开信息，每次最多获取100人
+     * 获取群组的公开信息，每次最多获取100个群组
      * @param gids        群组id集合
      *return              PublicInfo 结构
      */
@@ -150,10 +150,39 @@
     /**
      * 离开房间 sync
      * @param roomId  房间id(NoNull)
-     
      */
     public RTMAnswer leaveRoom(long roomId)
 
+
+    /**
+     * 获取房间中的所有member sync(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param roomId  房间id
+     */
+    public MembersStruct getRoomMembers(long roomId) 
+    
+    
+    /**
+     * 获取房间中的所有人数 async(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param callback IRTMEmptyCallback回调
+     * @param roomId   房间id
+     */
+    public void getRoomCount(@NonNull final IRTMCallback<Integer> callback, long roomId)
+
+
+    /**
+     * 获取房间中的所有人数 sync(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param roomId  房间id
+     */
+    public MemberCount getRoomCount(long roomId) 
+
+    /**
+     * 获取房间中的所有member async(由于分布式系统，房间的人数会有几秒同步间隔)
+     * @param callback IRTMEmptyCallback回调
+     * @param roomId   房间id
+     */
+    public void getRoomMembers(@NonNull final IRTMCallback<HashSet<Long>> callback, long roomId)
+    
+    
     /**
      * 获取用户所在的房间   async
      * @param callback IRTMCallback回调(NoNull)

@@ -240,7 +240,7 @@
      * @param destinationLanguage   目标语言(NoNull)
      * @param sourceLanguage        源文本语言
      * @param type                  可选值为chat或mail。如未指定，则默认使用'chat'
-     * @param profanity             对翻译结果进行敏感语过滤。设置为以下2项之一: off, censor，默认：off
+     * @param profanity             对翻译结果进行敏感语过滤。设置为以下2项之一: off(不进行敏感语过滤), censor(敏感语用*号代替)，默认：off
      */
     public void translate(final IRTMCallback<TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage,
                              translateType type, ProfanityType profanity)

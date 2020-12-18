@@ -255,7 +255,7 @@ class RTMMessageCore extends RTMCore {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HistoryMessageResult result = null;
+                HistoryMessageResult result = new HistoryMessageResult();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     result = buildHistoryMessageResult(answer);
                     if (type == DuplicatedMessageFilter.MessageCategories.P2PMessage)
@@ -348,7 +348,7 @@ class RTMMessageCore extends RTMCore {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                SingleMessage SingleMessage = null;
+                SingleMessage SingleMessage = new SingleMessage();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     SingleMessage = buildSingleMessage(answer);
                 callback.onResult(SingleMessage, genRTMAnswer(answer,errorCode));

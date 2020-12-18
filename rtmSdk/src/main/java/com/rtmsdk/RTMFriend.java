@@ -68,7 +68,7 @@ public class RTMFriend extends RTMGroup {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> uids = null;
+                HashSet<Long> uids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     uids = RTMUtils.wantLongHashSet(answer, "uids");
                 }
@@ -150,7 +150,7 @@ public class RTMFriend extends RTMGroup {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> uids = null;
+                HashSet<Long> uids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     uids = RTMUtils.wantLongHashSet(answer, "uids");
                 }

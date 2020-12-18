@@ -11,6 +11,7 @@ import com.rtmsdk.RTMStruct.RTMAnswer;
 import com.rtmsdk.UserInterface.IRTMCallback;
 import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -86,7 +87,7 @@ class RTMSystem extends RTMUser {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                List<Map<String, String>> attributes = null;
+                List<Map<String, String>> attributes = new ArrayList<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
                     attributes = RTMUtils.wantListHashMap(answer, "attrs");
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));

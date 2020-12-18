@@ -60,7 +60,7 @@ class AmrBroad implements Runnable {
             mAudioTrack.stop();
         }
         catch (IllegalStateException e) {
-            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            Log.e("rtmsdk","stopRecord error " + e.getMessage());
         }
         mAudioTrack.release();
         mAudioTrack = null;
@@ -280,7 +280,7 @@ public class RTMAudio {
             fis.close();
             baos.close();
         } catch (Exception e) {
-            Log.e("rtmaudio","fileToByteArray error " + e.getMessage());
+            Log.e("rtmsdk","fileToByteArray error " + e.getMessage());
             return null;
         }
         return data;
@@ -319,14 +319,13 @@ public class RTMAudio {
                 mRecorder.setOnErrorListener(null);
                 mRecorder.setOnInfoListener(null);
                 mRecorder.setPreviewDisplay(null);
-                mRecorder.stop();
             } catch (IllegalStateException e) {
-                Log.e("rtmaudio","stopRecord error " + e.getMessage());
+                Log.e("rtmsdk","stopRecord error " + e.getMessage());
             }
             catch (RuntimeException e) {
-                Log.e("rtmaudio","stopRecord error " + e.getMessage());
+                Log.e("rtmsdk","stopRecord error " + e.getMessage());
             } catch (Exception e) {
-                Log.e("rtmaudio","stopRecord error " + e.getMessage());
+                Log.e("rtmsdk","stopRecord error " + e.getMessage());
             }
             mRecorder.release();
             mRecorder = null;
@@ -357,7 +356,7 @@ public class RTMAudio {
                 audioAction.startRecord();
             updateMicStatus();
         } catch (Exception e) {
-            Log.e("rtmaudio","startRecord error " + e.getMessage());
+            Log.e("rtmsdk","startRecord error " + e.getMessage());
         }
     }
 
@@ -370,12 +369,12 @@ public class RTMAudio {
             mRecorder.setPreviewDisplay(null);
             mRecorder.stop();
         } catch (IllegalStateException e) {
-            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            Log.e("rtmsdk","stopRecord error " + e.getMessage());
         }
         catch (RuntimeException e) {
-            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            Log.e("rtmsdk","stopRecord error " + e.getMessage());
         } catch (Exception e) {
-            Log.e("rtmaudio","stopRecord error " + e.getMessage());
+            Log.e("rtmsdk","stopRecord error " + e.getMessage());
         }
 
         mRecorder.release();

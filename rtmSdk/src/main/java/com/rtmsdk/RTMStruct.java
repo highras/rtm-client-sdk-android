@@ -101,7 +101,7 @@ public class RTMStruct {
         public String attrs;        //客户端发送消息自定义的附加信息
         public long modifiedTime;   //服务器处理返回时间
         public FileStruct fileInfo; //文件结构信息(语音的信息也存在这里)
-        public TranslatedInfo translatedInfo = null; //聊天信息结构(push)
+        public TranslatedInfo translatedInfo = new TranslatedInfo(); //聊天信息结构(push)
 
         public String getInfo()
         {
@@ -235,11 +235,15 @@ public class RTMStruct {
     }
 
     public static class MembersStruct extends RTMAnswer{
-        public  HashSet<Long> uids;
+        public  HashSet<Long> uids = new HashSet<>();
     }
 
     public static class DataInfo extends RTMAnswer{
-        public String info;
+        public String info = "";
+    }
+
+    public static class MemberCount extends RTMAnswer{
+        public int count;
     }
 
     public static class AttrsStruct extends RTMAnswer{

@@ -1,6 +1,6 @@
 ~~~ c++
     //connection closed (if user set autoconnect then wiil be reconnect soon)
-    public void rtmConnectClose(int ClosedByErrorCode){};
+    public void sessionClosed(int ClosedByErrorCode){};
 
     //be kicked by server 
     public void kickout(){};

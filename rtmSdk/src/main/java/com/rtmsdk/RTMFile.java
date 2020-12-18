@@ -21,7 +21,7 @@ import java.security.MessageDigest;
 
 class RTMFile extends RTMSystem {
     interface DoubleStringCallback{
-        void onResult(String str1, String str2, int errorCode);
+        void onResult(String str1, String str2, RTMAnswer answer);
     }
 
 
@@ -105,7 +105,7 @@ class RTMFile extends RTMSystem {
                     token = answer.wantString("token");
                     endpoint = answer.wantString("endpoint");
                 }
-                callback.onResult(token, endpoint, errorCode);
+                callback.onResult(token, endpoint, genRTMAnswer(answer,errorCode));
             }
         }, timeout);
     }
@@ -282,8 +282,8 @@ class RTMFile extends RTMSystem {
         return ErrorCode.FPNN_EC_OK.value();
     }
 
-    private void getFileTokenCallback(SendFileInfo info, String token, String endpoint, int errorCode) throws InterruptedException {
-        if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+    private void getFileTokenCallback(SendFileInfo info, String token, String endpoint, RTMAnswer answer) throws InterruptedException {
+        if (answer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
             info.token = token;
             info.endpoint = endpoint;
             int  err;
@@ -299,7 +299,7 @@ class RTMFile extends RTMSystem {
             else
                 errorRecorder.recordError("send file error");
         } else
-            info.callback.onResult(0L,0L,genRTMAnswer(errorCode));
+            info.callback.onResult(0L,0L, answer);
     }
 
 
@@ -342,9 +342,9 @@ class RTMFile extends RTMSystem {
         final SendFileInfo inFile = info;
         fileToken(new DoubleStringCallback() {
             @Override
-            public void onResult(String token, String endpoint, int errorCode) {
+            public void onResult(String token, String endpoint, RTMAnswer answer) {
                 try {
-                    getFileTokenCallback(inFile, token, endpoint, errorCode);
+                    getFileTokenCallback(inFile, token, endpoint, answer);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
