@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.2'
+        api 'com.github.highras:rtm-android:2.3.4'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.2</version>
+        <version>2.3.4</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -46,7 +46,7 @@
 - server push:please extends RTMPushProcessor,overload the function what you need
 - all async and sync function will contain RTMAnswer，please judge errorCode in RTMAnswer first, if errorCode equal 0 means successful
 - RTMConfig has default value，if user need change default value, please call rtmclient.config function。
-- user can extends ErrorRecorder record sdk's error for example
+- user can extends ErrorRecorder record rtmsdk internal error(strongly recommend). for example:
     ~~~
      public class TestErrorRecorder extends ErrorRecorder {
         public TestErrorRecorder(){
@@ -65,7 +65,12 @@
             Log.i("log",String.format("Error: %s, exception: %s", message, e));
         }
     }
-    RTMClient.setErrorRecoder(new TestErrorRecorder())
+    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor)
+    rtmclient.setErrorRecoder(new TestErrorRecorder())
+    or
+    RTMConfig newconfig = new RTMConfig();
+    newconfig.errorRecorder = new TestErrorRecorder();
+    RTMConfig.Config( newconfig); （before RTMClient init）
     ~~~
 
 ### Demonstration

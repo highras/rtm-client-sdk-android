@@ -15,7 +15,7 @@ import java.util.Map;
 
 class RTMGroup extends RTMFile {
     /**
-     * 添加群组用户 async
+     * 添加群组用户 async(注意 调用接口的用户必须在群组里)
      * @param callback  IRTMEmptyCallback回调
      * @param groupId   群组id
      * @param uids      用户id集合
@@ -29,7 +29,7 @@ class RTMGroup extends RTMFile {
     }
 
     /**
-     * 添加群组用户  sync
+     * 添加群组用户  sync(注意 调用接口的用户必须在群组里)
      * @param groupId   群组id
      * @param uids      用户id集合
      * @return

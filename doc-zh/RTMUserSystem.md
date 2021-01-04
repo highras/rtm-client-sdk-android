@@ -67,14 +67,14 @@
     /**
      * 添加设备，应用信息 async
      * @param  callback  IRTMEmptyCallback回调
-     * @param appType     应用类型(NoNull)
-     * @param deviceToken   设备token(NoNull)
+     * @param appType     应用类型 fcm(android) 或者 apns(ios)
+     * @param deviceToken   设备推送token
      */
     public void addDevice(IRTMEmptyCallback callback, String appType, String deviceToken) 
 
     /**
      * 添加设备，应用信息 async
-     * @param appType     应用类型(NoNull)
+     * @param appType     应用类型 fcm(android) 或者 apns(ios)
      * @param deviceToken   设备token(NoNull)
      */
     public RTMAnswer addDevice(String appType, String deviceToken)
@@ -84,13 +84,13 @@
      * @param  callback  IRTMEmptyCallback回调
      * @param deviceToken   设备token(NoNull)
      */
-    public void RemoveDevice(final IRTMEmptyCallback callback, String deviceToken)
+    public void removeDevice(final IRTMEmptyCallback callback, String deviceToken)
 
     /**
      * 删除设备， async
      * @param deviceToken   设备token(NoNull)
      */
-    public RTMAnswer RemoveDevice(String deviceToken)
+    public RTMAnswer removeDevice(String deviceToken)
 
 
     /**
@@ -124,8 +124,7 @@
 
     /**
      * 获取的用户公开信息或者私有信息 async
-     * @param callback DoubleStringCallback回调(NoNull)
-     ）
+     * @param callback 回调(NoNull)
      */
     public void getUserInfo(final IRTMCallback<GroupInfoStruct> callback)
 
@@ -148,4 +147,56 @@
      *return 返回用户id 公开信息map(NoNull) 用户id会被转变成string返回
      */
     public UserPublicInfo getUserPublicInfo(HashSet<Long> uids)
+    
+    
+    /**设置设备推送属性(注意此接口是设置个人或群组某个类型的type不推送的设置) sync
+     * @param type  type=0, 设置某个p2p 不推送；type=1, 设置某个group不推送
+     * @param xid   当type =0 时 表示userid；当type =1时 表示groupId
+     * @param messageTypes (为空，则所有mtype均不推送;否则表示指定mtype不推送)
+     * @return  RTMAnswer
+     */
+    public RTMAnswer addDevicePushOption(@NonNull int type, @NonNull long xid, HashSet<Integer> messagetTypes)
+    
+    
+
+    /**取消设备推送属性(和addDevicePushOption对应) sync
+     * @param type  type=0, 取消p2p推送属性；type=1, 取消group推送属性
+     * @param xid   当type =0 时 表示userid；当type =1时 表示groupId
+     * @param messageTypes  需要取消设置的messagetype集合(如果为空表示什么都不做)
+     * @return  RTMAnswer
+     */
+    public RTMAnswer removeDevicePushOption(@NonNull int type, @NonNull long xid, HashSet<Integer> messagetTypes)
+    
+    
+
+    /**获取设备推送属性(addDevicePushOption的结果) sync
+     * @return DevicePushOption
+     */
+    public DevicePushOption getDevicePushOption() 
+
+
+
+    /**设置设备推送属性(注意此接口是设置个人或群组某个类型的type不推送的设置) async
+     * @param type  type=0, 设置某个p2p 不推送；type=1, 设置某个group不推送
+     * @param xid   当type =0 时 表示userId；当type =1时 表示groupId
+     * @param messageTypes (为空，则所有mtype均不推送;否则表示指定mtype不推送)
+     * @return  RTMAnswer
+     */
+    public void addDevicePushOption(@NonNull UserInterface.IRTMEmptyCallback callback, @NonNull int type, @NonNull long xid, HashSet<Integer> messagetTypes)
+    
+    
+    
+    /**取消设备推送属性(和addDevicePushOption对应) async
+     * @param type  type=0, 取消p2p推送属性；type=1, 取消group推送属性
+     * @param xid   当type =0 时 表示userId；当type =1时 表示groupId
+     * @param messagetTypes  需要取消的设置的messagetype集合
+     * @return  RTMAnswer
+     */
+    public void removeDevicePushOption(UserInterface.IRTMEmptyCallback callback, @NonNull int type, @NonNull long xid, HashSet<Integer> messagetTypes)
+    
+    
+    /**获取设备推送属性(addDevicePushOption的结果) async
+     * @return DevicePushOption
+     */
+    public void getDevicePushOption(final UserInterface.IRTMCallback<DevicePushOption> callback)
 ~~~

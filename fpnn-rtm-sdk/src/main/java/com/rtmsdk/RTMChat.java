@@ -6,16 +6,12 @@ import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
-import com.rtmsdk.RTMStruct.*;
-import com.rtmsdk.UserInterface.*;
-import com.rtmsdk.DuplicatedMessageFilter.MessageCategories;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 class RTMChat extends RTMRoom {
     private String defaultCodec = "AMR_WB";
@@ -23,12 +19,12 @@ class RTMChat extends RTMRoom {
 
     private List<Byte> chatMTypes = new ArrayList<Byte>() {
         {
-            add(MessageType.CHAT);
-            add(MessageType.CMD);
-            add(MessageType.IMAGEFILE);
-            add(MessageType.AUDIOFILE);
-            add(MessageType.VIDEOFILE);
-            add(MessageType.NORMALFILE);
+            add(RTMStruct.MessageType.CHAT);
+            add(RTMStruct.MessageType.CMD);
+            add(RTMStruct.MessageType.IMAGEFILE);
+            add(RTMStruct.MessageType.AUDIOFILE);
+            add(RTMStruct.MessageType.VIDEOFILE);
+            add(RTMStruct.MessageType.NORMALFILE);
         }
     };
     private enum CheckType {
@@ -44,140 +40,140 @@ class RTMChat extends RTMRoom {
     }
 
     //重载start
-    public void sendChat(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message) {
+    public void sendChat(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long uid, String message) {
         sendChat(callback, uid, message, "");
     }
 
-    public ModifyTimeStruct sendChat(long uid, String message){
+    public RTMStruct.ModifyTimeStruct sendChat(long uid, String message){
         return sendChat(uid, message, "");
     }
 
-    public void sendGroupChat(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message) {
+    public void sendGroupChat(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message) {
         sendGroupChat(callback, groupId, message, "");
     }
 
-    public ModifyTimeStruct sendGroupChat(long groupId, String message){
+    public RTMStruct.ModifyTimeStruct sendGroupChat(long groupId, String message){
         return sendGroupChat(groupId, message, "");
     }
 
-    public void sendRoomChat(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message) {
+    public void sendRoomChat(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message) {
         sendRoomChat(callback, roomId, message, "");
     }
 
-    public ModifyTimeStruct sendRoomChat(long roomId, String message){
+    public RTMStruct.ModifyTimeStruct sendRoomChat(long roomId, String message){
         return sendRoomChat(roomId, message, "");
     }
 
-    public ModifyTimeStruct sendCmd(long uid, String message){
+    public RTMStruct.ModifyTimeStruct sendCmd(long uid, String message){
         return sendCmd(uid, message, "");
     }
 
-    public void sendCmd(IRTMDoubleValueCallback<Long,Long> callback, long uid, String message) {
+    public void sendCmd(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long uid, String message) {
         sendCmd(callback,uid, message, "");
     }
 
-    public void sendGroupCmd(IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message) {
+    public void sendGroupCmd(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, String message) {
         sendGroupCmd(callback, groupId, message, "");
     }
 
-    public ModifyTimeStruct sendGroupCmd(long groupId, String message) {
+    public RTMStruct.ModifyTimeStruct sendGroupCmd(long groupId, String message) {
         return sendGroupCmd(groupId, message, "");
     }
 
-    public void sendRoomCmd(IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message){
+    public void sendRoomCmd(UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId, String message){
         sendRoomCmd(callback, roomId, message, "");
     }
-    public ModifyTimeStruct sendRoomCmd(long roomId, String message){
+    public RTMStruct.ModifyTimeStruct sendRoomCmd(long roomId, String message){
         return sendRoomCmd(roomId, message, "");
     }
 
-    public void getUnread(IRTMCallback<Unread> callback) {
+    public void getUnread(UserInterface.IRTMCallback<RTMStruct.Unread> callback) {
         getUnread(callback, true);
     }
 
-    public Unread getUnread(){
+    public RTMStruct.Unread getUnread(){
         return getUnread(true);
     }
 
 
-    public void translate(IRTMCallback<TranslatedInfo> callback, String text, String targetLanguage) {
-        translate(callback, text, targetLanguage, "", TranslateType.Chat, ProfanityType.Off);
+    public void translate(UserInterface.IRTMCallback<RTMStruct.TranslatedInfo> callback, String text, String targetLanguage) {
+        translate(callback, text, targetLanguage, "", RTMStruct.TranslateType.Chat, RTMStruct.ProfanityType.Off);
     }
 
-    public void translate(IRTMCallback<TranslatedInfo> callback, String text, String targetLanguage, TranslateType transtype,ProfanityType protype) {
+    public void translate(UserInterface.IRTMCallback<RTMStruct.TranslatedInfo> callback, String text, String targetLanguage, RTMStruct.TranslateType transtype, RTMStruct.ProfanityType protype) {
         translate(callback, text, targetLanguage, "", transtype, protype);
     }
 
-    public TranslatedInfo translate(String text, String targetLanguage){
-        return translate(text, targetLanguage, "", TranslateType.Chat, ProfanityType.Off);
+    public RTMStruct.TranslatedInfo translate(String text, String targetLanguage){
+        return translate(text, targetLanguage, "", RTMStruct.TranslateType.Chat, RTMStruct.ProfanityType.Off);
     }
 
-    public TranslatedInfo translate(String text, String targetLanguage,TranslateType transtype,ProfanityType protype){
+    public RTMStruct.TranslatedInfo translate(String text, String targetLanguage, RTMStruct.TranslateType transtype, RTMStruct.ProfanityType protype){
         return translate(text, targetLanguage, "", transtype, protype);
     }
 
-    public void audioCheckURL(IRTMCallback<CheckResult> callback, String url, String lang) {
+    public void audioCheckURL(UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, String url, String lang) {
         audioCheckURL(callback, url, lang,defaultCodec,sample_rate);
     }
 
-    public void audioCheck(IRTMCallback<CheckResult> callback, byte[] content, String lang) {
+    public void audioCheck(UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, byte[] content, String lang) {
         audioCheck(callback, content, lang,defaultCodec,sample_rate);
     }
 
-    public CheckResult audioCheckURL(String url, String lang){
+    public RTMStruct.CheckResult audioCheckURL(String url, String lang){
         return audioCheckURL(url, lang,defaultCodec,sample_rate);
     }
 
-    public CheckResult audioCheck(byte[] content, String lang){
+    public RTMStruct.CheckResult audioCheck(byte[] content, String lang){
         return audioCheck(content, lang,defaultCodec,sample_rate);
     }
 
-    public void audioToTextURL(IRTMCallback<AudioTextStruct> callback, String url, String lang) {
+    public void audioToTextURL(UserInterface.IRTMCallback<RTMStruct.AudioTextStruct> callback, String url, String lang) {
         audioToTextURL(callback, url, lang,defaultCodec,sample_rate);
     }
 
-    public void audioToText(IRTMCallback<AudioTextStruct> callback, byte[] content, String lang) {
+    public void audioToText(UserInterface.IRTMCallback<RTMStruct.AudioTextStruct> callback, byte[] content, String lang) {
         audioToText(callback, content, lang,defaultCodec,sample_rate);
     }
 
-    public AudioTextStruct audioToTextURL(String url, String lang){
+    public RTMStruct.AudioTextStruct audioToTextURL(String url, String lang){
         return audioToTextURL(url, lang,defaultCodec,sample_rate);
     }
 
-    public AudioTextStruct audioToText(byte[] content, String lang){
+    public RTMStruct.AudioTextStruct audioToText(byte[] content, String lang){
         return audioToText(content, lang,defaultCodec,sample_rate);
     }
 
-    public UnreadNum getGroupUnread(HashSet<Long>gids) {
+    public RTMStruct.UnreadNum getGroupUnread(HashSet<Long>gids) {
         return getGroupUnread(gids, 0, null);
     }
 
 
-    public UnreadNum getGroupUnread(HashSet<Long>gids, List<Byte> messageTypes) {
+    public RTMStruct.UnreadNum getGroupUnread(HashSet<Long>gids, List<Byte> messageTypes) {
         return getGroupUnread(gids,0,messageTypes);
     }
 
-    public UnreadNum getP2PUnread(HashSet<Long>uids) {
+    public RTMStruct.UnreadNum getP2PUnread(HashSet<Long>uids) {
         return getP2PUnread(uids,0, null);
     }
 
-    public UnreadNum getP2PUnread(HashSet<Long>uids, List<Byte> messageTypes) {
+    public RTMStruct.UnreadNum getP2PUnread(HashSet<Long>uids, List<Byte> messageTypes) {
         return getP2PUnread(uids,0, messageTypes);
     }
 
-    public void getP2PUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids){
+    public void getP2PUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids){
         getP2PUnread(callback,uids,0,null);
     }
 
-    public void getP2PUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids, List<Byte> messageTypes){
+    public void getP2PUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids, List<Byte> messageTypes){
         getP2PUnread(callback,uids,0,messageTypes);
     }
 
-    public void getGroupUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids) {
+    public void getGroupUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids) {
         getGroupUnread(callback,gids,0, null);
     }
 
-    public void getGroupUnread(final IRTMCallback<Map<String, Integer>> callback, HashSet<Long>gids,List<Byte> messageTypes) {
+    public void getGroupUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long>gids, List<Byte> messageTypes) {
         getGroupUnread(callback,gids,0, messageTypes);
     }
         //重载end
@@ -186,7 +182,7 @@ class RTMChat extends RTMRoom {
      * @param callback  IRTMCallback<CheckResult>回调
      * @param url       url地址
      */
-    public void imageCheckURL(@NonNull IRTMCallback<CheckResult> callback, @NonNull String url) {
+    public void imageCheckURL(@NonNull UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull String url) {
         checkContentAsync(callback, url, CheckSourceType.URL, CheckType.PIC, "", null,"",0);
     }
 
@@ -194,21 +190,21 @@ class RTMChat extends RTMRoom {
      * @param callback  IRTMCallback<CheckResult>回调
      * @param content   图片内容
      */
-    public void imageCheck(@NonNull IRTMCallback<CheckResult> callback, @NonNull byte[] content) {
+    public void imageCheck(@NonNull UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull byte[] content) {
         checkContentAsync(callback, content, CheckSourceType.CONTENT, CheckType.PIC, "", null,"",0);
     }
 
     /**图片检测 sync
      * @param url   url地址
      */
-    public CheckResult imageCheckURL(@NonNull String url) {
+    public RTMStruct.CheckResult imageCheckURL(@NonNull String url) {
         return checkContentSync(url, CheckSourceType.URL, CheckType.PIC, "", null,"",0);
     }
 
     /**图片检测 sync
      * @param content   图片内容
      */
-    public CheckResult imageCheck(@NonNull byte[] content) {
+    public RTMStruct.CheckResult imageCheck(@NonNull byte[] content) {
         return checkContentSync(content, CheckSourceType.CONTENT, CheckType.PIC, "", null,"",0);
     }
 
@@ -218,7 +214,7 @@ class RTMChat extends RTMRoom {
      * @param lang      语言(详见TranscribeLang.java枚举列表)
      * @param codec     音频格式
      */
-    public void audioCheckURL(@NonNull IRTMCallback<CheckResult> callback, @NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
+    public void audioCheckURL(@NonNull UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         checkContentAsync(callback, url, CheckSourceType.URL, CheckType.AUDIO, "", lang,codec, srate);
     }
 
@@ -228,7 +224,7 @@ class RTMChat extends RTMRoom {
      * @param lang      语言(详见TranscribeLang.java枚举列表)
      * @param codec     音频格式
      */
-    public void audioCheck(@NonNull IRTMCallback<CheckResult> callback, @NonNull byte[] content,@NonNull String lang, @NonNull String codec, int srate) {
+    public void audioCheck(@NonNull UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
         checkContentAsync(callback, content, CheckSourceType.CONTENT, CheckType.AUDIO, "", lang, codec, srate);
     }
 
@@ -237,7 +233,7 @@ class RTMChat extends RTMRoom {
      * @param lang   语言(详见TranscribeLang.java枚举列表)
      * @param codec  音频格式
      */
-    public CheckResult audioCheckURL(@NonNull String url, @NonNull String lang, @NonNull String codec,int srate) {
+    public RTMStruct.CheckResult audioCheckURL(@NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         return checkContentSync(url, CheckSourceType.URL, CheckType.AUDIO, "", lang, codec, srate);
     }
 
@@ -246,7 +242,7 @@ class RTMChat extends RTMRoom {
      * @param lang      语言(详见TranscribeLang.java枚举列表)
      * @param codec     音频格式
      */
-    public CheckResult audioCheck(@NonNull byte[] content,@NonNull String lang, @NonNull String codec, int srate) {
+    public RTMStruct.CheckResult audioCheck(@NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
         return checkContentSync(content, CheckSourceType.CONTENT, CheckType.AUDIO, "", lang,codec, srate);
     }
 
@@ -255,7 +251,7 @@ class RTMChat extends RTMRoom {
      * @param callback  IRTMCallback<CheckResult>回调
      * @param url       视频url地址
      */
-    public void videoCheckURL(@NonNull IRTMCallback<CheckResult> callback, @NonNull String url) {
+    public void videoCheckURL(@NonNull UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull String url) {
         checkContentAsync(callback, url, CheckSourceType.URL, CheckType.VIDEO, "", null,"",0);
     }
 
@@ -264,14 +260,14 @@ class RTMChat extends RTMRoom {
      * @param content   视频内容
      * @param videoName   视频名称
      */
-    public void videoCheck(@NonNull IRTMCallback<CheckResult> callback, @NonNull byte[] content, @NonNull String videoName) {
+    public void videoCheck(@NonNull UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull byte[] content, @NonNull String videoName) {
         checkContentAsync(callback, content, CheckSourceType.CONTENT, CheckType.VIDEO, videoName, null, "",0);
     }
 
     /**视频检测 sync
      * @param url   视频url地址
      */
-    public CheckResult videoCheckURL(@NonNull String url) {
+    public RTMStruct.CheckResult videoCheckURL(@NonNull String url) {
         return checkContentSync(url, CheckSourceType.URL, CheckType.VIDEO, "", null, "",0);
     }
 
@@ -279,7 +275,7 @@ class RTMChat extends RTMRoom {
      * @param content   视频内容
      * @param videoName   视频名称
      */
-    public CheckResult videoCheck(@NonNull byte[] content, @NonNull String videoName) {
+    public RTMStruct.CheckResult videoCheck(@NonNull byte[] content, @NonNull String videoName) {
         return checkContentSync(content, CheckSourceType.CONTENT, CheckType.VIDEO, videoName, null,"",0);
     }
 
@@ -292,7 +288,7 @@ class RTMChat extends RTMRoom {
      * @param codec     音频格式
      * @param srate     采样率
      */
-    public void audioToTextURL(@NonNull IRTMCallback<AudioTextStruct> callback, @NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
+    public void audioToTextURL(@NonNull UserInterface.IRTMCallback<RTMStruct.AudioTextStruct> callback, @NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         audioToTextAsync(callback, url,CheckSourceType.URL, lang, codec, srate);
     }
 
@@ -303,7 +299,7 @@ class RTMChat extends RTMRoom {
      * @param srate     采样率(16000)
      * return           AudioTextStruct结构
      */
-    public AudioTextStruct audioToTextURL(@NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
+    public RTMStruct.AudioTextStruct audioToTextURL(@NonNull String url, @NonNull String lang, @NonNull String codec, int srate) {
         return audioToTextSync(url, CheckSourceType.URL, lang, codec, srate);
     }
 
@@ -314,7 +310,7 @@ class RTMChat extends RTMRoom {
      * @param codec     音频格式("AMR_WB")
      * @param srate     采样率(16000)
      */
-    public void audioToText(@NonNull IRTMCallback<AudioTextStruct> callback, @NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
+    public void audioToText(@NonNull UserInterface.IRTMCallback<RTMStruct.AudioTextStruct> callback, @NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
         audioToTextAsync(callback, content, CheckSourceType.CONTENT, lang, codec, srate);
     }
 
@@ -325,7 +321,7 @@ class RTMChat extends RTMRoom {
      * @param srate     采样率(16000)
      * return           AudioTextStruct结构
      */
-    public AudioTextStruct audioToText(@NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
+    public RTMStruct.AudioTextStruct audioToText(@NonNull byte[] content, @NonNull String lang, @NonNull String codec, int srate) {
         return audioToTextSync(content, CheckSourceType.CONTENT, lang, codec, srate);
     }
 
@@ -336,8 +332,8 @@ class RTMChat extends RTMRoom {
      * @param message   聊天消息
      * @param attrs     附加信息
      */
-    public void sendChat(@NonNull IRTMDoubleValueCallback<Long,Long> callback, long uid, @NonNull String message, String attrs) {
-        internalSendChat(callback, uid, MessageType.CHAT, message, attrs,MessageCategories.P2PMessage);
+    public void sendChat(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long uid, @NonNull String message, String attrs) {
+        internalSendChat(callback, uid, RTMStruct.MessageType.CHAT, message, attrs, DuplicatedMessageFilter.MessageCategories.P2PMessage);
     }
 
     /**
@@ -347,8 +343,8 @@ class RTMChat extends RTMRoom {
      * @param attrs     客户端自定义信息
      * @return          ModifyTimeStruct结构
      */
-    public ModifyTimeStruct sendChat(long uid, @NonNull String message, String attrs){
-        return internalSendChat(uid, MessageType.CHAT, message, attrs,MessageCategories.P2PMessage);
+    public RTMStruct.ModifyTimeStruct sendChat(long uid, @NonNull String message, String attrs){
+        return internalSendChat(uid, RTMStruct.MessageType.CHAT, message, attrs, DuplicatedMessageFilter.MessageCategories.P2PMessage);
     }
 
     /**
@@ -358,8 +354,8 @@ class RTMChat extends RTMRoom {
      * @param message   聊天消息
      * @param attrs     附加信息
      */
-    public void sendGroupChat(@NonNull IRTMDoubleValueCallback<Long,Long> callback, long groupId, @NonNull String message, String attrs) {
-        internalSendChat(callback, groupId, MessageType.CHAT, message, attrs, MessageCategories.GroupMessage);
+    public void sendGroupChat(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, @NonNull String message, String attrs) {
+        internalSendChat(callback, groupId, RTMStruct.MessageType.CHAT, message, attrs, DuplicatedMessageFilter.MessageCategories.GroupMessage);
     }
 
     /**
@@ -370,8 +366,8 @@ class RTMChat extends RTMRoom {
      
      * @return          ModifyTimeStruct结构
      */
-    public ModifyTimeStruct sendGroupChat(long groupId, @NonNull String message, String attrs) {
-        return internalSendChat(groupId, MessageType.CHAT, message, attrs,MessageCategories.GroupMessage);
+    public RTMStruct.ModifyTimeStruct sendGroupChat(long groupId, @NonNull String message, String attrs) {
+        return internalSendChat(groupId, RTMStruct.MessageType.CHAT, message, attrs, DuplicatedMessageFilter.MessageCategories.GroupMessage);
     }
 
     /**
@@ -381,8 +377,8 @@ class RTMChat extends RTMRoom {
      * @param attrs     附加信息
      
      */
-    public void sendRoomChat(@NonNull IRTMDoubleValueCallback<Long,Long> callback, long roomId, @NonNull String message, String attrs){
-        internalSendChat(callback, roomId, MessageType.CHAT, message, attrs, MessageCategories.RoomMessage);
+    public void sendRoomChat(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId, @NonNull String message, String attrs){
+        internalSendChat(callback, roomId, RTMStruct.MessageType.CHAT, message, attrs, DuplicatedMessageFilter.MessageCategories.RoomMessage);
     }
 
     /**
@@ -393,8 +389,8 @@ class RTMChat extends RTMRoom {
      
      * @return          ModifyTimeStruct结构
      */
-    public ModifyTimeStruct sendRoomChat(long roomId, @NonNull String message, String attrs){
-        return internalSendChat(roomId, MessageType.CHAT, message, attrs,MessageCategories.RoomMessage);
+    public RTMStruct.ModifyTimeStruct sendRoomChat(long roomId, @NonNull String message, String attrs){
+        return internalSendChat(roomId, RTMStruct.MessageType.CHAT, message, attrs, DuplicatedMessageFilter.MessageCategories.RoomMessage);
     }
 
     /**
@@ -405,8 +401,8 @@ class RTMChat extends RTMRoom {
      * @param attrs     附加信息
      
      */
-    public void sendCmd(@NonNull IRTMDoubleValueCallback<Long,Long> callback, long uid, @NonNull String message, String attrs) {
-        internalSendChat(callback, uid, MessageType.CMD, message, attrs,MessageCategories.P2PMessage);
+    public void sendCmd(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long uid, @NonNull String message, String attrs) {
+        internalSendChat(callback, uid, RTMStruct.MessageType.CMD, message, attrs, DuplicatedMessageFilter.MessageCategories.P2PMessage);
     }
 
     /**
@@ -417,8 +413,8 @@ class RTMChat extends RTMRoom {
      
      * @return          ModifyTimeStruct结构
      */
-    public ModifyTimeStruct sendCmd(long uid, @NonNull String message, String attrs){
-        return internalSendChat(uid, MessageType.CMD, message, attrs,MessageCategories.P2PMessage);
+    public RTMStruct.ModifyTimeStruct sendCmd(long uid, @NonNull String message, String attrs){
+        return internalSendChat(uid, RTMStruct.MessageType.CMD, message, attrs, DuplicatedMessageFilter.MessageCategories.P2PMessage);
     }
 
     /**
@@ -429,8 +425,8 @@ class RTMChat extends RTMRoom {
      * @param attrs     附加信息
      
      */
-    public void sendGroupCmd(@NonNull IRTMDoubleValueCallback<Long,Long> callback, long groupId, @NonNull String message, String attrs) {
-        internalSendChat(callback, groupId, MessageType.CMD, message, attrs,MessageCategories.GroupMessage);
+    public void sendGroupCmd(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long groupId, @NonNull String message, String attrs) {
+        internalSendChat(callback, groupId, RTMStruct.MessageType.CMD, message, attrs, DuplicatedMessageFilter.MessageCategories.GroupMessage);
     }
 
     /**
@@ -441,8 +437,8 @@ class RTMChat extends RTMRoom {
      
      * @return          ModifyTimeStruct结构
      */
-    public ModifyTimeStruct sendGroupCmd(long groupId, @NonNull String message, String attrs){
-        return internalSendChat(groupId, MessageType.CMD, message, attrs,MessageCategories.GroupMessage);
+    public RTMStruct.ModifyTimeStruct sendGroupCmd(long groupId, @NonNull String message, String attrs){
+        return internalSendChat(groupId, RTMStruct.MessageType.CMD, message, attrs, DuplicatedMessageFilter.MessageCategories.GroupMessage);
     }
 
     /**
@@ -454,8 +450,8 @@ class RTMChat extends RTMRoom {
      
 
      */
-    public void sendRoomCmd(@NonNull IRTMDoubleValueCallback<Long,Long> callback, long roomId, @NonNull String message, String attrs){
-        internalSendChat(callback, roomId, MessageType.CMD, message, attrs,MessageCategories.RoomMessage);
+    public void sendRoomCmd(@NonNull UserInterface.IRTMDoubleValueCallback<Long,Long> callback, long roomId, @NonNull String message, String attrs){
+        internalSendChat(callback, roomId, RTMStruct.MessageType.CMD, message, attrs, DuplicatedMessageFilter.MessageCategories.RoomMessage);
     }
 
     /**
@@ -466,8 +462,8 @@ class RTMChat extends RTMRoom {
      
      * @return          ModifyTimeStruct结构
      */
-    public ModifyTimeStruct sendRoomCmd(long roomId, @NonNull String message, String attrs){
-        return internalSendChat(roomId, MessageType.CMD, message, attrs,MessageCategories.RoomMessage);
+    public RTMStruct.ModifyTimeStruct sendRoomCmd(long roomId, @NonNull String message, String attrs){
+        return internalSendChat(roomId, RTMStruct.MessageType.CMD, message, attrs, DuplicatedMessageFilter.MessageCategories.RoomMessage);
     }
 
     /**
@@ -481,7 +477,7 @@ class RTMChat extends RTMRoom {
      * @param lastId    最后一条消息索引id(第一次默认填0)
      
      */
-    public void getP2PHistoryChat(@NonNull IRTMCallback<HistoryMessageResult> callback,  long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
+    public void getP2PHistoryChat(@NonNull UserInterface.IRTMCallback<RTMStruct.HistoryMessageResult> callback, long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
         getHistoryMessage(callback, toUid, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.P2PMessage);
     }
 
@@ -496,7 +492,7 @@ class RTMChat extends RTMRoom {
      
      * return       HistoryMessageResult结构
      */
-    public HistoryMessageResult getP2PHistoryChat(long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId){
+    public RTMStruct.HistoryMessageResult getP2PHistoryChat(long toUid, boolean desc, int count, long beginMsec, long endMsec, long lastId){
         return getHistoryMessage(toUid, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.P2PMessage);
     }
 
@@ -511,8 +507,8 @@ class RTMChat extends RTMRoom {
      * @param lastId    最后一条消息索引id(第一次默认填0)
      
      */
-    public void getGroupHistoryChat(@NonNull IRTMCallback<HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
-        getHistoryMessage(callback, groupId, desc, count, beginMsec, endMsec, lastId, chatMTypes, MessageCategories.GroupMessage);
+    public void getGroupHistoryChat(@NonNull UserInterface.IRTMCallback<RTMStruct.HistoryMessageResult> callback, long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
+        getHistoryMessage(callback, groupId, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.GroupMessage);
     }
 
     /**
@@ -525,8 +521,8 @@ class RTMChat extends RTMRoom {
      * @param lastId    最后一条消息索引id(第一次默认填0)
      
      */
-    public HistoryMessageResult getGroupHistoryChat(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
-        return getHistoryMessage(groupId, desc, count, beginMsec, endMsec, lastId, chatMTypes, MessageCategories.GroupMessage);
+    public RTMStruct.HistoryMessageResult getGroupHistoryChat(long groupId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
+        return getHistoryMessage(groupId, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.GroupMessage);
     }
 
     /**
@@ -540,8 +536,8 @@ class RTMChat extends RTMRoom {
      * @param lastId    最后一条消息索引id(第一次默认填0)
      
      */
-    public void getRoomHistoryChat(@NonNull IRTMCallback<HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
-        getHistoryMessage(callback, roomId, desc, count, beginMsec, endMsec, lastId, chatMTypes, MessageCategories.RoomMessage);
+    public void getRoomHistoryChat(@NonNull UserInterface.IRTMCallback<RTMStruct.HistoryMessageResult> callback, long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
+        getHistoryMessage(callback, roomId, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.RoomMessage);
     }
 
     /**
@@ -555,8 +551,8 @@ class RTMChat extends RTMRoom {
      
      *return            HistoryMessageResult
      */
-    public HistoryMessageResult getRoomHistoryChat(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
-        return getHistoryMessage(roomId, desc, count, beginMsec, endMsec, lastId, chatMTypes, MessageCategories.RoomMessage);
+    public RTMStruct.HistoryMessageResult getRoomHistoryChat(long roomId, boolean desc, int count, long beginMsec, long endMsec, long lastId){
+        return getHistoryMessage(roomId, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.RoomMessage);
     }
 
     /**
@@ -569,8 +565,8 @@ class RTMChat extends RTMRoom {
      * @param lastId    最后一条消息索引id(第一次默认填0)
      
      */
-    public void getBroadcastHistoryChat(@NonNull IRTMCallback<HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
-        getHistoryMessage(callback, -1, desc, count, beginMsec, endMsec, lastId, chatMTypes, MessageCategories.BroadcastMessage);
+    public void getBroadcastHistoryChat(@NonNull UserInterface.IRTMCallback<RTMStruct.HistoryMessageResult> callback, boolean desc, int count, long beginMsec, long endMsec, long lastId) {
+        getHistoryMessage(callback, -1, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.BroadcastMessage);
     }
 
     /**
@@ -583,8 +579,8 @@ class RTMChat extends RTMRoom {
      
      * return   HistoryMessageResult
      */
-    public HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId){
-        return getHistoryMessage(-1, desc, count, beginMsec, endMsec, lastId, chatMTypes, MessageCategories.BroadcastMessage);
+    public RTMStruct.HistoryMessageResult getBroadcastHistoryChat(boolean desc, int count, long beginMsec, long endMsec, long lastId){
+        return getHistoryMessage(-1, desc, count, beginMsec, endMsec, lastId, chatMTypes, DuplicatedMessageFilter.MessageCategories.BroadcastMessage);
     }
 
     /**
@@ -594,7 +590,7 @@ class RTMChat extends RTMRoom {
      * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
      * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，不包含自定义的type)
      */
-    public void getP2PUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids,long lastMessageTime, List<Byte> messageTypes) {
+    public void getP2PUnread(@NonNull final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes) {
         Quest quest = new Quest("getp2punread");
         quest.param("uids",uids);
         if (lastMessageTime != 0)
@@ -623,7 +619,7 @@ class RTMChat extends RTMRoom {
      * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
      * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，不包含自定义的type)
      */
-    public void getGroupUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids,long lastMessageTime, List<Byte> messageTypes) {
+    public void getGroupUnread(@NonNull final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes) {
         Quest quest = new Quest("getgroupunread");
         quest.param("gids", gids);
         if (lastMessageTime != 0)
@@ -650,14 +646,14 @@ class RTMChat extends RTMRoom {
      * @param callback  IRTMCallback<Unread> 回调
      * @param clear     是否清除离线提醒(如果不传 默认为true)
      */
-    public void getUnread(@NonNull final IRTMCallback<Unread> callback, boolean clear) {
+    public void getUnread(@NonNull final UserInterface.IRTMCallback<RTMStruct.Unread> callback, boolean clear) {
         Quest quest = new Quest("getunread");
         quest.param("clear", clear);
 
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Unread ret = new Unread();
+                RTMStruct.Unread ret = new RTMStruct.Unread();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     List<Long> p2pList = new ArrayList<>();
                     List<Long> groupList = new ArrayList<>();
@@ -675,14 +671,14 @@ class RTMChat extends RTMRoom {
      * @param clear     是否清除离线提醒(默认为true)
      * return           Unread 结构
      */
-    public Unread getUnread( boolean clear){
+    public RTMStruct.Unread getUnread(boolean clear){
         Quest quest = new Quest("getunread");
         quest.param("clear", clear);
 
         Answer answer = sendQuest(quest);
-        RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
 
-        Unread ret = new Unread();
+        RTMStruct.Unread ret = new RTMStruct.Unread();
         List<Long> p2pList = new ArrayList<>();
         List<Long> groupList = new ArrayList<>();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -704,7 +700,7 @@ class RTMChat extends RTMRoom {
      * @param messageTypes  消息类型集合(如果不传默认所有聊天和文件相关消息类型，不包含自定义的type)
      *  return UnreadNum结构
      */
-    public UnreadNum getGroupUnread(@NonNull HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes) {
+    public RTMStruct.UnreadNum getGroupUnread(@NonNull HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes) {
         Quest quest = new Quest("getgroupunread");
         quest.param("gids",gids);
         if (lastMessageTime != 0)
@@ -713,8 +709,8 @@ class RTMChat extends RTMRoom {
             quest.param("mtypes",messageTypes);
 
         Answer answer = sendQuest(quest);
-        RTMAnswer result = genRTMAnswer(answer);
-        UnreadNum res = new UnreadNum();
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.UnreadNum res = new RTMStruct.UnreadNum();
         HashMap<String, Integer> groupUnread = new HashMap<>();
 
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -735,7 +731,7 @@ class RTMChat extends RTMRoom {
      * @param messageTypes  消息类型集合(如果不传默认所有聊天和文件相关消息类型，不包含自定义的type)
      *return        UnreadNum结构
      */
-    public UnreadNum getP2PUnread(@NonNull HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes) {
+    public RTMStruct.UnreadNum getP2PUnread(@NonNull HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes) {
         Quest quest = new Quest("getp2punread");
         quest.param("uids",uids);
         if (lastMessageTime != 0)
@@ -744,8 +740,8 @@ class RTMChat extends RTMRoom {
             quest.param("mtypes",messageTypes);
 
         Answer answer = sendQuest(quest);
-        RTMAnswer result = genRTMAnswer(answer);
-        UnreadNum res = new UnreadNum();
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.UnreadNum res = new RTMStruct.UnreadNum();
         HashMap<String, Integer> p2pUnread = new HashMap<>();
 
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -763,13 +759,13 @@ class RTMChat extends RTMRoom {
      *清除离线提醒 async
      * @param callback EmptyCallback回调
      */
-    public void clearUnread(@NonNull IRTMEmptyCallback callback) {
+    public void clearUnread(@NonNull UserInterface.IRTMEmptyCallback callback) {
         Quest quest = new Quest("cleanunread");
         sendQuestEmptyCallback(callback, quest);
     }
 
     /*清除离线提醒 sync*/
-    public RTMAnswer clearUnread() {
+    public RTMStruct.RTMAnswer clearUnread() {
         Quest quest = new Quest("cleanunread");
         return sendQuestEmptyResult(quest);
     }
@@ -778,12 +774,12 @@ class RTMChat extends RTMRoom {
      * 获取和自己有过会话的用户uid和群组id集合 async
      * @param callback IRTMCallback<Unread>回调
      */
-    public void getSession(@NonNull final IRTMCallback<Unread> callback) {
+    public void getSession(@NonNull final UserInterface.IRTMCallback<RTMStruct.Unread> callback) {
         Quest quest = new Quest("getsession");
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                Unread ret = new Unread();
+                RTMStruct.Unread ret = new RTMStruct.Unread();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     List<Long> p2pList = new ArrayList<>();
                     List<Long> groupList = new ArrayList<>();
@@ -801,13 +797,13 @@ class RTMChat extends RTMRoom {
      * 获取和自己有过会话的用户uid和群组id集合 sync
      * return           Unread 结构
      */
-    public Unread getSession(){
+    public RTMStruct.Unread getSession(){
         Quest quest = new Quest("getsession");
 
         Answer answer = sendQuest(quest);
-        RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
 
-        Unread ret = new Unread();
+        RTMStruct.Unread ret = new RTMStruct.Unread();
         List<Long> p2pList = new ArrayList<>();
         List<Long> groupList = new ArrayList<>();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -827,7 +823,7 @@ class RTMChat extends RTMRoom {
      * @param callback  IRTMEmptyCallback回调
      * @param targetLanguage    目标语言(详见TranslateLang.java语言列表)
      */
-    public void setTranslatedLanguage(@NonNull IRTMEmptyCallback callback, String targetLanguage) {
+    public void setTranslatedLanguage(@NonNull UserInterface.IRTMEmptyCallback callback, String targetLanguage) {
         String slang ="";
         if (targetLanguage!=null)
             slang = targetLanguage;
@@ -840,7 +836,7 @@ class RTMChat extends RTMRoom {
      * 设置翻译的目标语言 sync
      * @param targetLanguage    目标语言(详见TranslateLang.java语言列表)
      */
-    public RTMAnswer setTranslatedLanguage(String targetLanguage){
+    public RTMStruct.RTMAnswer setTranslatedLanguage(String targetLanguage){
         String slang ="";
         if (targetLanguage!=null)
             slang = targetLanguage;
@@ -858,8 +854,8 @@ class RTMChat extends RTMRoom {
      * @param type                  可选值为chat或mail。如未指定，则默认使用'chat'
      * @param profanity             对翻译结果进行敏感语过滤。设置为以下2项之一: off, censor，默认：off
      */
-    public void translate(@NonNull final IRTMCallback<TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage,
-                          TranslateType type, ProfanityType profanity) {
+    public void translate(@NonNull final UserInterface.IRTMCallback<RTMStruct.TranslatedInfo> callback, String text, String destinationLanguage, String sourceLanguage,
+                          RTMStruct.TranslateType type, RTMStruct.ProfanityType profanity) {
         Quest quest = new Quest("translate");
         quest.param("text", text);
         quest.param("dst", destinationLanguage);
@@ -867,7 +863,7 @@ class RTMChat extends RTMRoom {
         if (sourceLanguage.length() > 0)
             quest.param("src", sourceLanguage);
 
-        if (type == TranslateType.Mail)
+        if (type == RTMStruct.TranslateType.Mail)
             quest.param("type", "mail");
         else
             quest.param("type", "chat");
@@ -886,7 +882,7 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                TranslatedInfo tm = new TranslatedInfo();
+                RTMStruct.TranslatedInfo tm = new RTMStruct.TranslatedInfo();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     tm.source = answer.wantString("source");
                     tm.target = answer.wantString("target");
@@ -907,8 +903,8 @@ class RTMChat extends RTMRoom {
      * @param profanity             对翻译结果进行敏感语过滤。设置为以下2项之一: off, censor，默认：off(不进行过滤)
      * @return                  TranslatedInfo结构
      */
-    public TranslatedInfo translate(@NonNull String text, String destinationLanguage, @NonNull String sourceLanguage,
-                                    @NonNull TranslateType type, @NonNull ProfanityType profanity){
+    public RTMStruct.TranslatedInfo translate(@NonNull String text, String destinationLanguage, @NonNull String sourceLanguage,
+                                              @NonNull RTMStruct.TranslateType type, @NonNull RTMStruct.ProfanityType profanity){
         Quest quest = new Quest("translate");
         quest.param("text", text);
         quest.param("dst", destinationLanguage);
@@ -916,7 +912,7 @@ class RTMChat extends RTMRoom {
         if (sourceLanguage.length() > 0)
             quest.param("src", sourceLanguage);
 
-        if (type == TranslateType.Mail)
+        if (type == RTMStruct.TranslateType.Mail)
             quest.param("type", "mail");
         else
             quest.param("type", "chat");
@@ -933,9 +929,9 @@ class RTMChat extends RTMRoom {
         }
 
         Answer answer = sendQuest(quest);
-        RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
 
-        TranslatedInfo translatedMessage = new TranslatedInfo();
+        RTMStruct.TranslatedInfo translatedMessage = new RTMStruct.TranslatedInfo();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             translatedMessage.source = answer.wantString("source");
             translatedMessage.target = answer.wantString("target");
@@ -952,13 +948,13 @@ class RTMChat extends RTMRoom {
      * @param text          需要检测的文本
      * @return              CheckResult结构
      */
-    public CheckResult textCheck(@NonNull String text){
+    public RTMStruct.CheckResult textCheck(@NonNull String text){
         Quest quest = new Quest("tcheck");
         quest.param("text", text);
 
         Answer answer = sendQuest(quest,RTMConfig.globalFileQuestTimeoutSeconds);
-        CheckResult checkResult = new CheckResult();
-        RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             checkResult.result = answer.wantInt("result");
             if (checkResult.result == 2){
@@ -982,14 +978,14 @@ class RTMChat extends RTMRoom {
      * @param callback      IRTMCallback<CheckResult>回调
      * @param text          需要检测的文本
      */
-    public void textCheck(@NonNull final IRTMCallback<CheckResult> callback, @NonNull String text){
+    public void textCheck(@NonNull final UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, @NonNull String text){
         Quest quest = new Quest("tcheck");
         quest.param("text", text);
 
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                CheckResult checkResult = new CheckResult();
+                RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     List<Integer> tags = new ArrayList<>();
                     List<String> wlist = new ArrayList<>();
@@ -1004,7 +1000,7 @@ class RTMChat extends RTMRoom {
         });
     }
 
-    private void audioToTextAsync(final IRTMCallback<AudioTextStruct> callback, Object content, CheckSourceType type,String lang, String codec, int srate)
+    private void audioToTextAsync(final UserInterface.IRTMCallback<RTMStruct.AudioTextStruct> callback, Object content, CheckSourceType type, String lang, String codec, int srate)
     {
         Quest quest = new Quest("speech2text");
         quest.param("audio", content);
@@ -1019,7 +1015,7 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                AudioTextStruct audioTextStruct = new AudioTextStruct();
+                RTMStruct.AudioTextStruct audioTextStruct = new RTMStruct.AudioTextStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     audioTextStruct.text = answer.getString("text");
                     audioTextStruct.lang = answer.getString("lang");
@@ -1029,7 +1025,7 @@ class RTMChat extends RTMRoom {
         }, RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
-    private AudioTextStruct audioToTextSync(Object content, CheckSourceType type, String lang, String codec, int srate)
+    private RTMStruct.AudioTextStruct audioToTextSync(Object content, CheckSourceType type, String lang, String codec, int srate)
     {
         Quest quest = new Quest("speech2text");
         quest.param("audio", content);
@@ -1042,8 +1038,8 @@ class RTMChat extends RTMRoom {
         quest.param("srate", srate);
 
         Answer answer = sendQuest(quest);
-        AudioTextStruct audioTextStruct = new AudioTextStruct();
-        RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.AudioTextStruct audioTextStruct = new RTMStruct.AudioTextStruct();
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             audioTextStruct.text = answer.getString("text");
             audioTextStruct.lang = answer.getString("lang");
@@ -1054,7 +1050,7 @@ class RTMChat extends RTMRoom {
     }
 
 
-    private void checkContentAsync(final IRTMCallback<CheckResult> callback, Object content, CheckSourceType type, CheckType checkType,String videoName, String lang, String codec, int srate)
+    private void checkContentAsync(final UserInterface.IRTMCallback<RTMStruct.CheckResult> callback, Object content, CheckSourceType type, CheckType checkType, String videoName, String lang, String codec, int srate)
     {
         String method = "", rucankey = "";
         int sourfeType = 1;
@@ -1089,7 +1085,7 @@ class RTMChat extends RTMRoom {
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                CheckResult checkResult = new CheckResult();
+                RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     checkResult.result = answer.wantInt("result");
                     if (checkResult.result == 2){
@@ -1103,7 +1099,7 @@ class RTMChat extends RTMRoom {
         }, RTMConfig.globalFileQuestTimeoutSeconds);
     }
 
-    private CheckResult checkContentSync(Object content, CheckSourceType type,CheckType checkType,String videoName, String lang, String codec, int srate)
+    private RTMStruct.CheckResult checkContentSync(Object content, CheckSourceType type, CheckType checkType, String videoName, String lang, String codec, int srate)
     {
         String method = "", rucankey = "";
         int sourfeType = 1;
@@ -1136,8 +1132,8 @@ class RTMChat extends RTMRoom {
         }
 
         Answer answer = sendQuest(quest);
-        CheckResult checkResult = new CheckResult();
-        RTMAnswer result = genRTMAnswer(answer);
+        RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
+        RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             checkResult.result = answer.wantInt("result");
             if (checkResult.result == 2){

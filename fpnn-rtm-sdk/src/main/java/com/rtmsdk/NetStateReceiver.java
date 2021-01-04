@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 
-import java.util.Objects;
-
 class NetStateReceiver extends BroadcastReceiver {
     private INetEvent mINetEvent = RTMCore.mINetEvent;
 

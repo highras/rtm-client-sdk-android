@@ -38,14 +38,6 @@ public class RTMClient extends RTMChat {
     }
 
     /**
-     * 配置rtm全局参数
-     * @param config RTMConfig结构
-     */
-    void config(RTMConfig config){
-        RTMConfig.Config(config);
-    }
-
-    /**
      * 关闭rtm
      */
     public void closeRTM(){

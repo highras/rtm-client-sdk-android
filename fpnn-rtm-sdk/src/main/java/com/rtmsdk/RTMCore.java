@@ -67,7 +67,7 @@ class RTMCore  implements INetEvent{
     private Thread checkThread;
 
     private RTMQuestProcessor processor;
-    protected com.fpnn.sdk.ErrorRecorder errorRecorder = (ErrorRecorder)ErrorRecorder.getInstance();
+    protected com.fpnn.sdk.ErrorRecorder errorRecorder = null;
 
     private TCPClient dispatch;
     private TCPClient rtmGate;
@@ -188,6 +188,8 @@ class RTMCore  implements INetEvent{
             this.pid = pid;
             this.uid = uid;
             autoConnect = false;
+            isRelogin.set(false);
+            errorRecorder = RTMConfig.defaultErrorRecorder;
 
             fileGates = new HashMap<>();
             processor = new RTMQuestProcessor();
@@ -195,11 +197,13 @@ class RTMCore  implements INetEvent{
 
             dispatch = TCPClient.create(endpoint, true);
             dispatch.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
-            dispatch.setQuestTimeout(RTMConfig.globalConnectTimeoutSeconds);
-            isRelogin.set(false);
+            dispatch.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
         }
         catch (Exception ex){
-            Log.e("rtmsdk","RTMInit error " + ex.getMessage());
+            if (errorRecorder != null)
+                errorRecorder.recordError("RTMInit error "+ ex.getMessage());
+            else
+                Log.e("rtmsdk","RTMInit error " + ex.getMessage());
         }
     }
 
@@ -278,7 +282,7 @@ class RTMCore  implements INetEvent{
 
     RTMStruct.RTMAnswer genRTMAnswer(Answer answer) {
         if (answer == null)
-            return genRTMAnswer(answer, ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
+            return new RTMStruct.RTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(), "invalid connection");
         return new RTMStruct.RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
     }
 

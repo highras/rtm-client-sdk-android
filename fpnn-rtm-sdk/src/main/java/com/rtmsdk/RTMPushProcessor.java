@@ -3,10 +3,10 @@ package com.rtmsdk;
 import com.rtmsdk.RTMStruct.RTMMessage;
 public class RTMPushProcessor
 {
-    //链接断开 (如果设置重连 会自动连接)
+    //链接断开 (如果设置重连 会自动连接 kickout除外)
     public void rtmConnectClose(int ClosedByErrorCode){}
 
-    //被踢
+    //被服务器踢下线(不会自动重连)
     public void kickout(){}
 
     //踢出房间

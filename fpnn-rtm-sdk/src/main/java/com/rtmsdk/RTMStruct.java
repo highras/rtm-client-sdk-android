@@ -258,6 +258,12 @@ public class RTMStruct {
         public Map<String, String> publicInfos; //群组/房间/个人的公开信息 key -用户id/群组id/房间id
     }
 
+
+    public static class DevicePushOption extends RTMAnswer{
+        public Map<Long, HashSet<Integer>> p2pPushOptions; //p2p的不推送设置 key-uid value-messagetypes （如果集合里有0 表示所有type均不推送）
+        public Map<Long, HashSet<Integer>> groupPushOptions; //group的不推送设置 key-groupid value-messagetypes（如果集合里有0 表示所有type均不推送）
+    }
+
     public static class FileStruct{ //serverpush的文件结构
         public String url = "";     //文件的url地址 图片/语音/视频/普通文件
         public long fileSize = 0;  //文件大小(字节)
@@ -268,4 +274,6 @@ public class RTMStruct {
         public String codec = "";   //语音编码 如果是rtm语音消息 会有此值
         public int srate = 0;       //语音采样率 如果是rtm语音消息 会有此值
     }
+
+
 }

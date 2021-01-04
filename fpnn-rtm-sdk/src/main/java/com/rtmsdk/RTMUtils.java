@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RTMUtils {
@@ -137,6 +137,25 @@ public class RTMUtils {
         }
         return attributes;
     }
+
+    static HashMap<Long, HashSet<Integer>> wantDeviceOption(Message message, String key) {
+        HashMap<Long, HashSet<Integer>> options = new HashMap<>();
+        try {
+            Map<Object, ArrayList<Integer>> tmpOption = (Map<Object, ArrayList<Integer>>) message.want(key);
+            for (Object xid: tmpOption.keySet()){
+                HashSet<Integer> messageTypes = new HashSet<>();
+                for (Integer type: tmpOption.get(xid))
+                    messageTypes.add(type);
+                options.put(wantLong(xid), messageTypes);
+            }
+        }
+        catch (Exception e)
+        {
+            ErrorRecorder.record(e.getMessage());
+        }
+        return options;
+    }
+
 
     static HashSet<Long> wantLongHashSet(Message message, String key) {
         HashSet<Long> uids = new HashSet<Long>();

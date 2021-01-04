@@ -45,7 +45,7 @@
 
     /**
      *get user attributes async
-     * @return          List<Map<String, String>>
+     * @return          AttrsStruct
      */
     public AttrsStruct getAttributes()
 
@@ -66,17 +66,17 @@
     public RTMAnswer addDebugLog(String message, String attrs)
 
     /**
-     * async
-     * @param  callback  IRTMEmptyCallback 
-     * @param appType     (NoNull)
-     * @param deviceToken  (NoNull)
+     * add device push info async
+     * @param  callback  IRTMEmptyCallback
+     * @param appType     fcm(android) or apns(ios)
+     * @param deviceToken   token for push
      */
     public void addDevice(IRTMEmptyCallback callback, String appType, String deviceToken) 
 
     /**
      * async
-     * @param appType    (NoNull)
-     * @param deviceToken (NoNull)
+     * @param appType    fcm(android) or apns(ios)
+     * @param deviceToken token for push
      */
     public RTMAnswer addDevice(String appType, String deviceToken)
 
@@ -147,4 +147,57 @@
      *return        UserPublicInfo
      */
     public UserPublicInfo getUserPublicInfo(HashSet<Long> uids)
+    
+    
+    /**set device push options(note:this interface is set some messagetypes not push) sync
+     * @param type  when type=0, set p2p options；when type=1, set group options
+     * @param xid   when type =0 is mean userid；when type =1  is mean groupId
+     * @param messageTypes (when messageTypes is null，all message not push)
+     * @return  RTMAnswer
+     */
+    public RTMAnswer addDevicePushOption(@NonNull int type, @NonNull long xid, HashSet<Integer> messageTypes)
+    
+    
+
+    /**cancel device push options(corresponding with addDevicePushOption) sync
+     * @param type  when type=0, mean p2p；when type=1 mean group
+     * @param xid   when type =0  mean userid；when type =1 mean groupId
+     * @param messageTypes  message types
+     * @return  RTMAnswer
+     */
+    public RTMAnswer removeDevicePushOption(@NonNull int type, @NonNull long xid, HashSet<Integer> messageTypes)
+    
+    
+
+    /** sync
+     * @return DevicePushOption
+     */
+    public DevicePushOption getDevicePushOption() 
+
+
+
+    /**set device push options(note:this interface is set some messagetypes not push) sync
+     * @param callback
+     * @param type  when type=0, set p2p options；when type=1, set group options
+     * @param xid   when type =0 is mean userid；when type =1  is mean groupId
+     * @param messageTypes (when messageTypes is null，all message not push)
+     **/
+    public void addDevicePushOption(@NonNull UserInterface.IRTMEmptyCallback callback, @NonNull int type, @NonNull long xid, HashSet<Integer> messageTypes)
+    
+    
+    
+    /**cancel the device push options() async
+     * @param callback
+     * @param type  when type=0, set p2p options；when type=1, set group options
+     * @param xid   when type =0 is mean userid；when type =1  is mean groupId
+     * @param messageTypes 
+     */
+    public void removeDevicePushOption(UserInterface.IRTMEmptyCallback callback, @NonNull int type, @NonNull long xid, HashSet<Integer> messageTypes)
+    
+    
+    /**async
+     *  @param callback
+     */
+    public void getDevicePushOption(final UserInterface.IRTMCallback<DevicePushOption> callback)
+    
 ~~~

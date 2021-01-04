@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.2'
+        api 'com.github.highras:rtm-android:2.3.4'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.2</version>
+        <version>2.3.4</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -65,7 +65,12 @@
             Log.i("log",String.format("Error: %s, exception: %s", message, e));
         }
     }
-    rtmclient.setErrorRecoder(TestErrorRecorder)
+    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor)
+    rtmclient.setErrorRecoder(new TestErrorRecorder())
+    或者
+    RTMConfig newconfig = new RTMConfig();
+    newconfig.errorRecorder = new TestErrorRecorder();
+    RTMConfig.Config( newconfig); （需要在RTMClient初始化之前）
     ~~~
 
 ### 使用示例

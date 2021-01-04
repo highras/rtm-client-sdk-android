@@ -96,11 +96,10 @@ public class RTMAudio {
         }
     };
     private IAudioAction audioAction = null;
-    private TranscribeLang lang = TranscribeLang.EN_US;
+    private String lang = TranscribeLang.EN_US.getName();
     private int gatherInterva = 200;
     //    private AudioTrack mPlayer;
     private MediaRecorder mRecorder = null;
-    private String audioDir = "";
     private File recordFile;
     private int minSampleRate = 16000;
     private int maxDurSeconds = 300;
@@ -184,30 +183,25 @@ public class RTMAudio {
     /**
      *
      * @param file 录音文件默认存储的地址
-     * @param lang 语言
+     * @param lang 语言(详见TranslateLang列表)
      * @param audioAction 用户自定义回调
      */
-    public void init(File file, TranscribeLang lang, IAudioAction audioAction) {
+    public void init(File file, String lang, IAudioAction audioAction) {
         this.audioAction = audioAction;
         this.lang = lang;
 
         recordFile = file;
     }
 
-    public void setLang(TranscribeLang lang){
+    /**
+     * @param lang 语言(详见TranslateLang列表)
+     */
+    public void setLang(String lang){
         this.lang = lang;
     }
 
     public void setGatherInterva(int time){
         gatherInterva = time;
-    }
-
-    public String getLang(){
-        return lang.getName();
-    }
-
-    public TranscribeLang getInitLang(){
-        return lang;
     }
 
     private int getAudioTime(File file) {
@@ -261,7 +255,7 @@ public class RTMAudio {
         tt.file = file;
         tt.audioData = audio;
         tt.duration = audioDur;
-        tt.lang = lang.getName();
+        tt.lang = lang;
         return tt;
     }
 
@@ -288,20 +282,20 @@ public class RTMAudio {
 
     private void updateMicStatus() {
         if (mRecorder != null) {
-            double ratio = (double)mRecorder.getMaxAmplitude() /1;
-            double db = 0;// 分贝
-            if (ratio > 1)
-                db = 20 * Math.log10(ratio);
-            if (audioAction !=null){
-                audioAction.listenVolume(db);
+            try {
+                double ratio = (double) mRecorder.getMaxAmplitude() / 1;
+                double db = 0;// 分贝
+                if (ratio > 1)
+                    db = 20 * Math.log10(ratio);
+                if (audioAction != null) {
+                    audioAction.listenVolume(db);
+                }
+                handler.postDelayed(mUpdateMicStatusTimer, gatherInterva);
             }
-            handler.postDelayed(mUpdateMicStatusTimer, gatherInterva);
+            catch (Exception e){
+                return;
+            }
         }
-    }
-
-    public void startRecord(TranscribeLang lang) {
-        this.lang = lang;
-        startRecord();
     }
 
     public void startRecord() {

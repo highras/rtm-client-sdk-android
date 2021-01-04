@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 
 import com.fpnn.sdk.ConnectionConnectedCallback;
 import com.fpnn.sdk.ErrorCode;
-import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.TCPClient;
 import com.fpnn.sdk.proto.Answer;
@@ -15,8 +14,6 @@ import com.rtmsdk.UserInterface.IRTMDoubleValueCallback;
 import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 class RTMFile extends RTMSystem {
