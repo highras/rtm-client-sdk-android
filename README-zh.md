@@ -45,7 +45,7 @@
   - 自动重连需要设置重连开始回调和重连完成回调函数并传入applicationContext
 - 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数
 - 所有同步和异步接口都会返回 RTMAnswer结构，请先判断answer中的errorCode 如果为0正常
-- RTMConfig创建后，所有配置均已有默认值，使用者如需要重新设置默认值，请在初始化rtmclient之前调用RTMConfig.config()接口即可。
+- RTMConfig创建后，所有配置均已有默认值，使用者如需要重新设置默认值，请在初始化rtmclient之前调用RTMConfig.Config()接口即可。
 - 用户可以重写rtm的日志类 收集和获取sdk内部的错误信息(强烈建议重载日志类) 例如
     ~~~
      public class TestErrorRecorder extends ErrorRecorder {
