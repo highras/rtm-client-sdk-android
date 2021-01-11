@@ -1,6 +1,5 @@
 ~~~ java
-
-   //重连开始接口 每次重连都会判断reloginWillStart 返回值 若返回false则中断重连
+    //重连开始接口 每次重连都会判断reloginWillStart 返回值 若返回false则中断重连
     //reloginWillStart 参数说明 uid-用户id  answer本次重连的结果  reloginCount重连次数
     //备注 需要用户设定一些条件 比如重连间隔 最大重连次数
     public interface  IReloginStart{
@@ -23,9 +22,11 @@
         void onResult(T t, RTMAnswer answer);
     }
 
-    interface DoubleStringCallback{
-        void onResult(String str1, String str2, int errorCode);
+    //泛型接口 带有两个返回值的回调函数
+    public interface IRTMDoubleValueCallback<T,V> {
+        void onResult(T t, V v, RTMAnswer answer);
     }
+
     
 
 public class RTMStruct {
