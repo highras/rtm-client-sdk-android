@@ -39,13 +39,14 @@
 
 
 ### Instructions
-- rtm need network permission，if you use RTMaudio  module，it's need storage and record permission
+- RTM need network permission，if you use RTMaudio  module，it's need storage and record permission
 - please use RTMClient in child thread
-- rtm suipport autoconnect,after init rtmclient,you can use <setAutoconnect> function
-  - autoconnect need set reconnect-start function and reconnect-complete funciton, as well setapplicationContext
+- RTM suipport autoconnect,after init RTMclient,you can use <setAutoconnect> function
+  - autoconnect need set reconnect-start function and reconnect-complete funciton, as well applicationContext
 - server push:please extends RTMPushProcessor,overload the function what you need
+- the different of room and group,group is persistent ，room is not persistent；when you disconnect rtm or logout you will be leave room
 - all async and sync function will contain RTMAnswer，please judge errorCode in RTMAnswer first, if errorCode equal 0 means successful
-- RTMConfig has default value，if user need change default value, please call rtmclient.config function。
+- RTMConfig class is RTM gloable config, all param has default value，if user need change default value, please call RTMConfig.Config(RTMConfig newConfig) before init RTMClient。
 - user can extends ErrorRecorder record rtmsdk internal error(strongly recommend). for example:
     ~~~
      public class TestErrorRecorder extends ErrorRecorder {

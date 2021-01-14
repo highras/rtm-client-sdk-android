@@ -12,7 +12,7 @@ public class UserInterface {
     }
 
     //重连完成(如果 successful 为false表示最终重连失败,answer会有详细的错误码和错和错误信息 为true表示重连成功)
-    //备注 当用户的token过期 重连会直接返回 不会继续判断reloginWillStart
+    //备注 当用户的token过期 重连会直接返回 不会继续判断reloginWillStart.
     public interface  IReloginCompleted{
         void   reloginCompleted(long uid, boolean successful, RTMAnswer answer, int reloginCount);
     }

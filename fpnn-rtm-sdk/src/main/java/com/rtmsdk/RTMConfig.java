@@ -3,8 +3,8 @@ package com.rtmsdk;
 import com.fpnn.sdk.ErrorRecorder;
 
 public class RTMConfig {
-    public static final String SDKVersion = "2.3.4";
-    public static final String InterfaceVersion = "2.5.0";
+    public static final String SDKVersion = "2.3.5";
+    public static final String InterfaceVersion = "2.6.1";
 
     static int lostConnectionAfterLastPingInSeconds = 60;
     static int globalConnectTimeoutSeconds = 30;
@@ -20,7 +20,7 @@ public class RTMConfig {
 //    public int fileClientHoldingSeconds;
     public int globalFileQuestTimeout;//传输文件/音频 最大超时时间
     public int globalTranslateQuestTimeout;//翻译/识别最大超时时间
-    public ErrorRecorder errorRecorder;//错误日志收集类
+    public ErrorRecorder errorRecorder = (ErrorRecorder)ErrorRecorder.getInstance();//错误日志收集类
 
     public RTMConfig() {
         maxPingInterval = 60;
@@ -29,7 +29,7 @@ public class RTMConfig {
 //        fileClientHoldingSeconds = 150;
         globalFileQuestTimeout = 120;
         globalTranslateQuestTimeout = 120;
-        errorRecorder = (ErrorRecorder)ErrorRecorder.getInstance();
+        defaultErrorRecorder = errorRecorder;
     }
 
     public static void Config(RTMConfig config) {

@@ -68,19 +68,22 @@ public class RTMRoom extends RTMFriend {
     /**
      * 获取房间中的所有人数 async(由于分布式系统，房间的人数会有几秒同步间隔)
      * @param callback IRTMEmptyCallback回调
-     * @param roomId   房间id
+     * @param rids   房间id
      */
-    public void getRoomCount(@NonNull final IRTMCallback<Integer> callback, long roomId) {
+    public void getRoomCount(@NonNull final IRTMCallback<Map<Long,Integer>> callback, HashSet<Long> rids) {
         Quest quest = new Quest("getroomcount");
-        quest.param("rid",roomId);
+        quest.param("rids",rids);
 
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                int count = 0;
-                if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    count = answer.wantInt("cn");
-                callback.onResult(count, genRTMAnswer(answer,errorCode));
+                Map<Long,Integer> members = new HashMap<>();
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    Map oo = (Map) answer.want("cn");
+                    for (Object kk: oo.keySet())
+                        members.put(RTMUtils.wantLong(kk),RTMUtils.wantInt(oo.get(kk)));
+                }
+                callback.onResult(members, genRTMAnswer(answer,errorCode));
             }
         });
     }
@@ -88,18 +91,23 @@ public class RTMRoom extends RTMFriend {
 
     /**
      * 获取房间中的所有人数 sync(由于分布式系统，房间的人数会有几秒同步间隔)
-     * @param roomId  房间id
+     * @param rids  房间id
      */
-    public MemberCount getRoomCount(long roomId) {
+    public MemberCount getRoomCount(HashSet<Long> rids) {
         Quest quest = new Quest("getroomcount");
-        quest.param("rid",roomId);
+        quest.param("rids",rids);
         Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MemberCount ret = new MemberCount();
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
-        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.count = answer.wantInt("cn");
+        HashMap mems = new HashMap<Long,Integer>();
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            Map ll = (Map)answer.want("cn");
+            for (Object kk: ll.keySet())
+                mems.put(RTMUtils.wantLong(kk),RTMUtils.wantInt(ll.get(kk)));
+            ret.memberCounts = mems;
+        }
         return ret;
     }
 

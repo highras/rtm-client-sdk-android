@@ -243,7 +243,7 @@ public class RTMStruct {
     }
 
     public static class MemberCount extends RTMAnswer{
-        public int count;
+        public Map<Long,Integer>  memberCounts;
     }
 
     public static class AttrsStruct extends RTMAnswer{
@@ -274,6 +274,4 @@ public class RTMStruct {
         public String codec = "";   //语音编码 如果是rtm语音消息 会有此值
         public int srate = 0;       //语音采样率 如果是rtm语音消息 会有此值
     }
-
-
 }

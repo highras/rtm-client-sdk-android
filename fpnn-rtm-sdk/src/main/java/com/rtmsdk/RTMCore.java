@@ -67,13 +67,12 @@ class RTMCore  implements INetEvent{
     private Thread checkThread;
 
     private RTMQuestProcessor processor;
-    protected com.fpnn.sdk.ErrorRecorder errorRecorder = null;
+    protected com.fpnn.sdk.ErrorRecorder errorRecorder = RTMConfig.defaultErrorRecorder;;
 
     private TCPClient dispatch;
     private TCPClient rtmGate;
     private Map<String, Map<TCPClient, Long>> fileGates;
     private int connectionId = 0;
-    private boolean authFinish = false;
     private RTMStruct.RTMAnswer lastReloginAnswer = new RTMStruct.RTMAnswer();
     private boolean noNetWorkNotify = false;
 
@@ -126,7 +125,7 @@ class RTMCore  implements INetEvent{
                         return;
                     }
                     try {
-                        Thread.sleep(1 * 1000);
+                        Thread.sleep(2 * 1000);
                     } catch (InterruptedException e) {
                         isRelogin.set(false);
                         reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
@@ -146,8 +145,6 @@ class RTMCore  implements INetEvent{
         if (lastNetType != NetUtils.NETWORK_NOTINIT) {
             switch (netWorkState) {
                 case NetUtils.NETWORK_NONE:
-//                    close();
-                    //                sayBye(true);
                     noNetWorkNotify = true;
 //                    if (isRelogin.get()){
 //                        isRelogin.set(false);
@@ -189,7 +186,6 @@ class RTMCore  implements INetEvent{
             this.uid = uid;
             autoConnect = false;
             isRelogin.set(false);
-            errorRecorder = RTMConfig.defaultErrorRecorder;
 
             fileGates = new HashMap<>();
             processor = new RTMQuestProcessor();
@@ -278,7 +274,6 @@ class RTMCore  implements INetEvent{
             tt.errorMsg = msg;
         return tt;
     }
-
 
     RTMStruct.RTMAnswer genRTMAnswer(Answer answer) {
         if (answer == null)
@@ -596,7 +591,7 @@ class RTMCore  implements INetEvent{
         if (attr != null)
             qt.param("attrs", attr);
         try {
-            Answer answer = rtmGate.sendQuest(qt,RTMConfig.globalConnectTimeoutSeconds);
+            Answer answer = rtmGate.sendQuest(qt,RTMConfig.globalQuestTimeoutSeconds);
 
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
@@ -621,7 +616,6 @@ class RTMCore  implements INetEvent{
             }
             processor.setLastPingTime(RTMUtils.getCurrentSeconds());
             checkRoutineInit();
-            authFinish = true;
             connectionId = rtmGate.getConnectionId();
             return genRTMAnswer(answer);
         }
@@ -672,7 +666,6 @@ class RTMCore  implements INetEvent{
                         }
                         processor.setLastPingTime(RTMUtils.getCurrentSeconds());
                         checkRoutineInit();
-                        authFinish = true;
                         connectionId = rtmGate.getConnectionId();
                         callback.onResult(genRTMAnswer(errorCode));
                     }
@@ -741,7 +734,7 @@ class RTMCore  implements INetEvent{
                             }
                         }
                     }
-                }, RTMConfig.globalConnectTimeoutSeconds);
+                }, RTMConfig.globalQuestTimeoutSeconds);
             }
         }
         catch (final Exception ex){
@@ -789,7 +782,7 @@ class RTMCore  implements INetEvent{
             quest.param("what", "rtmGated");
             quest.param("addrType", addressType);
             quest.param("proto", "tcp");
-            Answer answer = dispatch.sendQuest(quest,RTMConfig.globalConnectTimeoutSeconds);
+            Answer answer = dispatch.sendQuest(quest,RTMConfig.globalQuestTimeoutSeconds);
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
                 return genRTMAnswer(answer);
@@ -813,7 +806,6 @@ class RTMCore  implements INetEvent{
 
     public void close() {
         synchronized (interLocker) {
-            authFinish = false;
             initCheckThread.set(false);
             running.set(false);
             if (status == ClientStatus.Closed)

@@ -39,14 +39,17 @@
 
 
 ### 使用说明
-- rtm通信需要网络权限，使用语音相关功能需要存储和录音权限
+- RTM通信需要网络权限，使用语音相关功能需要存储和录音权限
 - 请在子线程初始化RTMClient以及登录和任何发送操作
-- rtm支持自动重连 初始化rtmclient成功后可调用setAutoconnect方法设置自动重连
+- RTM支持自动重连 初始化RTMclient成功后可调用setAutoconnect方法设置自动重连
   - 自动重连需要设置重连开始回调和重连完成回调函数并传入applicationContext
-- 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数
-- 所有同步和异步接口都会返回 RTMAnswer结构，请先判断answer中的errorCode 如果为0正常
-- RTMConfig创建后，所有配置均已有默认值，使用者如需要重新设置默认值，请调用config接口即可。
-- 用户可以重写rtm的日志类 收集和获取sdk内部的错误信息(强烈建议重载日志类) 例如
+- 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数(RTM的push回调函数和收发线程在一起 如果用户在push的回调函数中有耗时操作 请单独开启线程不然会有可能阻塞后续的处理请求)
+- RTM的各项服务配置和增值服务可以在后台配置，请登陆管理后台预览详细的配置参数
+- 所有同步和异步接口都会返回 RTMAnswer结构，请优先判断answer中的errorCode 如果为0正常
+- RTM的room和group的区别 group在服务端会持久化 room是非持久化(用户下线或者RTM链接断开会自动离开room)
+  - room默认不支持多房间（当用户进入第二个房间会自动退出第一个房间） 用户可以在控制台开启支持多房间配置
+- RTMConfig是RTM的全局配置参数，所有配置均已有默认值，使用者如需要重新设置默认值，请在初始化RTMclient之前调用RTMConfig.Config(RTMConfig newConfig)接口。
+- 用户可以重写RTM的日志类 收集和获取sdk内部的错误信息(强烈建议重载日志类) 例如
     ~~~
      public class TestErrorRecorder extends ErrorRecorder {
         public TestErrorRecorder(){
@@ -79,6 +82,10 @@ import com.rtmsdk.RTMErrorCode;
 import com.rtmsdk.RTMAudio; //语音相关功能
 
  ~~~
+    public class RTMExampleQuestProcessor extends RTMPushProcessor {
+        ....//重写自己需要处理的业务接口
+    }
+    
     RTMClient client = new RTMClient(String endpoint, long pid, long uid,new RTMExampleQuestProcessor());
     
     //若服务端启用fpnn加密功能 客户端需要传入公钥和曲线算法
@@ -102,6 +109,7 @@ import com.rtmsdk.RTMAudio; //语音相关功能
 - [房间/群组/好友接口](doc-zh/RTMRelationship.md)
 - [用户系统命令接口](doc-zh/RTMUserSystem.md)
 - [语音接口](doc-zh/RTMAudio.md)
+- [RTM错误码](doc-zh/ErrorCode.md)
 
 
 #### 测试案例

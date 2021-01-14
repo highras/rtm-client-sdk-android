@@ -1,8 +1,13 @@
 package com.rtmsdk;
 
+import android.util.Log;
+
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 class DuplicatedMessageFilter {
     public enum MessageCategories {
@@ -54,13 +59,15 @@ class DuplicatedMessageFilter {
         }
     }
 
-    private final int expireSeconds = 20 * 60;
+//    private final int expireSeconds = 60;
+//    private Map<MessageIdUnit, Long> midCache;
+    private final int maxMessage = 2000;
+    private Set<MessageIdUnit> midCache;
 
-    private Map<MessageIdUnit, Long> midCache;
     private Object locker;
 
     public DuplicatedMessageFilter() {
-        midCache = new HashMap<>();
+        midCache = new HashSet<>(2000);
         locker = new Object();
     }
 
@@ -70,26 +77,20 @@ class DuplicatedMessageFilter {
 
     public boolean CheckMessage(MessageCategories type, long uid, long mid, long bizId) {
         synchronized (locker) {
-            long now = RTMUtils.getCurrentSeconds();
             MessageIdUnit unit = new MessageIdUnit(type, bizId, uid, mid);
-            if (midCache.containsKey(unit)) {
-                midCache.put(unit, now);
-                return false;
+            boolean findFlag = false;
+            if (midCache.contains(unit)) {
+                midCache.add(unit);
             } else {
-                midCache.put(unit, now);
-                ClearExpired(now);
-                return true;
+                midCache.add(unit);
+                findFlag = true;
             }
-        }
-    }
-
-    private void ClearExpired(long now) {
-        now -= expireSeconds;
-        Iterator<Map.Entry<MessageIdUnit, Long>> it = midCache.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<MessageIdUnit, Long> entry = it.next();
-            if (entry.getValue() <= now)
-                it.remove();
+            if (midCache.size() >= maxMessage) {
+                midCache.clear();
+                midCache = null;
+                midCache = new HashSet<>(2000);
+            }
+            return findFlag;
         }
     }
 }

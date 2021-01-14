@@ -8,8 +8,6 @@ import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 public class RTMClient extends RTMChat {
     private long pid;
     private long uid;
-    private String token;
-    private String endpoint;
 
     /**
      *
@@ -29,16 +27,17 @@ public class RTMClient extends RTMChat {
         if (serverPushProcessor == null)
             errDesc += " IRTMQuestProcessor is null";
 
-        if (!errDesc.equals(""))
-            errorRecorder.recordError("rtmclient init error " + errDesc);
+        if (!errDesc.equals("")) {
+            if (errorRecorder != null)
+                errorRecorder.recordError("rtmclient init error " + errDesc);
+        }
         this.pid = pid;
         this.uid = uid;
-        this.endpoint = endpoint;
         RTMInit(endpoint, pid, uid, serverPushProcessor);
     }
 
     /**
-     * 关闭rtm
+     * 关闭rtm(释放资源)
      */
     public void closeRTM(){
         realClose();

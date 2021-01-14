@@ -3,13 +3,13 @@ package com.rtmsdk;
 import com.rtmsdk.RTMStruct.RTMMessage;
 public class RTMPushProcessor
 {
-    //链接断开 (如果设置重连 会自动连接 kickout除外)
+    //rtm链接断开 (如果设置重连 会自动连接 kickout除外)(备注:链接断开会自动退出之前进入的房间,需要在重连成功根据业务需求再次加入房间)
     public void rtmConnectClose(int ClosedByErrorCode){}
 
     //被服务器踢下线(不会自动重连)
     public void kickout(){}
 
-    //踢出房间
+    //被踢出房间
     public void kickoutRoom(long roomId){}
 
     //push聊天消息(具体消息内容为 RTMMessage 中的translatedInfo)
