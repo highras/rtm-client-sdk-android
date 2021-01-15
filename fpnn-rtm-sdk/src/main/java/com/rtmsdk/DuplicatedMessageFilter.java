@@ -61,7 +61,7 @@ class DuplicatedMessageFilter {
 
 //    private final int expireSeconds = 60;
 //    private Map<MessageIdUnit, Long> midCache;
-    private final int maxMessage = 2000;
+    private final int maxMessage =1000;
     private Set<MessageIdUnit> midCache;
 
     private Object locker;
@@ -88,7 +88,7 @@ class DuplicatedMessageFilter {
             if (midCache.size() >= maxMessage) {
                 midCache.clear();
                 midCache = null;
-                midCache = new HashSet<>(2000);
+                midCache = new HashSet<>(maxMessage);
             }
             return findFlag;
         }
