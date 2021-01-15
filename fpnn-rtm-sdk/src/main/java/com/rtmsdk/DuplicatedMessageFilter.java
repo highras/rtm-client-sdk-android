@@ -67,7 +67,7 @@ class DuplicatedMessageFilter {
     private Object locker;
 
     public DuplicatedMessageFilter() {
-        midCache = new HashSet<>(2000);
+        midCache = new HashSet<>(maxMessage);
         locker = new Object();
     }
 

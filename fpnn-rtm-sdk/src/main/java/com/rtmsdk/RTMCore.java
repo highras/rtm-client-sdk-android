@@ -353,7 +353,7 @@ class RTMCore  implements INetEvent{
                 context.unregisterReceiver(stateReceiver);
         } catch ( IllegalArgumentException e){
         }
-        close();
+        sayBye(true);
     }
 
      void sayBye(boolean async) {
@@ -804,7 +804,7 @@ class RTMCore  implements INetEvent{
         }
     }
 
-    public void close() {
+    void close() {
         synchronized (interLocker) {
             initCheckThread.set(false);
             running.set(false);

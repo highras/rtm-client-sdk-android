@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.4'
+        api 'com.github.highras:rtm-android:2.3.6'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.4</version>
+        <version>2.3.6</version>
         <type>pom</type>
     </dependency>
     ~~~

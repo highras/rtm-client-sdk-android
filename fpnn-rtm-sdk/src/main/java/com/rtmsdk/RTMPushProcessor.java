@@ -1,6 +1,7 @@
 package com.rtmsdk;
 
 import com.rtmsdk.RTMStruct.RTMMessage;
+//如果有耗时操作 需要用户单开线程处理业务逻辑 以免阻塞后续的请求
 public class RTMPushProcessor
 {
     //rtm链接断开 (如果设置重连 会自动连接 kickout除外)(备注:链接断开会自动退出之前进入的房间,需要在重连成功根据业务需求再次加入房间)

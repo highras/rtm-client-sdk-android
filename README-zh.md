@@ -1,6 +1,10 @@
 ### android-rtm-sdk 使用文档
+- [版本支持](#版本支持)
+- [依赖集成](#依赖集成)
+- [使用说明](#使用说明)
+- [使用示例](#使用示例)
 - [接口说明](#接口说明)
-    - [测试案例](#测试案例)
+- [测试案例](#测试案例)
 
 ### 版本支持
 - 最低支持Android版本为4.1(api16)
@@ -19,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.4'
+        api 'com.github.highras:rtm-android:2.3.6'
     }
     ~~~
 2. dependency in Maven
@@ -27,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.4</version>
+        <version>2.3.6</version>
         <type>pom</type>
     </dependency>
     ~~~
