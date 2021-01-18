@@ -7,6 +7,7 @@ import android.net.NetworkInfo;
 import android.provider.Settings;
 import android.util.Log;
 
+import com.fpnn.sdk.ClientEngine;
 import com.fpnn.sdk.ConnectionWillCloseCallback;
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.ErrorRecorder;
@@ -194,6 +195,7 @@ class RTMCore  implements INetEvent{
             dispatch = TCPClient.create(endpoint, true);
             dispatch.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
             dispatch.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
+            ClientEngine.setMaxThreadInTaskPool(RTMConfig.globalMaxThread);
         }
         catch (Exception ex){
             if (errorRecorder != null)
