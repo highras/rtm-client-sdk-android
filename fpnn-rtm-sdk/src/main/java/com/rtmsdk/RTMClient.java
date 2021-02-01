@@ -6,52 +6,52 @@ import java.util.Map;
 import com.rtmsdk.UserInterface.IRTMEmptyCallback;
 
 public class RTMClient extends RTMChat {
-    private long pid;
-    private long uid;
-
-    /**
-     *
-     * @param endpoint 客户端网关地址
-     * @param pid      项目id
-     * @param uid       用户id
-     * @param serverPushProcessor serverpush类
-     */
-    public RTMClient(String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor){
-        String errDesc = "";
-        if (endpoint == null || endpoint.equals("") || endpoint.lastIndexOf(':') == -1)
-            errDesc = "invalid endpoint:" + endpoint;
-        if (pid <= 0)
-            errDesc += " pid is invalid:" + pid;
-        if (uid <= 0)
-            errDesc += " uid is invalid:" + uid;
-        if (serverPushProcessor == null)
-            errDesc += " IRTMQuestProcessor is null";
-
-        if (!errDesc.equals("")) {
-            if (errorRecorder != null)
-                errorRecorder.recordError("rtmclient init error " + errDesc);
-        }
-        this.pid = pid;
-        this.uid = uid;
-        RTMInit(endpoint, pid, uid, serverPushProcessor);
+    public RTMClient(String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor,Context applicationContext) {
+        RTMInit(endpoint, pid, uid, serverPushProcessor,applicationContext,null);
     }
 
     /**
-     * 关闭rtm(释放资源)
+     *
+     * @param endpoint RTM网关地址
+     * @param pid      项目id
+     * @param uid       用户id
+     * @param serverPushProcessor serverpush类
+     * @applicationContext
+     * @RTMConfig
+     */
+    public RTMClient(String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor,Context applicationContext,RTMConfig config){
+        RTMInit(endpoint, pid, uid, serverPushProcessor,applicationContext,config);
+    }
+
+    /** 用户下线(单纯的用户下线)
+     */
+    public void bye() {
+        bye(true);
+    }
+
+    /**
+     * 关闭rtm(下线并释放资源,网络广播监听会持有RTMClient对象 如果不调用RTMClient对象会一直持有不释放)
      */
     public void closeRTM(){
         realClose();
     }
 
     public long getPid() {
-        return pid;
+        return super.getPid();
     }
 
     public long getUid() {
-        return uid;
+        return super.getUid();
     }
 
-    public RTMStruct.RTMAnswer  login(String token) {
+    /**获取用户登录状态
+     *
+     */
+    public boolean isOnline() {
+        return getClientStatus() == ClientStatus.Connected?true:false;
+    }
+
+    public RTMStruct.RTMAnswer login(String token) {
         return login(token, "", null,"ipv4");
     }
 
@@ -64,10 +64,9 @@ public class RTMClient extends RTMChat {
      * @param token     用户token
      * @param lang      用户语言(详见TranslateLang.java枚举列表)(当项目启用了自动翻译  如果客户端设置了语言会收到翻译后的结果 不设置语言或者为空则不会自动翻译,后续可以通过setTranslatedLanguage设置)
      * @param attr      登陆附加信息
-     * @param addressType   连接网关的类型 "ipv4"-ip地址 "domain"-域名
      */
-    public RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
-        return super.login(token, lang, attr, addressType);
+    public RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr) {
+        return super.login(token, lang, attr, "ipv4");
     }
 
     /**
@@ -76,19 +75,8 @@ public class RTMClient extends RTMChat {
      * @param token     用户token
      * @param lang      用户语言(详见TranslateLang.java枚举列表)(当项目启用了自动翻译  如果客户端设置了语言会收到翻译后的结果 不设置语言或者为空则不会自动翻译,后续可以通过setTranslatedLanguage设置)
      * @param attr      登陆附加信息
-     * @param addressType   连接网关的类型 "ipv4"-ip地址 "domain"-域名
      */
-    public void login(IRTMEmptyCallback callback,String token, String lang, Map<String, String> attr, String addressType) {
-        super.login(callback, token, lang, addressType, attr);
-    }
-
-    /**
-     *
-     * @param applicationContext
-     * @param startCallback        //重连开始回调
-     * @param completedCallback    //重连结束回调
-     */
-    public void setAutoConnect(Context applicationContext, UserInterface.IReloginStart startCallback, UserInterface.IReloginCompleted completedCallback) {
-        super.setAutoConnect(applicationContext,startCallback, completedCallback);
+    public void login(IRTMEmptyCallback callback,String token, String lang, Map<String, String> attr) {
+        super.login(callback, token, lang, "ipv4", attr);
     }
 }

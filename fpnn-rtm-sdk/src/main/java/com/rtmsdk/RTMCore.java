@@ -1,23 +1,20 @@
 package com.rtmsdk;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.provider.Settings;
-import android.util.Log;
 
-import com.fpnn.sdk.ClientEngine;
-import com.fpnn.sdk.ConnectionWillCloseCallback;
-import com.fpnn.sdk.ErrorCode;
-import com.fpnn.sdk.ErrorRecorder;
-import com.fpnn.sdk.FunctionalAnswerCallback;
-import com.fpnn.sdk.TCPClient;
-import com.fpnn.sdk.proto.Answer;
-import com.fpnn.sdk.proto.Quest;
+import com.fpnn.sdk.*;
+import com.fpnn.sdk.proto.*;
 import com.rtmsdk.UserInterface.IRTMEmptyCallback;
-import com.rtmsdk.UserInterface.IReloginCompleted;
-import com.rtmsdk.UserInterface.IReloginStart;
+import com.rtmsdk.RTMStruct.RTMAnswer;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -27,8 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
-class RTMCore  implements INetEvent{
+class RTMCore  extends BroadcastReceiver implements INetEvent{
     public enum ClientStatus {
         Closed,
         Connecting,
@@ -37,99 +35,530 @@ class RTMCore  implements INetEvent{
 
     public enum CloseType {
         ByUser,
-        NetWoekSwitch,
         ByServer,
         Timeout,
         None
     }
 
+    /**for network change**/
+    private int LAST_TYPE = -3;
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Object b= ConnectivityManager.CONNECTIVITY_ACTION;
+        Object a= intent.getAction();
+        if ((a == b) || (a != null && a.equals(b))) {
+            int netWorkState = NetUtils.getNetWorkState(context);
+            if (LAST_TYPE != netWorkState) {
+                LAST_TYPE = netWorkState;
+                onNetChange(netWorkState);
+            }
+        }
+    }
+    /**for network change**/
+
     //-------------[ Fields ]--------------------------//
-    public static INetEvent mINetEvent;
-    private NetStateReceiver stateReceiver;
     private final Object interLocker =  new Object();
     private long pid;
     private long uid;
-    private String token;
     private String lang;
-    private String loginAddresType;
-    private Map<String, String>  loginAttrs;
-
+    private String token;
     private String curve;
+    private Context context;
     private byte[] encrptyData;
     private boolean autoConnect;
-    private Context context;
-    private static CloseType closedCase = CloseType.None;
+
+    private Map<String, String>  loginAttrs;
+    private ClientStatus status = ClientStatus.Closed;
+    private CloseType closedCase = CloseType.None;
     private int lastNetType = NetUtils.NETWORK_NOTINIT;
     private AtomicBoolean isRelogin = new AtomicBoolean(false);
-
-    private ClientStatus status = ClientStatus.Closed;
     private AtomicBoolean running = new AtomicBoolean(true);
     private AtomicBoolean initCheckThread = new AtomicBoolean(false);
     private Thread checkThread;
-
     private RTMQuestProcessor processor;
-    protected com.fpnn.sdk.ErrorRecorder errorRecorder = RTMConfig.defaultErrorRecorder;;
-
+    ErrorRecorder errorRecorder;
     private TCPClient dispatch;
     private TCPClient rtmGate;
     private Map<String, Map<TCPClient, Long>> fileGates;
-    private int connectionId = 0;
-    private RTMStruct.RTMAnswer lastReloginAnswer = new RTMStruct.RTMAnswer();
-    private boolean noNetWorkNotify = false;
+    private AtomicLong connectionId = new AtomicLong(0);
+    private AtomicBoolean noNetWorkNotify = new AtomicBoolean(false);
+    private RTMAnswer lastReloginAnswer = new RTMAnswer();
+    private RTMPushProcessor serverPushProcessor;
+    RTMConfig rtmConfig;
 
-    private IReloginStart reloginStartCallback;
-    private IReloginCompleted reloginCompletedCallback;
-    private ArrayList<Integer> finishCodeList = new ArrayList<Integer>(){
-        {
+    private ArrayList<Integer> finishCodeList = new ArrayList<Integer>(){{
             add(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value());
-            add(RTMErrorCode.RTM_EC_PROJECT_BLACKUSER.value());
-        }
-    };
+            add(RTMErrorCode.RTM_EC_PROJECT_BLACKUSER.value()); }};
 
-    void setAutoConnect(Context applicationContext, IReloginStart startCallback, IReloginCompleted completedCallback){
-        if (applicationContext == null || startCallback == null || completedCallback == null) {
-            if (errorRecorder != null)
-                errorRecorder.recordError("invalid setAutoConnect parma ");
-            return;
+    class RTMQuestProcessor{
+        private DuplicatedMessageFilter duplicatedFilter =  new DuplicatedMessageFilter();
+        private AtomicLong lastPingTime  = new AtomicLong();;
+
+        synchronized void setLastPingTime(long time){
+            lastPingTime.set(time);
         }
-        mINetEvent = this;
-        context = applicationContext;
-        autoConnect = true;
-        reloginStartCallback = startCallback;
-        reloginCompletedCallback = completedCallback;
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
-        stateReceiver = new NetStateReceiver();
-        context.registerReceiver(stateReceiver,intentFilter);
+
+        synchronized long getLastPingTime(){
+            return lastPingTime.get();
+        }
+
+        boolean ConnectionIsAlive() {
+            long lastPingSec = lastPingTime.get();
+            boolean ret = true;
+
+            if (RTMUtils.getCurrentSeconds() - lastPingSec > rtmConfig.lostConnectionAfterLastPingInSeconds) {
+                ret = false;
+            }
+            return ret;
+        }
+
+        void rtmConnectClose() {
+            if (serverPushProcessor != null)
+                serverPushProcessor.rtmConnectClose(getUid());
+        }
+
+        //----------------------[ RTM Operations ]-------------------//
+        Answer ping(Quest quest, InetSocketAddress peer) {
+            long now = RTMUtils.getCurrentSeconds();
+            lastPingTime.set(now);
+            return new Answer(quest);
+        }
+
+        Answer kickout(Quest quest, InetSocketAddress peer) {
+            setCloseType(CloseType.ByServer);
+            close();
+            serverPushProcessor.kickout();
+            return null;
+        }
+
+        Answer kickoutRoom(Quest quest, InetSocketAddress peer) {
+            long roomId = (long) quest.get("rid");
+            serverPushProcessor.kickoutRoom(roomId);
+            return null;
+        }
+
+        class MessageInfo {
+            public boolean isBinary;
+            public byte[] binaryData;
+            public String message;
+
+            MessageInfo() {
+                isBinary = false;
+                message = "";
+                binaryData = null;
+            }
+        }
+
+        //----------------------[ RTM Messagess Utilities ]-------------------//
+        private RTMStruct.TranslatedInfo processChatMessage(Quest quest, StringBuilder message) {
+            Object ret = quest.want("msg");
+            Map<String, String> msg = new HashMap<>((Map<String, String>) ret);
+            RTMStruct.TranslatedInfo tm = new RTMStruct.TranslatedInfo();
+            tm.source = msg.get("source");
+            tm.target = msg.get("target");
+            tm.sourceText = msg.get("sourceText");
+            tm.targetText = msg.get("targetText");
+            return tm;
+        }
+
+        private MessageInfo BuildMessageInfo(Quest quest) {
+            MessageInfo info = new MessageInfo();
+
+            Object obj = quest.want("msg");
+            if (obj instanceof byte[]) {
+                info.isBinary = true;
+                info.binaryData = (byte[]) obj;
+            } else
+                info.message = (String) obj;
+
+            return info;
+        }
+
+        //----------------------[ RTM Messagess ]-------------------//
+        Answer pushmsg(Quest quest, InetSocketAddress peer){
+            rtmGate.sendAnswer(new Answer(quest));
+
+            long from = quest.wantLong("from");
+            long to = quest.wantLong("to");
+            long mid = quest.wantLong("mid");
+
+            if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.P2PMessage, from, mid))
+                return null;
+
+            byte mtype = (byte) quest.wantInt("mtype");
+
+            String attrs = quest.wantString("attrs");
+            long mtime = quest.wantLong("mtime");
+
+            RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
+            userMsg.attrs = attrs;
+            userMsg.fromUid = from;
+            userMsg.modifiedTime = mtime;
+            userMsg.messageType = mtype;
+            userMsg.messageId = mid;
+            userMsg.toId = to;
+
+            if (mtype == RTMStruct.MessageType.CHAT) {
+                StringBuilder orginialMessage = new StringBuilder();
+                userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+                serverPushProcessor.pushChat(userMsg);
+                return null;
+            }
+
+            MessageInfo messageInfo = BuildMessageInfo(quest);
+            if (mtype == RTMStruct.MessageType.CMD) {
+                userMsg.stringMessage = messageInfo.message;
+                serverPushProcessor.pushCmd(userMsg);
+            } else if (mtype >= RTMStruct.MessageType.IMAGEFILE && mtype <= RTMStruct.MessageType.NORMALFILE) {
+                RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
+                userMsg.fileInfo = fileInfo;
+                String fileRecieve = quest.getString("msg");
+                try {
+                    JSONObject kk = new JSONObject(fileRecieve);
+                    fileInfo.url = kk.optString("url");
+                    fileInfo.fileSize = kk.getLong("size");
+                    if (kk.has("surl"))
+                        fileInfo.surl = kk.optString("surl");
+                    JSONObject tt = new JSONObject(attrs);
+                    if (mtype == RTMStruct.MessageType.AUDIOFILE) {
+                        if (tt.has("rtm")){
+                            JSONObject rtmjson = tt.getJSONObject("rtm");
+                            if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                                JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                userMsg.fileInfo.isRTMaudio = true;
+                                userMsg.fileInfo.lang = fileAttrs.optString("lang");
+                                userMsg.fileInfo.duration = fileAttrs.optInt("duration");
+                                userMsg.fileInfo.codec = fileAttrs.optString("codec");
+                                userMsg.fileInfo.srate = fileAttrs.optInt("srate");
+                            }
+                        }
+                    }
+                    String realAttrs = "";
+                    if (tt.has("custom")) {
+                        try {
+                            JSONObject custtomObject = tt.getJSONObject("custom");
+                            realAttrs = custtomObject.toString();
+                        } catch (Exception ex) {
+                            realAttrs = "";
+                        }
+                        userMsg.attrs = realAttrs;
+                    }
+                } catch (JSONException e) {
+                    ErrorRecorder.record("pushmsg parse json error " + e.getMessage());
+                }
+                serverPushProcessor.pushFile(userMsg);
+            }
+            else {
+                if (messageInfo.isBinary) {
+                    userMsg.binaryMessage = messageInfo.binaryData;
+                    serverPushProcessor.pushMessage(userMsg);
+                }
+                else {
+                    userMsg.stringMessage = messageInfo.message;
+                    serverPushProcessor.pushMessage(userMsg);
+                }
+            }
+            return null;
+        }
+
+        Answer pushgroupmsg(Quest quest, InetSocketAddress peer) {
+            rtmGate.sendAnswer(new Answer(quest));
+
+            long from = quest.wantLong("from");
+            long groupId = quest.wantLong("gid");
+            long mid = quest.wantLong("mid");
+
+            if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.GroupMessage, from, mid, groupId))
+                return null;
+
+            byte mtype = (byte) quest.wantInt("mtype");
+            String attrs = quest.wantString("attrs");
+            long mtime = quest.wantLong("mtime");
+
+            RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
+            userMsg.attrs = attrs;
+            userMsg.fromUid = from;
+            userMsg.modifiedTime = mtime;
+            userMsg.messageType = mtype;
+            userMsg.messageId = mid;
+            userMsg.toId = groupId;
+
+            if (mtype == RTMStruct.MessageType.CHAT) {
+                StringBuilder orginialMessage = new StringBuilder();
+                userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+                serverPushProcessor.pushGroupChat(userMsg);
+                return null;
+            }
+
+            MessageInfo messageInfo = BuildMessageInfo(quest);
+            if (mtype == RTMStruct.MessageType.CMD) {
+                userMsg.stringMessage = messageInfo.message;
+                serverPushProcessor.pushGroupCmd(userMsg);
+            }else if (mtype >= RTMStruct.MessageType.IMAGEFILE && mtype <= RTMStruct.MessageType.NORMALFILE) {
+                RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
+                userMsg.fileInfo = fileInfo;
+                String fileRecieve = quest.wantString("msg");
+                String fileattrs = quest.wantString("attrs");
+                try {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    JSONObject kk = new JSONObject(fileRecieve);
+                    fileInfo.url = kk.optString("url");
+                    fileInfo.fileSize = kk.getLong("size");
+                    if (kk.has("surl"))
+                        fileInfo.surl = kk.optString("surl");
+
+                    if (mtype == RTMStruct.MessageType.AUDIOFILE) {
+                        if (tt.has("rtm")){
+                            JSONObject rtmjson = tt.getJSONObject("rtm");
+                            if (rtmjson.has("type") && rtmjson.getString("type").equals("audiomsg")) {//rtm语音消息
+                                JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                userMsg.fileInfo.isRTMaudio = true;
+                                userMsg.fileInfo.lang = fileAttrs.optString("lang");
+                                userMsg.fileInfo.duration = fileAttrs.optInt("duration");
+                                userMsg.fileInfo.codec = fileAttrs.optString("codec");
+                                userMsg.fileInfo.srate = fileAttrs.optInt("srate");
+                            }
+                        }
+                    }
+                    String realAttrs = "";
+                    if (tt.has("custom")) {
+                        try {
+                            JSONObject custtomObject = tt.getJSONObject("custom");
+                            realAttrs = custtomObject.toString();
+                        } catch (JSONException ex) {
+                            realAttrs = "";
+                        }
+                        userMsg.attrs = realAttrs;
+                    }
+                } catch (JSONException e) {
+                    ErrorRecorder.record("pushgroupmsg parse json error " + e.getMessage());
+                }
+                serverPushProcessor.pushGroupFile(userMsg);
+            }else {
+                if (messageInfo.isBinary) {
+                    userMsg.binaryMessage = messageInfo.binaryData;
+                    serverPushProcessor.pushGroupMessage(userMsg);
+                }
+                else {
+                    userMsg.stringMessage = messageInfo.message;
+                    serverPushProcessor.pushGroupMessage(userMsg);
+                }
+            }
+            return null;
+        }
+
+        Answer pushroommsg(Quest quest, InetSocketAddress peer) {
+            rtmGate.sendAnswer(new Answer(quest));
+
+            long from = quest.wantLong("from");
+            long roomId = quest.wantLong("rid");
+            long mid = quest.wantLong("mid");
+
+            if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.RoomMessage, from, mid, roomId))
+                return null;
+
+            byte mtype = (byte) quest.wantInt("mtype");
+            String attrs = quest.wantString("attrs");
+            long mtime = quest.wantLong("mtime");
+
+            RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
+            userMsg.attrs = attrs;
+            userMsg.fromUid = from;
+            userMsg.modifiedTime = mtime;
+            userMsg.messageType = mtype;
+            userMsg.messageId = mid;
+            userMsg.toId = roomId;
+
+            if (mtype == RTMStruct.MessageType.CHAT) {
+                StringBuilder orginialMessage = new StringBuilder();
+                userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+                serverPushProcessor.pushRoomChat(userMsg);
+                return null;
+            }
+
+            MessageInfo messageInfo = BuildMessageInfo(quest);
+            if (mtype == RTMStruct.MessageType.CMD) {
+                userMsg.stringMessage = messageInfo.message;
+                serverPushProcessor.pushRoomCmd(userMsg);
+            }else if (mtype >= RTMStruct.MessageType.IMAGEFILE && mtype <= RTMStruct.MessageType.NORMALFILE) {
+                RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
+                userMsg.fileInfo = fileInfo;
+
+                String fileRecieve = quest.wantString("msg");
+                String fileattrs = quest.wantString("attrs");
+                try {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    JSONObject kk = new JSONObject(fileRecieve);
+                    fileInfo.url = kk.getString("url");
+                    fileInfo.fileSize = kk.getLong("size");
+                    if (kk.has("surl"))
+                        fileInfo.surl = kk.getString("surl");
+
+                    if (mtype == RTMStruct.MessageType.AUDIOFILE) {
+                        if (tt.has("rtm")){
+                            JSONObject rtmjson = tt.getJSONObject("rtm");
+                            if (rtmjson.has("type") && rtmjson.optString("type").equals("audiomsg")) {//rtm语音消息
+                                JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                userMsg.fileInfo.isRTMaudio = true;
+                                userMsg.fileInfo.lang = fileAttrs.optString("lang");
+                                userMsg.fileInfo.duration = fileAttrs.optInt("duration");
+                                userMsg.fileInfo.codec = fileAttrs.optString("codec");
+                                userMsg.fileInfo.srate = fileAttrs.optInt("srate");
+                            }
+                        }
+                    }
+                    String realAttrs = "";
+                    if (tt.has("custom")) {
+                        try {
+                            JSONObject custtomObject = tt.getJSONObject("custom");
+                            realAttrs = custtomObject.toString();
+                        } catch (JSONException ex) {
+                            realAttrs = "";
+                        }
+                        userMsg.attrs = realAttrs;
+                    }
+                } catch (JSONException e) {
+                    ErrorRecorder.record("pushroommsg parse json error " + e.getMessage());
+                }
+                serverPushProcessor.pushRoomFile(userMsg);
+            }else {
+                if (messageInfo.isBinary) {
+                    userMsg.binaryMessage = messageInfo.binaryData;
+                    serverPushProcessor.pushRoomMessage(userMsg);
+                }
+                else {
+                    userMsg.stringMessage = messageInfo.message;
+                    serverPushProcessor.pushRoomMessage(userMsg);
+                }
+            }
+            return null;
+        }
+
+        Answer pushbroadcastmsg(Quest quest, InetSocketAddress peer) {
+            rtmGate.sendAnswer(new Answer(quest));
+
+            long from = quest.wantLong("from");
+            long mid = quest.wantLong("mid");
+
+            if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.BroadcastMessage, from, mid))
+                return null;
+
+            byte mtype = (byte) quest.wantInt("mtype");
+            String attrs = quest.wantString("attrs");
+            long mtime = quest.wantLong("mtime");
+
+            RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
+            userMsg.attrs = attrs;
+            userMsg.fromUid = from;
+            userMsg.modifiedTime = mtime;
+            userMsg.messageType = mtype;
+            userMsg.messageId = mid;
+
+            if (mtype == RTMStruct.MessageType.CHAT) {
+                StringBuilder orginialMessage = new StringBuilder();
+                userMsg.translatedInfo = processChatMessage(quest, orginialMessage);
+                serverPushProcessor.pushBroadcastChat(userMsg);
+                return null;
+            }
+
+            MessageInfo messageInfo = BuildMessageInfo(quest);
+            if (mtype == RTMStruct.MessageType.CMD) {
+                userMsg.stringMessage = messageInfo.message;
+                serverPushProcessor.pushBroadcastCmd(userMsg);
+            } else if (mtype >= RTMStruct.MessageType.IMAGEFILE && mtype <= RTMStruct.MessageType.NORMALFILE) {
+                RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
+                userMsg.fileInfo = fileInfo;
+
+                String fileRecieve = quest.wantString("msg");
+                String fileattrs = quest.wantString("attrs");
+                try {
+                    JSONObject tt = new JSONObject(fileattrs);
+                    JSONObject kk = new JSONObject(fileRecieve);
+                    fileInfo.url = kk.optString("url");
+                    fileInfo.fileSize = kk.getLong("size");
+                    if (kk.has("surl"))
+                        fileInfo.surl = kk.optString("surl");
+
+                    if (mtype == RTMStruct.MessageType.AUDIOFILE) {
+                        if (tt.has("rtm")){
+                            JSONObject rtmjson = tt.getJSONObject("rtm");
+                            if (rtmjson.has("type") && rtmjson.optString("type").equals("audiomsg")) {//rtm语音消息
+                                JSONObject fileAttrs = tt.getJSONObject("rtm");
+                                userMsg.fileInfo.isRTMaudio = true;
+                                userMsg.fileInfo.lang = fileAttrs.optString("lang");
+                                userMsg.fileInfo.duration = fileAttrs.optInt("duration");
+                                userMsg.fileInfo.codec = fileAttrs.optString("codec");
+                                userMsg.fileInfo.srate = fileAttrs.optInt("srate");
+                            }
+                        }
+                    }
+                    String realAttrs = "";
+                    if (tt.has("custom")) {
+                        try {
+                            JSONObject custtomObject = tt.getJSONObject("custom");
+                            realAttrs = custtomObject.toString();
+                        } catch (JSONException ex) {
+                            realAttrs = "";
+                        }
+                        userMsg.attrs = realAttrs;
+                    }
+                } catch (JSONException e) {
+                    ErrorRecorder.record("pushbroadcastmsg parse json error " + e.getMessage());
+                }
+                serverPushProcessor.pushBroadcastFile(userMsg);
+            }else {
+                if (messageInfo.isBinary) {
+                    userMsg.binaryMessage =  messageInfo.binaryData;
+                    serverPushProcessor.pushBroadcastMessage(userMsg);
+                }
+                else {
+                    userMsg.stringMessage = messageInfo.message;
+                    serverPushProcessor.pushBroadcastMessage(userMsg);
+                }
+            }
+            return null;
+        }
     }
 
+
     void reloginEvent(int count){
+        if (noNetWorkNotify.get()) {
+            isRelogin.set(false);
+            serverPushProcessor.reloginCompleted(uid, false, lastReloginAnswer, count);
+            return;
+        }
 //        isRelogin.set(true);
         int num = count;
         Map<String, String> kk = loginAttrs;
-        if (reloginStartCallback.reloginWillStart(uid, lastReloginAnswer, num)) {
-            lastReloginAnswer = login(token, lang, kk, loginAddresType);
+        if (serverPushProcessor.reloginWillStart(uid, lastReloginAnswer, num)) {
+            lastReloginAnswer = login(token, lang, kk,"ipv4");
             if(lastReloginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
                 isRelogin.set(false);
-                reloginCompletedCallback.reloginCompleted(uid, true, lastReloginAnswer, num);
+                serverPushProcessor.reloginCompleted(uid, true, lastReloginAnswer, num);
                 return;
             }
             else {
                 if (finishCodeList.contains(lastReloginAnswer.errorCode)){
                     isRelogin.set(false);
-                    reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
+                    serverPushProcessor.reloginCompleted(uid, false, lastReloginAnswer, num);
                     return;
                 }
                 else {
+                    if (num >= serverPushProcessor.internalReloginMaxTimes){
+                        isRelogin.set(false);
+                        serverPushProcessor.reloginCompleted(uid, false, lastReloginAnswer, num);
+                        return;
+                    }
                     if (!isRelogin.get()) {
-                        reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
+                        serverPushProcessor.reloginCompleted(uid, false, lastReloginAnswer, num);
                         return;
                     }
                     try {
                         Thread.sleep(2 * 1000);
                     } catch (InterruptedException e) {
                         isRelogin.set(false);
-                        reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, num);
+                        serverPushProcessor.reloginCompleted(uid, false, lastReloginAnswer, num);
                         return;
                     }
                     reloginEvent(++num);
@@ -138,7 +567,7 @@ class RTMCore  implements INetEvent{
         }
         else {
             isRelogin.set(false);
-            reloginCompletedCallback.reloginCompleted(uid, false, lastReloginAnswer, --num);
+            serverPushProcessor.reloginCompleted(uid, false, lastReloginAnswer, --num);
         }
     }
 
@@ -146,14 +575,16 @@ class RTMCore  implements INetEvent{
         if (lastNetType != NetUtils.NETWORK_NOTINIT) {
             switch (netWorkState) {
                 case NetUtils.NETWORK_NONE:
-                    noNetWorkNotify = true;
+                    noNetWorkNotify.set(true);
 //                    if (isRelogin.get()){
 //                        isRelogin.set(false);
 //                    }
                     break;
                 case NetUtils.NETWORK_MOBILE:
                 case NetUtils.NETWORK_WIFI:
-                    noNetWorkNotify = false;
+                    noNetWorkNotify.set(false);
+                    if (connectionId.get() == 0)
+                        return;
                     if (lastNetType != netWorkState && autoConnect) {
                         if (isRelogin.get())
                             return;
@@ -163,15 +594,23 @@ class RTMCore  implements INetEvent{
                             @Override
                             public void run() {
                                 if (getClientStatus() == ClientStatus.Connected){
-                                    sayBye(new IRTMEmptyCallback() {
+                                    Quest quest = new Quest("bye");
+                                    sendQuest(quest, new FunctionalAnswerCallback() {
                                         @Override
-                                        public void onResult(RTMStruct.RTMAnswer answer) {
+                                        public void onAnswer(Answer answer, int errorCode) {
+                                            close();
+                                            try {
+                                                Thread.sleep(200);
+                                            } catch (InterruptedException e) {
+                                                e.printStackTrace();
+                                            }
                                             reloginEvent(1);
                                         }
-                                    });
+                                    }, 5);
                                 }
-                                else
+                                else {
                                     reloginEvent(1);
+                                }
                             }
                         }).start();
                     }
@@ -181,28 +620,57 @@ class RTMCore  implements INetEvent{
         lastNetType = netWorkState;
     }
 
-    void RTMInit(String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor) {
+    void RTMInit(String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor, Context applicationContext, RTMConfig config) {
+        if (config == null)
+            rtmConfig = new RTMConfig();
+        else
+            rtmConfig = config;
+
+        errorRecorder = rtmConfig.defaultErrorRecorder;
+
+        String errDesc = "";
+        if (endpoint == null || endpoint.equals("") || endpoint.lastIndexOf(':') == -1)
+            errDesc = "invalid endpoint:" + endpoint;
+        if (pid <= 0)
+            errDesc += " pid is invalid:" + pid;
+        if (uid <= 0)
+            errDesc += " uid is invalid:" + uid;
+        if (serverPushProcessor == null)
+            errDesc += " RTMPushProcessor is null";
+
+        if (!errDesc.equals("")) {
+            errorRecorder.recordError("rtmclient init error." + errDesc);
+            return;
+        }
+
+        this.pid = pid;
+        this.uid = uid;
+        isRelogin.set(false);
+        fileGates = new HashMap<>();
+        processor = new RTMQuestProcessor();
+        this.serverPushProcessor = serverPushProcessor;
+        autoConnect = rtmConfig.autoConnect;
+        ClientEngine.setMaxThreadInTaskPool(rtmConfig.globalMaxThread);
+
         try {
-            this.pid = pid;
-            this.uid = uid;
-            autoConnect = false;
-            isRelogin.set(false);
-
-            fileGates = new HashMap<>();
-            processor = new RTMQuestProcessor();
-            processor.SetProcessor(serverPushProcessor);
-
             dispatch = TCPClient.create(endpoint, true);
-            dispatch.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
-            dispatch.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
-            ClientEngine.setMaxThreadInTaskPool(RTMConfig.globalMaxThread);
+            if (autoConnect) {
+                if (applicationContext == null){
+                    errorRecorder.recordError("applicationContext is null ");
+                    return;
+                }
+                context = applicationContext;
+                IntentFilter intentFilter = new IntentFilter();
+                intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+                context.registerReceiver(this, intentFilter);
+            }
         }
         catch (Exception ex){
-            if (errorRecorder != null)
-                errorRecorder.recordError("RTMInit error "+ ex.getMessage());
-            else
-                Log.e("rtmsdk","RTMInit error " + ex.getMessage());
+            errorRecorder.recordError("RTMInit error ",ex);
+            return;
         }
+        dispatch.setQuestTimeout(rtmConfig.globalQuestTimeoutSeconds);
+        dispatch.SetErrorRecorder(errorRecorder);
     }
 
     public void setErrorRecoder(com.fpnn.sdk.ErrorRecorder value){
@@ -210,7 +678,6 @@ class RTMCore  implements INetEvent{
             return;
         synchronized (interLocker) {
             errorRecorder = value;
-            processor.SetErrorRecorder(value);
             if (dispatch != null)
                 dispatch.SetErrorRecorder(value);
         }
@@ -240,19 +707,15 @@ class RTMCore  implements INetEvent{
         }
     }
 
-    protected long getPid() {
+     long getPid() {
         return pid;
     }
 
-    protected long getUid() {
+     long getUid() {
         return uid;
     }
 
-    protected String getToken() {
-        return token;
-    }
-
-    synchronized protected ClientStatus getClientStatus() {
+    synchronized ClientStatus getClientStatus() {
         synchronized (interLocker) {
             return status;
         }
@@ -262,13 +725,13 @@ class RTMCore  implements INetEvent{
         return processor.ConnectionIsAlive();
     }
 
-    RTMStruct.RTMAnswer genRTMAnswer(int errCode){
+    RTMAnswer genRTMAnswer(int errCode){
         return genRTMAnswer(errCode,"");
     }
 
-    RTMStruct.RTMAnswer genRTMAnswer(int errCode,String msg)
+    RTMAnswer genRTMAnswer(int errCode,String msg)
     {
-        RTMStruct.RTMAnswer tt = new RTMStruct.RTMAnswer();
+        RTMAnswer tt = new RTMAnswer();
         tt.errorCode = errCode;
         if (msg.isEmpty())
             tt.errorMsg = RTMErrorCode.getMsg(errCode);
@@ -277,22 +740,22 @@ class RTMCore  implements INetEvent{
         return tt;
     }
 
-    RTMStruct.RTMAnswer genRTMAnswer(Answer answer) {
+    RTMAnswer genRTMAnswer(Answer answer) {
         if (answer == null)
-            return new RTMStruct.RTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(), "invalid connection");
-        return new RTMStruct.RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
+            return new RTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(), "invalid connection");
+        return new RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
     }
 
 
-    RTMStruct.RTMAnswer genRTMAnswer(Answer answer,int errcode) {
+    RTMAnswer genRTMAnswer(Answer answer,int errcode) {
         if (answer == null && errcode !=0) {
             if (errcode == ErrorCode.FPNN_EC_CORE_TIMEOUT.value())
-                return new RTMStruct.RTMAnswer(errcode, "FPNN_EC_CORE_TIMEOUT");
+                return new RTMAnswer(errcode, "FPNN_EC_CORE_TIMEOUT");
             else
-                return new RTMStruct.RTMAnswer(errcode,"fpnn  error");
+                return new RTMAnswer(errcode,"fpnn  error");
         }
         else
-            return new RTMStruct.RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
+            return new RTMAnswer(answer.getErrorCode(),answer.getErrorMessage());
     }
 
     private TCPClient getCoreClient() {
@@ -304,8 +767,12 @@ class RTMCore  implements INetEvent{
         }
     }
 
+    Answer sendFileQuest(Quest quest) {
+        return sendQuest(quest,rtmConfig.globalFileQuestTimeoutSeconds);
+    }
+
     Answer sendQuest(Quest quest) {
-        return sendQuest(quest,RTMConfig.globalQuestTimeoutSeconds);
+        return sendQuest(quest,rtmConfig.globalQuestTimeoutSeconds);
     }
 
     Answer sendQuest(Quest quest, int timeout) {
@@ -313,7 +780,7 @@ class RTMCore  implements INetEvent{
         if (client == null)
             return null;
 
-        Answer answer = null;
+        Answer answer;
         try {
             answer = client.sendQuest(quest, timeout);
         } catch (Exception e) {
@@ -326,8 +793,7 @@ class RTMCore  implements INetEvent{
         return answer;
     }
 
-    void setCloseType(CloseType type)
-    {
+    void setCloseType(CloseType type) {
         closedCase = type;
     }
 
@@ -351,11 +817,11 @@ class RTMCore  implements INetEvent{
     void realClose(){
         closedCase = CloseType.ByUser;
         try {
-            if (stateReceiver != null)
-                context.unregisterReceiver(stateReceiver);
+            if (autoConnect)
+                context.unregisterReceiver(this);
         } catch ( IllegalArgumentException e){
         }
-        sayBye(true);
+        close();
     }
 
      void sayBye(boolean async) {
@@ -383,8 +849,12 @@ class RTMCore  implements INetEvent{
         }
     }
 
+    void sendFileQuest(Quest quest, final FunctionalAnswerCallback callback) {
+        sendQuest(quest, callback,rtmConfig.globalFileQuestTimeoutSeconds);
+    }
+
     void sendQuest(Quest quest, final FunctionalAnswerCallback callback) {
-        sendQuest(quest, callback, RTMConfig.globalQuestTimeoutSeconds);
+        sendQuest(quest, callback, rtmConfig.globalQuestTimeoutSeconds);
     }
 
     void sendQuest(Quest quest, final FunctionalAnswerCallback callback, int timeout) {
@@ -403,7 +873,7 @@ class RTMCore  implements INetEvent{
 //                    });
         }
         if (timeout <= 0)
-            timeout = RTMConfig.globalQuestTimeoutSeconds;
+            timeout = rtmConfig.globalQuestTimeoutSeconds;
         try {
             client.sendQuest(quest, callback, timeout);
         }
@@ -419,10 +889,10 @@ class RTMCore  implements INetEvent{
             public void onAnswer(Answer answer, int errorCode) {
                 callback.onResult(genRTMAnswer(answer,errorCode));
             }
-        }, RTMConfig.globalQuestTimeoutSeconds);
+        }, rtmConfig.globalQuestTimeoutSeconds);
     }
 
-    RTMStruct.RTMAnswer sendQuestEmptyResult(Quest quest){
+    RTMAnswer sendQuestEmptyResult(Quest quest){
         Answer ret =  sendQuest(quest);
         if (ret == null)
             return genRTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(),"invalid connection");
@@ -506,29 +976,21 @@ class RTMCore  implements INetEvent{
 
     //-------------[ Auth(Login) utilies functions ]--------------------------//
     private void ConfigRtmGateClient(final TCPClient client) {
-        client.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
-        client.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
+        client.setQuestTimeout(rtmConfig.globalQuestTimeoutSeconds);
 
         if (encrptyData != null && curve!=null && !curve.equals(""))
             client.enableEncryptorByDerData(curve, encrptyData);
 
-        if (errorRecorder != null)
-            client.SetErrorRecorder(errorRecorder);
 
-        client.setQuestProcessor(processor, "com.rtmsdk.RTMQuestProcessor");
-        processor.setAnswerTCPclient(client);
-//        client.setConnectedCallback(new ConnectionConnectedCallback() {
-//            @Override
-//            public void connectResult(InetSocketAddress peerAddress, int _connectionId,boolean connected) {
-//                connectionId = _connectionId;
-//            }
-//        });
+        client.setQuestProcessor(processor, "com.rtmsdk.RTMCore$RTMQuestProcessor");
+
         client.setWillCloseCallback(new ConnectionWillCloseCallback() {
             @Override
             public void connectionWillClose(InetSocketAddress peerAddress, int _connectionId,boolean causedByError) {
-                if (connectionId != 0 && connectionId == _connectionId && closedCase != CloseType.ByUser && getClientStatus() != ClientStatus.Connecting) {
+                if (connectionId.get() != 0 && connectionId.get() == _connectionId && closedCase != CloseType.ByUser && getClientStatus() != ClientStatus.Connecting) {
+//                if (connectionId.get() != 0 && connectionId.get() == _connectionId && closedCase != CloseType.ByUser) {
                     close();
-                    processor.rtmConnectClose(causedByError ? ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value() : ErrorCode.FPNN_EC_OK.value());
+                    processor.rtmConnectClose();
                     if (!autoConnect) {
                         return;
                     }
@@ -545,7 +1007,7 @@ class RTMCore  implements INetEvent{
                         if(getClientStatus() == ClientStatus.Closed){
                             try {
                                 Thread.sleep(2* 1000);//处理一些特殊情况
-                                if (noNetWorkNotify)
+                                if (noNetWorkNotify.get())
                                     return;
                                 if (isRelogin.get() || getClientStatus() == ClientStatus.Connected)
                                     return;
@@ -578,22 +1040,22 @@ class RTMCore  implements INetEvent{
         dispatch.sendQuest(quest, callback, timeout);
     }
 
-    private RTMStruct.RTMAnswer auth(String token, Map<String, String> attr) {
+    private RTMAnswer auth(String token, Map<String, String> attr) {
         return auth(token, attr, false);
     }
 
-    private RTMStruct.RTMAnswer auth(String token, Map<String, String> attr, boolean retry) {
+    private RTMAnswer auth(String token, Map<String, String> attr, boolean retry) {
         Quest qt = new Quest("auth");
         qt.param("pid", pid);
         qt.param("uid", uid);
         qt.param("token", token);
         qt.param("lang", lang);
-        qt.param("version", "Android-" + RTMConfig.SDKVersion);
+        qt.param("version", "Android-" + rtmConfig.SDKVersion);
 
         if (attr != null)
             qt.param("attrs", attr);
         try {
-            Answer answer = rtmGate.sendQuest(qt,RTMConfig.globalQuestTimeoutSeconds);
+            Answer answer = rtmGate.sendQuest(qt,rtmConfig.globalQuestTimeoutSeconds);
 
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
@@ -618,7 +1080,7 @@ class RTMCore  implements INetEvent{
             }
             processor.setLastPingTime(RTMUtils.getCurrentSeconds());
             checkRoutineInit();
-            connectionId = rtmGate.getConnectionId();
+            connectionId.set(rtmGate.getConnectionId());
             return genRTMAnswer(answer);
         }
         catch (Exception  ex){
@@ -637,7 +1099,7 @@ class RTMCore  implements INetEvent{
         qt.param("uid", uid);
         qt.param("token", token);
         qt.param("lang", lang);
-        qt.param("version", "Android-" + RTMConfig.SDKVersion);
+        qt.param("version", "Android-" + rtmConfig.SDKVersion);
         if (attr != null)
             qt.param("attrs", attr);
 
@@ -668,7 +1130,7 @@ class RTMCore  implements INetEvent{
                         }
                         processor.setLastPingTime(RTMUtils.getCurrentSeconds());
                         checkRoutineInit();
-                        connectionId = rtmGate.getConnectionId();
+                        connectionId.set(rtmGate.getConnectionId());
                         callback.onResult(genRTMAnswer(errorCode));
                     }
                 }
@@ -680,6 +1142,11 @@ class RTMCore  implements INetEvent{
     }
 
     void login(final IRTMEmptyCallback callback, final String token, final String lang, final String addressType, final Map<String, String> attr) {
+        if (token ==null || addressType == null){
+            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value()," token  is null"));
+            return;
+        }
+
         try {
             synchronized (interLocker) {
                 if (status == ClientStatus.Connected || status == ClientStatus.Connecting) {
@@ -704,12 +1171,12 @@ class RTMCore  implements INetEvent{
                 }).start();
                 return;
             }
+
             this.token = token;
             if (lang == null)
                 this.lang = "";
             else
                 this.lang = lang;
-            this.loginAddresType = addressType;
             this.loginAttrs = attr;
             closedCase = CloseType.None;
 
@@ -736,7 +1203,7 @@ class RTMCore  implements INetEvent{
                             }
                         }
                     }
-                }, RTMConfig.globalQuestTimeoutSeconds);
+                }, rtmConfig.globalQuestTimeoutSeconds);
             }
         }
         catch (final Exception ex){
@@ -755,14 +1222,16 @@ class RTMCore  implements INetEvent{
         }
     }
 
-    RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
+    RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
+        if (token == null || addressType ==null)
+            return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), " token  is null");
+
         try {
             if (lang == null)
                 this.lang = "";
             else
                 this.lang = lang;
             this.token =  token;
-            this.loginAddresType = addressType;
             this.loginAttrs = attr;
             closedCase = CloseType.None;
 
@@ -784,7 +1253,7 @@ class RTMCore  implements INetEvent{
             quest.param("what", "rtmGated");
             quest.param("addrType", addressType);
             quest.param("proto", "tcp");
-            Answer answer = dispatch.sendQuest(quest,RTMConfig.globalQuestTimeoutSeconds);
+            Answer answer = dispatch.sendQuest(quest,rtmConfig.globalQuestTimeoutSeconds);
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
                 return genRTMAnswer(answer);
@@ -810,6 +1279,7 @@ class RTMCore  implements INetEvent{
         synchronized (interLocker) {
             initCheckThread.set(false);
             running.set(false);
+            fileGates.clear();
             if (status == ClientStatus.Closed)
                 return;
             status = ClientStatus.Closed;

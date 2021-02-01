@@ -879,7 +879,7 @@ class RTMChat extends RTMRoom {
             }
         }
 
-        sendQuest(quest, new FunctionalAnswerCallback() {
+        sendFileQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 RTMStruct.TranslatedInfo tm = new RTMStruct.TranslatedInfo();
@@ -891,7 +891,7 @@ class RTMChat extends RTMRoom {
                 }
                 callback.onResult(tm, genRTMAnswer(answer,errorCode));
             }
-        },RTMConfig.globalFileQuestTimeoutSeconds);
+        });
     }
 
     /**
@@ -952,7 +952,7 @@ class RTMChat extends RTMRoom {
         Quest quest = new Quest("tcheck");
         quest.param("text", text);
 
-        Answer answer = sendQuest(quest,RTMConfig.globalFileQuestTimeoutSeconds);
+        Answer answer = sendFileQuest(quest);
         RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
         RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
@@ -1012,7 +1012,7 @@ class RTMChat extends RTMRoom {
         quest.param("codec", codec);
         quest.param("srate", srate);
 
-        sendQuest(quest, new FunctionalAnswerCallback() {
+        sendFileQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 RTMStruct.AudioTextStruct audioTextStruct = new RTMStruct.AudioTextStruct();
@@ -1022,7 +1022,7 @@ class RTMChat extends RTMRoom {
                 }
                 callback.onResult(audioTextStruct, genRTMAnswer(answer,errorCode));
             }
-        }, RTMConfig.globalFileQuestTimeoutSeconds);
+        });
     }
 
     private RTMStruct.AudioTextStruct audioToTextSync(Object content, CheckSourceType type, String lang, String codec, int srate)
@@ -1082,7 +1082,7 @@ class RTMChat extends RTMRoom {
             quest.param("srate", srate);
         }
 
-        sendQuest(quest, new FunctionalAnswerCallback() {
+        sendFileQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
                 RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
@@ -1096,7 +1096,7 @@ class RTMChat extends RTMRoom {
                 }
                 callback.onResult(checkResult, genRTMAnswer(answer,errorCode));
             }
-        }, RTMConfig.globalFileQuestTimeoutSeconds);
+        });
     }
 
     private RTMStruct.CheckResult checkContentSync(Object content, CheckSourceType type, CheckType checkType, String videoName, String lang, String codec, int srate)

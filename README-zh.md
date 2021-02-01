@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.6'
+        api 'com.github.highras:rtm-android:2.4.0'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.6</version>
+        <version>2.4.0</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -41,14 +41,13 @@
 ### 使用说明
 - RTM通信需要网络权限，使用语音相关功能需要存储和录音权限
 - 请在子线程初始化RTMClient以及登录和任何发送操作
-- RTM支持自动重连 初始化RTMclient成功后可调用setAutoconnect方法设置自动重连
-  - 自动重连需要设置重连开始回调和重连完成回调函数并传入applicationContext
-- 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数(RTM的push回调函数和收发线程在一起 如果用户在push的回调函数中有耗时操作 请单独开启线程不然会有可能阻塞后续的处理请求)
+- RTM默认支持自动重连(请继承RTMPushProcessor类的reloginWillStart和reloginCompleted方法) 初始化需要传入applicationContext
+- 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数(RTM的push回调函数和收发线程在一起 如果用户在push的回调函数中有耗时操作 建议请独开启线程处理)
 - RTM的各项服务配置和增值服务可以在后台配置，请登陆管理后台预览详细的配置参数
 - 所有同步和异步接口都会返回 RTMAnswer结构，请优先判断answer中的errorCode 如果为0正常
 - RTM的room和group的区别 group在服务端会持久化 room是非持久化(用户下线或者RTM链接断开会自动离开room)
   - room默认不支持多房间（当用户进入第二个房间会自动退出第一个房间） 用户可以在控制台开启支持多房间配置
-- RTMConfig是RTM的全局配置参数，所有配置均已有默认值，使用者如需要重新设置默认值，请在初始化RTMclient之前调用RTMConfig.Config(RTMConfig newConfig)接口。
+- RTMConfig是RTM的全局配置参数，所有配置均已有默认值，使用者如需要重新设置默认值，请在初始化RTMclient调用带RTMConfig的构造函数。
 - 用户可以重写RTM的日志类 收集和获取sdk内部的错误信息(强烈建议重载日志类) 例如
     ~~~
      public class TestErrorRecorder extends ErrorRecorder {
@@ -68,12 +67,12 @@
             Log.i("log",String.format("Error: %s, exception: %s", message, e));
         }
     }
-    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor)
+    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor,Context applicationContext)
     rtmclient.setErrorRecoder(new TestErrorRecorder())
     或者
     RTMConfig newconfig = new RTMConfig();
-    newconfig.errorRecorder = new TestErrorRecorder();
-    RTMConfig.Config( newconfig); （需要在RTMClient初始化之前）
+    newconfig.defaultErrorRecorder = new TestErrorRecorder();
+    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor,Context applicationContext,RTMConfig newconfig)
     ~~~
 
 ### 使用示例

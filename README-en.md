@@ -23,7 +23,7 @@
     - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        api 'com.github.highras:rtm-android:2.3.6'
+        api 'com.github.highras:rtm-android:2.4.0'
     }
     ~~~
 2. dependency in Maven
@@ -31,7 +31,7 @@
     <dependency>
         <groupId>com.github.highras</groupId>
         <artifactId>rtm-android</artifactId>
-        <version>2.3.6</version>
+        <version>2.4.0</version>
         <type>pom</type>
     </dependency>
     ~~~
@@ -41,8 +41,7 @@
 ### Instructions
 - RTM need network permission，if you use RTMaudio  module，it's need storage and record permission
 - please use RTMClient in child thread
-- RTM suipport autoconnect,after init RTMclient,you can use <setAutoconnect> function
-  - autoconnect need set reconnect-start function and reconnect-complete funciton, as well applicationContext
+- RTM suipport autoconnect ,need applicationContext param when init rtmclient
 - server push:please extends RTMPushProcessor,overload the function what you need
 - the different of room and group,group is persistent ，room is not persistent；when you disconnect rtm or logout you will be leave room
 - all async and sync function will contain RTMAnswer，please judge errorCode in RTMAnswer first, if errorCode equal 0 means successful
@@ -66,12 +65,12 @@
             Log.i("log",String.format("Error: %s, exception: %s", message, e));
         }
     }
-    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor)
+    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor,Context applicationContext)
     rtmclient.setErrorRecoder(new TestErrorRecorder())
     or
     RTMConfig newconfig = new RTMConfig();
-    newconfig.errorRecorder = new TestErrorRecorder();
-    RTMConfig.Config( newconfig); （before RTMClient init）
+    newconfig.defaultErrorRecorder = new TestErrorRecorder();
+    RTMClient rtmclient  = new RTMClient((String endpoint, long pid, long uid, RTMPushProcessor serverPushProcessor,Context applicationContext,RTMConfig newconfig)
     ~~~
 
 ### Demonstration

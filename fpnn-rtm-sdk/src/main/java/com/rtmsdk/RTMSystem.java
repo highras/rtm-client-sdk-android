@@ -14,12 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 class RTMSystem extends RTMUser {
-        /** 用户下线
-         */
-    public void bye() {
-        bye(true);
-    }
-
     /**
      *
      * @param async 用户下线

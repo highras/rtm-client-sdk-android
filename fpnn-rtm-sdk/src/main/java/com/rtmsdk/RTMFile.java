@@ -2,7 +2,6 @@ package com.rtmsdk;
 
 import androidx.annotation.NonNull;
 
-import com.fpnn.sdk.ConnectionConnectedCallback;
 import com.fpnn.sdk.ErrorCode;
 import com.fpnn.sdk.FunctionalAnswerCallback;
 import com.fpnn.sdk.TCPClient;
@@ -12,8 +11,6 @@ import com.rtmsdk.RTMStruct.*;
 import com.rtmsdk.UserInterface.IRTMDoubleValueCallback;
 
 import org.json.JSONObject;
-
-import java.net.InetSocketAddress;
 import java.security.MessageDigest;
 
 class RTMFile extends RTMSystem {
@@ -40,7 +37,6 @@ class RTMFile extends RTMSystem {
         public String token;
         public String endpoint;
         public String fileExt;
-        public int remainTimeout;
         public long lastActionTimestamp;
         public UserInterface.IRTMDoubleValueCallback<Long,Long> callback;
         public RTMAudioStruct audioAttrs;//给语音用 语言+时长
@@ -74,10 +70,6 @@ class RTMFile extends RTMSystem {
 
     //===========================[ File Token ]=========================//
     private void fileToken(final DoubleStringCallback callback, FileTokenType tokenType, long xid) {
-        fileToken(callback, tokenType, xid, 0);
-    }
-
-    private void fileToken(final DoubleStringCallback callback, FileTokenType tokenType, long xid, int timeout) {
         Quest quest = new Quest("filetoken");
         switch (tokenType) {
             case P2P:
@@ -104,14 +96,10 @@ class RTMFile extends RTMSystem {
                 }
                 callback.onResult(token, endpoint, genRTMAnswer(answer,errorCode));
             }
-        }, timeout);
+        });
     }
 
     private RTMAnswer fileToken(StringBuilder token, StringBuilder endpoint, FileTokenType tokenType, long xid) {
-        return fileToken(token, endpoint, tokenType, xid, 0);
-    }
-
-    private RTMAnswer fileToken(StringBuilder token, StringBuilder endpoint, FileTokenType tokenType, long xid, int timeout) {
         Quest quest = new Quest("filetoken");
         switch (tokenType) {
             case P2P:
@@ -130,7 +118,7 @@ class RTMFile extends RTMSystem {
                 break;
         }
 
-        Answer answer = sendQuest(quest, timeout);
+        Answer answer = sendQuest(quest);
         if (answer !=null && answer.getErrorCode() == ErrorCode.FPNN_EC_OK.value()){
             token.append(answer.wantString("token"));
             endpoint.append(answer.wantString("endpoint"));
@@ -222,7 +210,6 @@ class RTMFile extends RTMSystem {
 
     private int sendFileWithClient(final SendFileInfo info, final TCPClient client) {
         final Quest quest = buildSendFileQuest(info);
-
         client.sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
@@ -239,7 +226,7 @@ class RTMFile extends RTMSystem {
                 }
                 info.callback.onResult(0L, 0L,genRTMAnswer(answer,errorCode));
             }
-        }, info.remainTimeout);
+        });
 
         return ErrorCode.FPNN_EC_OK.value();
     }
@@ -249,32 +236,10 @@ class RTMFile extends RTMSystem {
         fileGateEndpoint = info.endpoint;
 
         final TCPClient client = TCPClient.create(fileGateEndpoint, true);
-        client.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
-        client.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
-        if (errorRecorder != null)
-            client.SetErrorRecorder(errorRecorder);
+        client.setQuestTimeout(rtmConfig.globalFileQuestTimeoutSeconds);
+        client.SetErrorRecorder(errorRecorder);
 
-        client.setConnectedCallback(new ConnectionConnectedCallback() {
-            @Override
-            public void connectResult(InetSocketAddress peerAddress, int connectionId, boolean connected) {
-                int errorCode;
-                if (connected) {
-                    activeFileGateClient(info.endpoint, client);
-                    errorCode = sendFileWithClient(info, client);
-                }
-                else
-                    errorCode = ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value();
-
-                if (errorCode != ErrorCode.FPNN_EC_OK.value())
-                    info.callback.onResult(0L, 0L,genRTMAnswer(errorCode));
-            }
-        });
-        try {
-            client.connect(false);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value();
-        }
+        sendFileWithClient(info, client);
 
         return ErrorCode.FPNN_EC_OK.value();
     }
@@ -303,7 +268,6 @@ class RTMFile extends RTMSystem {
     
     //===========================[ Real Send File ]=========================//
    private void realSendFile(final UserInterface.IRTMDoubleValueCallback<Long,Long> callback, FileTokenType tokenType, long targetId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, RTMAudioStruct audioAttrs) {
-       int timeout = RTMConfig.globalFileQuestTimeoutSeconds;
        byte fileType = (byte)mtype.value();
         if (fileType < MessageType.IMAGEFILE || fileType > MessageType.NORMALFILE) {
             callback.onResult(0L,0L,genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_MTYPE.value()));
@@ -332,7 +296,6 @@ class RTMFile extends RTMSystem {
         info.fileContent = realData;
         info.filename = realName;
         info.attrs = attrs;
-        info.remainTimeout = timeout;
         info.lastActionTimestamp = RTMUtils.getCurrentMilliseconds();
         info.callback = callback;
         info.audioAttrs = audioAttrs;
@@ -346,11 +309,10 @@ class RTMFile extends RTMSystem {
                     Thread.currentThread().interrupt();
                 }
             }
-        }, tokenType, info.xid, timeout);
+        }, tokenType, info.xid);
     }
 
   private ModifyTimeStruct realSendFile(FileTokenType tokenType, long targetId, FileMessageType mtype, byte[] fileContent, String filename, JSONObject attrs, RTMAudioStruct audioAttrs){
-        int timeout = RTMConfig.globalFileQuestTimeoutSeconds;
         ModifyTimeStruct ret = new ModifyTimeStruct();
         byte fileType = (byte)mtype.value();
         //----------[ 1. check mtype ]---------------//
@@ -377,7 +339,7 @@ class RTMFile extends RTMSystem {
 
         StringBuilder token = new StringBuilder();
         StringBuilder endpoint = new StringBuilder();
-        RTMAnswer fileAnswer = fileToken(token, endpoint, tokenType, targetId, timeout);
+        RTMAnswer fileAnswer = fileToken(token, endpoint, tokenType, targetId);
         if (fileAnswer.errorCode != ErrorCode.FPNN_EC_OK.value()){
             ret.errorCode = fileAnswer.errorCode;
             ret.errorMsg = fileAnswer.errorMsg;
@@ -390,8 +352,7 @@ class RTMFile extends RTMSystem {
             TCPClient fileClient = fecthFileGateClient(realEndpoint);
             if (fileClient == null) {
                 fileClient = TCPClient.create(realEndpoint);
-                fileClient.setQuestTimeout(RTMConfig.globalQuestTimeoutSeconds);
-                fileClient.connectTimeout = RTMConfig.globalConnectTimeoutSeconds;
+                fileClient.setQuestTimeout(rtmConfig.globalFileQuestTimeoutSeconds);
 
                 if (fileClient.connect(true)) {
                     activeFileGateClient(realEndpoint, fileClient);
@@ -414,7 +375,7 @@ class RTMFile extends RTMSystem {
             info.audioAttrs = audioAttrs;
 
             Quest quest = buildSendFileQuest(info);
-            Answer answer = fileClient.sendQuest(quest, RTMConfig.globalFileQuestTimeoutSeconds);
+            Answer answer = fileClient.sendQuest(quest);
 
             if (answer.isErrorAnswer()){
                 ret.errorCode = answer.getErrorCode();

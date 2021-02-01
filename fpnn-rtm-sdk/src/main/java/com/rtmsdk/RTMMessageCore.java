@@ -111,7 +111,7 @@ class RTMMessageCore extends RTMCore {
                     mtime = answer.wantLong("mtime");
                 callback.onResult(mtime, quest.wantLong("mid"),genRTMAnswer(answer,errorCode));
             }
-        }, RTMConfig.globalQuestTimeoutSeconds);
+        });
     }
 
 
