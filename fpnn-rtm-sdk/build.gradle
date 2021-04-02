@@ -32,25 +32,17 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar','*.aar'], dir: 'libs')
     implementation 'androidx.annotation:annotation:1.1.0'
-//    implementation 'com.github.highras:fpnn-android:2.0.6'
-//    implementation files('libs/fpnn-sdk.jar')
-    api 'com.github.highras:fpnn-android:2.0.6'
 //    implementation project(path: ':fpnnsdk')
-//    embed project(path: ':fpnnsdk')
-//    embed(project(path:':fpnnsdk'))
-//    embed('com.github.highras:fpnn-android:2.0.6')
-//    implementation files('libs/msgpack-core-0.8.17.jar')
-//    implementation files('libs/fpnnsdk.jar')
+    api 'com.github.highras:fpnn-sdk-android:2.0.8'
 }
 
-apply plugin: 'com.novoda.bintray-release'
-//apply plugin: 'com.kezong.fat-aar'
-publish {
-    repoName = "fpnn-sdk-release"  //bintray中的repositories
-    userOrg = 'mayajun420'   //bintray组织id或者个人账户名
-    groupId = 'com.github.highras' //域名+公司名称 org非盈利 com商业  瞎起还不行 不然报“The relevant organization no longer exist”
-    artifactId = 'rtm-android' //repositories下的package name
-    publishVersion = '2.3.3' //版本号
-    desc = 'android-rtm-sdk' //描述
-    website = 'https://github.com/highras/rtm-client-sdk-android/'  //必须填写证明你对项目有过提交或者贡献 不然add to jcenter失败
-}
+//apply plugin: 'com.novoda.bintray-release'
+//publish {
+//    repoName = "fpnn-sdk-release"  //bintray中的repositories
+//    userOrg = 'mayajun420'   //bintray组织id或者个人账户名
+//    groupId = 'com.github.highras' //域名+公司名称 org非盈利 com商业  瞎起还不行 不然报“The relevant organization no longer exist”
+//    artifactId = 'rtm-android' //repositories下的package name
+//    publishVersion = '2.4.1' //版本号
+//    desc = 'android-rtm-sdk' //描述
+//    website = 'https://github.com/highras/rtm-client-sdk-android/'  //必须填写证明你对项目有过提交或者贡献 不然add to jcenter失败
+//}
