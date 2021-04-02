@@ -33,7 +33,7 @@ dependencies {
     implementation fileTree(include: ['*.jar','*.aar'], dir: 'libs')
     implementation 'androidx.annotation:annotation:1.1.0'
 //    implementation project(path: ':fpnnsdk')
-    api 'com.github.highras:fpnn-sdk-android:2.0.8'
+    api 'com.github.highras:fpnn-sdk-android:v2.0.8'
 }
 
 //apply plugin: 'com.novoda.bintray-release'
