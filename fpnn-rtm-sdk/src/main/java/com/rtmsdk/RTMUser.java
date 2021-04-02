@@ -32,7 +32,7 @@ public class RTMUser extends RTMData {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> onlineUids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    onlineUids = RTMUtils.wantLongHashSet(answer, "uids");
+                    onlineUids = rtmUtils.wantLongHashSet(answer, "uids");
                 }
                 callback.onResult(onlineUids, genRTMAnswer(answer,errorCode));
             }
@@ -53,7 +53,7 @@ public class RTMUser extends RTMData {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"uids");
 
         return ret;
     }
@@ -101,8 +101,8 @@ public class RTMUser extends RTMData {
             public void onAnswer(Answer answer, int errorCode) {
                 GroupInfoStruct userInfo = new GroupInfoStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    userInfo.publicInfo = answer.wantString("oinfo");
-                    userInfo.privateInfo = answer.wantString("pinfo");
+                    userInfo.publicInfo = rtmUtils.wantString(answer,"oinfo");
+                    userInfo.privateInfo = rtmUtils.wantString(answer,"pinfo");
                 }
                 callback.onResult(userInfo, genRTMAnswer(answer,errorCode));
             }
@@ -120,8 +120,8 @@ public class RTMUser extends RTMData {
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct userInfo = new GroupInfoStruct();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            userInfo.publicInfo = answer.wantString("oinfo");
-            userInfo.privateInfo = answer.wantString("pinfo");
+            userInfo.publicInfo = rtmUtils.wantString(answer,"oinfo");
+            userInfo.privateInfo = rtmUtils.wantString(answer,"pinfo");
         }
         userInfo.errorCode = result.errorCode;
         userInfo.errorMsg = result.errorMsg;
@@ -142,7 +142,7 @@ public class RTMUser extends RTMData {
             public void onAnswer(Answer answer, int errorCode) {
                 Map<String, String> attributes = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    attributes = RTMUtils.wantStringMap(answer, "info");
+                    attributes = rtmUtils.wantStringMap(answer, "info");
                 }
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));
             }
@@ -164,7 +164,7 @@ public class RTMUser extends RTMData {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.publicInfos = RTMUtils.wantStringMap(answer, "info");
+            ret.publicInfos = rtmUtils.wantStringMap(answer, "info");
 
         return ret;
     }

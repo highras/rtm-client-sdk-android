@@ -61,7 +61,7 @@ public class RTMRoom extends RTMFriend {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"uids");
         return ret;
     }
 
@@ -81,7 +81,7 @@ public class RTMRoom extends RTMFriend {
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     Map oo = (Map) answer.want("cn");
                     for (Object kk: oo.keySet())
-                        members.put(RTMUtils.wantLong(kk),RTMUtils.wantInt(oo.get(kk)));
+                        members.put(rtmUtils.wantLong(kk),rtmUtils.wantInt(oo.get(kk)));
                 }
                 callback.onResult(members, genRTMAnswer(answer,errorCode));
             }
@@ -105,7 +105,7 @@ public class RTMRoom extends RTMFriend {
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             Map ll = (Map)answer.want("cn");
             for (Object kk: ll.keySet())
-                mems.put(RTMUtils.wantLong(kk),RTMUtils.wantInt(ll.get(kk)));
+                mems.put(rtmUtils.wantLong(kk),rtmUtils.wantInt(ll.get(kk)));
             ret.memberCounts = mems;
         }
         return ret;
@@ -125,7 +125,7 @@ public class RTMRoom extends RTMFriend {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> uIds = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    uIds = RTMUtils.wantLongHashSet(answer,"uids");
+                    uIds = rtmUtils.wantLongHashSet(answer,"uids");
                 callback.onResult(uIds, genRTMAnswer(answer,errorCode));
             }
         });
@@ -154,7 +154,7 @@ public class RTMRoom extends RTMFriend {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> groupIds = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    groupIds = RTMUtils.wantLongHashSet(answer,"rooms");
+                    groupIds = rtmUtils.wantLongHashSet(answer,"rooms");
                 callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
             }
         });
@@ -173,7 +173,7 @@ public class RTMRoom extends RTMFriend {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"rooms");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"rooms");
         return ret;
     }
 
@@ -226,8 +226,8 @@ public class RTMRoom extends RTMFriend {
             public void onAnswer(Answer answer, int errorCode) {
                 GroupInfoStruct RoomInfo = new GroupInfoStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    RoomInfo.publicInfo = answer.wantString("oinfo");
-                    RoomInfo.privateInfo = answer.wantString("pinfo");
+                    RoomInfo.publicInfo = rtmUtils.wantString(answer,"oinfo");
+                    RoomInfo.privateInfo = rtmUtils.wantString(answer,"pinfo");
                 }
                 callback.onResult(RoomInfo, genRTMAnswer(answer,errorCode));
             }
@@ -247,8 +247,8 @@ public class RTMRoom extends RTMFriend {
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct RoomInfo = new GroupInfoStruct();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            RoomInfo.publicInfo = answer.wantString("oinfo");
-            RoomInfo.privateInfo = answer.wantString("pinfo");
+            RoomInfo.publicInfo = rtmUtils.wantString(answer,"oinfo");
+            RoomInfo.privateInfo = rtmUtils.wantString(answer,"pinfo");
         }
         RoomInfo.errorMsg = result.errorMsg;
         RoomInfo.errorCode = result.errorCode;
@@ -270,7 +270,7 @@ public class RTMRoom extends RTMFriend {
             public void onAnswer(Answer answer, int errorCode) {
                 String publicInfo = "";
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    publicInfo = answer.wantString("oinfo");
+                    publicInfo = rtmUtils.wantString(answer,"oinfo");
 
                 callback.onResult(publicInfo, genRTMAnswer(answer,errorCode));
             }
@@ -292,7 +292,7 @@ public class RTMRoom extends RTMFriend {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.publicInfo = answer.wantString("oinfo");
+            ret.publicInfo = rtmUtils.wantString(answer,"oinfo");
         return  ret;
     }
 
@@ -310,7 +310,7 @@ public class RTMRoom extends RTMFriend {
             public void onAnswer(Answer answer, int errorCode) {
                 Map<String, String> attributes = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    attributes = RTMUtils.wantStringMap(answer, "info");
+                    attributes = rtmUtils.wantStringMap(answer, "info");
                 }
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));
             }
@@ -332,7 +332,7 @@ public class RTMRoom extends RTMFriend {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.publicInfos = RTMUtils.wantStringMap(answer, "info");
+            ret.publicInfos = rtmUtils.wantStringMap(answer, "info");
 
         return ret;
     }

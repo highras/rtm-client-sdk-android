@@ -81,7 +81,7 @@ class RTMGroup extends RTMFile {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> uids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    uids  = RTMUtils.wantLongHashSet(answer,"uids");
+                    uids  = rtmUtils.wantLongHashSet(answer,"uids");
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
             }
         });
@@ -102,7 +102,7 @@ class RTMGroup extends RTMFile {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"uids");
 
         return ret;
     }
@@ -121,7 +121,7 @@ class RTMGroup extends RTMFile {
             public void onAnswer(Answer answer, int errorCode) {
                 Map<String, String> attributes = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    attributes = RTMUtils.wantStringMap(answer, "info");
+                    attributes = rtmUtils.wantStringMap(answer, "info");
                 }
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));
             }
@@ -143,7 +143,7 @@ class RTMGroup extends RTMFile {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.publicInfos = RTMUtils.wantStringMap(answer, "info");
+            ret.publicInfos = rtmUtils.wantStringMap(answer, "info");
 
         return ret;
     }
@@ -160,7 +160,7 @@ class RTMGroup extends RTMFile {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> groupIds =new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    groupIds = RTMUtils.wantLongHashSet(answer,"gids");
+                    groupIds = rtmUtils.wantLongHashSet(answer,"gids");
                 callback.onResult(groupIds, genRTMAnswer(answer,errorCode));
             }
         });
@@ -179,7 +179,7 @@ class RTMGroup extends RTMFile {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"gids");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"gids");
 
         return ret;
     }
@@ -233,8 +233,8 @@ class RTMGroup extends RTMFile {
             public void onAnswer(Answer answer, int errorCode) {
                 GroupInfoStruct groupInfo = new GroupInfoStruct();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    groupInfo.publicInfo = answer.wantString("oinfo");
-                    groupInfo.privateInfo = answer.wantString("pinfo");
+                    groupInfo.publicInfo = rtmUtils.wantString(answer,"oinfo");
+                    groupInfo.privateInfo = rtmUtils.wantString(answer,"pinfo");
                 }
                 callback.onResult(groupInfo, genRTMAnswer(answer,errorCode));
             }
@@ -254,8 +254,8 @@ class RTMGroup extends RTMFile {
         RTMAnswer result = genRTMAnswer(answer);
         GroupInfoStruct ret = new GroupInfoStruct();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            ret.publicInfo = answer.wantString("oinfo");
-            ret.privateInfo = answer.wantString("pinfo");
+            ret.publicInfo = rtmUtils.wantString(answer,"oinfo");
+            ret.privateInfo = rtmUtils.wantString(answer,"pinfo");
         }
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
@@ -277,7 +277,7 @@ class RTMGroup extends RTMFile {
             public void onAnswer(Answer answer, int errorCode) {
                 String publicInfo = "";
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    publicInfo = answer.wantString("oinfo");
+                    publicInfo = rtmUtils.wantString(answer,"oinfo");
 
                 callback.onResult(publicInfo, genRTMAnswer(answer,errorCode));
             }
@@ -299,7 +299,7 @@ class RTMGroup extends RTMFile {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.publicInfo = answer.wantString("oinfo");
+            ret.publicInfo = rtmUtils.wantString(answer,"oinfo");
         return ret;
     }
 }

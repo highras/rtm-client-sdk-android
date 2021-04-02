@@ -91,8 +91,8 @@ class RTMFile extends RTMSystem {
             public void onAnswer(Answer answer, int errorCode) {
                 String token = "" ,endpoint = "";
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    token = answer.wantString("token");
-                    endpoint = answer.wantString("endpoint");
+                    token = rtmUtils.wantString(answer,"token");
+                    endpoint = rtmUtils.wantString(answer,"endpoint");
                 }
                 callback.onResult(token, endpoint, genRTMAnswer(answer,errorCode));
             }
@@ -120,8 +120,8 @@ class RTMFile extends RTMSystem {
 
         Answer answer = sendQuest(quest);
         if (answer !=null && answer.getErrorCode() == ErrorCode.FPNN_EC_OK.value()){
-            token.append(answer.wantString("token"));
-            endpoint.append(answer.wantString("endpoint"));
+            token.append(rtmUtils.wantString(answer,"token"));
+            endpoint.append(rtmUtils.wantString(answer,"endpoint"));
         }
         return genRTMAnswer(answer, answer.getErrorCode());
     }
@@ -142,12 +142,12 @@ class RTMFile extends RTMSystem {
             MessageDigest  md5 = MessageDigest.getInstance("MD5");
             md5.update(info.fileContent);
             byte[] md5Binary = md5.digest();
-            String md5Hex = RTMUtils.bytesToHexString(md5Binary, true) + ":" + info.token;
+            String md5Hex = rtmUtils.bytesToHexString(md5Binary, true) + ":" + info.token;
 
             md5 = MessageDigest.getInstance("MD5");
             md5.update(md5Hex.getBytes("UTF-8"));
             md5Binary = md5.digest();
-            md5Hex = RTMUtils.bytesToHexString(md5Binary, true);
+            md5Hex = rtmUtils.bytesToHexString(md5Binary, true);
             JSONObject allatrrs = new JSONObject();
 
             if (info.attrs != null)
@@ -200,7 +200,7 @@ class RTMFile extends RTMSystem {
         quest.param("from", getUid());
         quest.param("token", info.token);
         quest.param("mtype", info.mtype);
-        quest.param("mid", RTMUtils.genMid());
+        quest.param("mid", Genid.genMid());
 
         quest.param("file", info.fileContent);
         quest.param("attrs", buildFileAttrs(info));
@@ -215,8 +215,8 @@ class RTMFile extends RTMSystem {
             public void onAnswer(Answer answer, int errorCode) {
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     try {
-                        long mtime = answer.wantLong("mtime");
-                        info.callback.onResult(mtime, quest.wantLong("mid"),genRTMAnswer(ErrorCode.FPNN_EC_OK.value()));
+                        long mtime = rtmUtils.wantLong(answer,"mtime");
+                        info.callback.onResult(mtime, rtmUtils.wantLong(quest,"mid"),genRTMAnswer(ErrorCode.FPNN_EC_OK.value()));
 
                         activeFileGateClient(info.endpoint, client);
                         return;
@@ -237,14 +237,14 @@ class RTMFile extends RTMSystem {
 
         final TCPClient client = TCPClient.create(fileGateEndpoint, true);
         client.setQuestTimeout(rtmConfig.globalFileQuestTimeoutSeconds);
-        client.SetErrorRecorder(errorRecorder);
+        client.setErrorRecorder(errorRecorder);
 
         sendFileWithClient(info, client);
 
         return ErrorCode.FPNN_EC_OK.value();
     }
 
-    private void getFileTokenCallback(SendFileInfo info, String token, String endpoint, RTMAnswer answer) throws InterruptedException {
+    private void getFileTokenCallback(SendFileInfo info, String token, String endpoint, RTMAnswer answer) {
         if (answer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
             info.token = token;
             info.endpoint = endpoint;
@@ -296,18 +296,14 @@ class RTMFile extends RTMSystem {
         info.fileContent = realData;
         info.filename = realName;
         info.attrs = attrs;
-        info.lastActionTimestamp = RTMUtils.getCurrentMilliseconds();
+        info.lastActionTimestamp = Genid.getCurrentMilliseconds();
         info.callback = callback;
         info.audioAttrs = audioAttrs;
         final SendFileInfo inFile = info;
         fileToken(new DoubleStringCallback() {
             @Override
             public void onResult(String token, String endpoint, RTMAnswer answer) {
-                try {
-                    getFileTokenCallback(inFile, token, endpoint, answer);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                getFileTokenCallback(inFile, token, endpoint, answer);
             }
         }, tokenType, info.xid);
     }
@@ -353,6 +349,7 @@ class RTMFile extends RTMSystem {
             if (fileClient == null) {
                 fileClient = TCPClient.create(realEndpoint);
                 fileClient.setQuestTimeout(rtmConfig.globalFileQuestTimeoutSeconds);
+                fileClient.setErrorRecorder(errorRecorder);
 
                 if (fileClient.connect(true)) {
                     activeFileGateClient(realEndpoint, fileClient);
@@ -386,8 +383,8 @@ class RTMFile extends RTMSystem {
 
             ret.errorCode = ErrorCode.FPNN_EC_OK.value();
             ret.errorMsg = "";
-            ret.modifyTime = answer.wantLong("mtime");
-            ret.messageId = quest.wantLong("mid");
+            ret.modifyTime = rtmUtils.wantLong(answer,"mtime");
+            ret.messageId = rtmUtils.wantLong(quest,"mid");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             ret.errorCode = ErrorCode.FPNN_EC_PROTO_UNKNOWN_ERROR.value();

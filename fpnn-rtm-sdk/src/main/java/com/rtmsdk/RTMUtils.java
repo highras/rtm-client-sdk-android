@@ -1,7 +1,10 @@
 package com.rtmsdk;
 
+import android.util.Log;
+
 import com.fpnn.sdk.ErrorRecorder;
 import com.fpnn.sdk.proto.Message;
+import com.fpnn.sdk.proto.Quest;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -10,43 +13,46 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RTMUtils {
-    static private AtomicLong orderId = new AtomicLong();
+    ErrorRecorder errorRecorder;
+//    private AtomicLong orderId = new AtomicLong();
+//
+//    public long genMid() {
+//        long id = getCurrentMilliseconds()<<16;
+//        return id + orderId.incrementAndGet();
+//    }
+//
+//    long getCurrentSeconds() {
+//        return System.currentTimeMillis() / 1000;
+//    }
+//
+//    long getCurrentMilliseconds() {
+//        return System.currentTimeMillis();
+//    }
 
-    static public long genMid() {
-        long id = getCurrentMilliseconds()<<16;
-        return id + orderId.incrementAndGet();
-    }
-
-    static long getCurrentSeconds() {
-        return System.currentTimeMillis() / 1000;
-    }
-
-    static long getCurrentMilliseconds() {
-        return System.currentTimeMillis();
-    }
-
-    static Map<String, String>  wantStringMap(Message message,String key) {
+    Map<String, String>  wantStringMap(Message message,String key) {
         Map<String, String> map = new HashMap<>();
+        if (message  == null)
+            return map;
         try {
-            if (message != null) {
                 Map<String, String> ret = (Map<String, String>) message.want(key);
+                if (ret == null)
+                    return map;
                 for (String value : ret.keySet())
                     map.put(value, ret.get(value));
-            }
             return map;
         }
         catch (Exception e)
         {
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("wantStringMap  key " + key + " error:" + e.getMessage());
         }
         return map;
     }
 
-    static void wantLongList(Message message,String key, List<Long> list) {
+    void wantLongList(Message message,String key, List<Long> list) {
         try {
             if (message == null)
                 return;
@@ -64,15 +70,17 @@ public class RTMUtils {
         }
         catch (Exception e)
         {
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("wantLongList  key " + key + " error:" + e.getMessage());
         }
     }
 
-    static void wantIntList(Message message,String key, List<Integer> list) {
+    void wantIntList(Message message,String key, List<Integer> list) {
         try {
             if (message == null)
                 return;
             List<Object> attrsList = (List<Object>) message.want(key);
+            if (attrsList == null)
+                return;
             for (Object value : attrsList) {
                 if (value instanceof Integer)
                     list.add(((Integer) value).intValue());
@@ -86,16 +94,18 @@ public class RTMUtils {
         }
         catch (Exception e)
         {
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("wantIntList  key " + key + " error:" + e.getMessage());
         }
     }
 
-    static void getIntList(Message message,String key, List<Integer> list) {
+    void getIntList(Message message,String key, List<Integer> list) {
         if (message == null)
             return;
         try {
 
             List<Object> attrsList = (List<Object>) message.get(key);
+            if (attrsList == null)
+                return;
             for (Object value : attrsList) {
                 if (value instanceof Integer)
                     list.add(((Integer) value).intValue());
@@ -107,41 +117,47 @@ public class RTMUtils {
                     list.add(Integer.valueOf(String.valueOf(value)));
             }
         }catch (Exception e){
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("getIntList  key " + key + " error:" + e.getMessage());
         }
     }
 
-    static void getStringList(Message message,String key, List<String> list) {
+    void getStringList(Message message,String key, List<String> list) {
         if (message == null)
             return;
         try {
             List<Object> attrsList = (List<Object>) message.get(key);
+            if (attrsList == null)
+                return;
             for (Object value : attrsList) {
                 list.add(String.valueOf(value));
             }
         }catch (Exception e){
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("getStringList  key " + key + " error:" + e.getMessage());
         }
     }
 
-    static List<Map<String, String>> wantListHashMap(Message message, String key) {
+    List<Map<String, String>> wantListHashMap(Message message, String key) {
         List<Map<String, String>> attributes = new ArrayList<>();
         try {
             List<Object> attrsList = (List<Object>) message.want(key);
+            if (attrsList  == null)
+                return attributes;
             for (Object value : attrsList)
                 attributes.add(new HashMap<>((Map<String, String>) value));
         }
         catch (Exception e)
         {
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("wantListHashMap  key " + key + " error:" + e.getMessage());
         }
         return attributes;
     }
 
-    static HashMap<Long, HashSet<Integer>> wantDeviceOption(Message message, String key) {
+    HashMap<Long, HashSet<Integer>> wantDeviceOption(Message message, String key) {
         HashMap<Long, HashSet<Integer>> options = new HashMap<>();
         try {
             Map<Object, ArrayList<Integer>> tmpOption = (Map<Object, ArrayList<Integer>>) message.want(key);
+            if (tmpOption == null)
+                return options;
             for (Object xid: tmpOption.keySet()){
                 HashSet<Integer> messageTypes = new HashSet<>();
                 for (Integer type: tmpOption.get(xid))
@@ -151,16 +167,43 @@ public class RTMUtils {
         }
         catch (Exception e)
         {
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("wantDeviceOption  key " + key + " error:" + e.getMessage());
         }
         return options;
     }
 
 
-    static HashSet<Long> wantLongHashSet(Message message, String key) {
+    public boolean wantBoolean(Message quest,String key) {
+        Object obj = null;
+        try {
+            obj = quest.want(key);
+        }
+        catch (NoSuchElementException e)
+        {
+            errorRecorder.recordError("wantBoolean NoSuchElementException " + key);
+        }
+        return (obj == null)? false :(Boolean)obj;
+    }
+
+    String wantString(Message quest, String key) {
+        Object obj = null;
+        try {
+            obj = quest.want(key);
+        }
+        catch (NoSuchElementException e)
+        {
+            errorRecorder.recordError("wantString NoSuchElementException " + key);
+            return null;
+        }
+        return String.valueOf(obj);
+    }
+
+    HashSet<Long> wantLongHashSet(Message message, String key) {
         HashSet<Long> uids = new HashSet<Long>();
         try{
             List<Object> list = (List<Object>)message.want(key);
+            if (list == null)
+                return uids;
             for (Object value : list) {
                 if (value instanceof Integer)
                     uids.add(((Integer) value).longValue());
@@ -174,12 +217,33 @@ public class RTMUtils {
         }
         catch (Exception e)
         {
-            ErrorRecorder.record(e.getMessage());
+            errorRecorder.recordError("wantLongHashSet  key " + key + " error:" + e.getMessage());
         }
         return uids;
     }
 
-    static long wantLong(Object obj) {
+    public long getLong(Message quest,String key) {
+        Object o = quest.get(key);
+        if (o != null)
+            return wantLong(key);
+        return 0;
+    }
+
+    long wantLong(Message quest,String key) {
+        long value = -1;
+        try {
+            Object obj = quest.want(key);
+            value = wantLong(obj);
+        }
+        catch (NoSuchElementException e)
+        {
+//            Log.e("rtmsdk","wantLong NoSuchElementException " + key);
+            errorRecorder.recordError("wantLong NoSuchElementException " + key);
+        }
+        return value;
+    }
+
+    long wantLong(Object obj) {
         long value = -1;
         if (obj instanceof Integer)
             value = ((Integer) obj).longValue();
@@ -196,7 +260,20 @@ public class RTMUtils {
         return value;
     }
 
-    static int wantInt(Object obj) {
+    public int wantInt(Message quest,String key) {
+        int value = -1;
+        try {
+            Object obj = quest.want(key);
+            value = wantInt(obj);
+        }
+        catch (NoSuchElementException e)
+        {
+            errorRecorder.recordError("wantInt NoSuchElementException " + key);
+        }
+        return value;
+    }
+
+    int wantInt(Object obj) {
         int value = -1;
         if (obj instanceof Integer)
             value = (Integer) obj;
@@ -213,7 +290,7 @@ public class RTMUtils {
         return value;
     }
 
-    public static String bytesToHexString(byte[] bytes, boolean isLowerCase) {
+    public String bytesToHexString(byte[] bytes, boolean isLowerCase) {
         String from = isLowerCase ? "%02x" : "%02X";
         StringBuilder sb = new StringBuilder(bytes.length * 2);
 

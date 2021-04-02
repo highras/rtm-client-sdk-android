@@ -70,7 +70,7 @@ public class RTMFriend extends RTMGroup {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> uids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    uids = RTMUtils.wantLongHashSet(answer, "uids");
+                    uids = rtmUtils.wantLongHashSet(answer, "uids");
                 }
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
             }
@@ -90,7 +90,7 @@ public class RTMFriend extends RTMGroup {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"uids");
         return ret;
     }
 
@@ -152,7 +152,7 @@ public class RTMFriend extends RTMGroup {
             public void onAnswer(Answer answer, int errorCode) {
                 HashSet<Long> uids = new HashSet<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    uids = RTMUtils.wantLongHashSet(answer, "uids");
+                    uids = rtmUtils.wantLongHashSet(answer, "uids");
                 }
                 callback.onResult(uids, genRTMAnswer(answer,errorCode));
             }
@@ -172,7 +172,7 @@ public class RTMFriend extends RTMGroup {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = RTMUtils.wantLongHashSet(answer,"uids");
+            ret.uids = rtmUtils.wantLongHashSet(answer,"uids");
 
         return ret;
     }

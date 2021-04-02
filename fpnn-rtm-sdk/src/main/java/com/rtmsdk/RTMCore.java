@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,7 +78,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     private AtomicBoolean initCheckThread = new AtomicBoolean(false);
     private Thread checkThread;
     private RTMQuestProcessor processor;
-    ErrorRecorder errorRecorder;
+    ErrorRecorder errorRecorder = new ErrorRecorder();
     private TCPClient dispatch;
     private TCPClient rtmGate;
     private Map<String, Map<TCPClient, Long>> fileGates;
@@ -86,6 +87,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     private RTMAnswer lastReloginAnswer = new RTMAnswer();
     private RTMPushProcessor serverPushProcessor;
     RTMConfig rtmConfig;
+    RTMUtils rtmUtils = new RTMUtils();
 
     private ArrayList<Integer> finishCodeList = new ArrayList<Integer>(){{
             add(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value());
@@ -107,7 +109,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             long lastPingSec = lastPingTime.get();
             boolean ret = true;
 
-            if (RTMUtils.getCurrentSeconds() - lastPingSec > rtmConfig.lostConnectionAfterLastPingInSeconds) {
+            if (Genid.getCurrentSeconds() - lastPingSec > rtmConfig.lostConnectionAfterLastPingInSeconds) {
                 ret = false;
             }
             return ret;
@@ -120,7 +122,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
 
         //----------------------[ RTM Operations ]-------------------//
         Answer ping(Quest quest, InetSocketAddress peer) {
-            long now = RTMUtils.getCurrentSeconds();
+            long now = Genid.getCurrentSeconds();
             lastPingTime.set(now);
             return new Answer(quest);
         }
@@ -170,7 +172,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 info.isBinary = true;
                 info.binaryData = (byte[]) obj;
             } else
-                info.message = (String) obj;
+                info.message = String.valueOf(obj);
+//                info.message = new Str(obj);
 
             return info;
         }
@@ -179,17 +182,16 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         Answer pushmsg(Quest quest, InetSocketAddress peer){
             rtmGate.sendAnswer(new Answer(quest));
 
-            long from = quest.wantLong("from");
-            long to = quest.wantLong("to");
-            long mid = quest.wantLong("mid");
+            long from = rtmUtils.wantLong(quest,"from");
+            long to = rtmUtils.wantLong(quest,"to");
+            long mid = rtmUtils.wantLong(quest,"mid");
 
             if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.P2PMessage, from, mid))
                 return null;
 
-            byte mtype = (byte) quest.wantInt("mtype");
-
-            String attrs = quest.wantString("attrs");
-            long mtime = quest.wantLong("mtime");
+            byte mtype = (byte) rtmUtils.wantInt(quest,"mtype");
+            String attrs = rtmUtils.wantString(quest,"attrs");
+            long mtime = rtmUtils.wantLong(quest,"mtime");
 
             RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
             userMsg.attrs = attrs;
@@ -245,7 +247,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                         userMsg.attrs = realAttrs;
                     }
                 } catch (JSONException e) {
-                    ErrorRecorder.record("pushmsg parse json error " + e.getMessage());
+                    errorRecorder.recordError("pushmsg parse json error " + e.getMessage());
                 }
                 serverPushProcessor.pushFile(userMsg);
             }
@@ -265,16 +267,16 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         Answer pushgroupmsg(Quest quest, InetSocketAddress peer) {
             rtmGate.sendAnswer(new Answer(quest));
 
-            long from = quest.wantLong("from");
-            long groupId = quest.wantLong("gid");
-            long mid = quest.wantLong("mid");
+            long from = rtmUtils.wantLong(quest,"from");
+            long groupId = rtmUtils.wantLong(quest,"gid");
+            long mid = rtmUtils.wantLong(quest,"mid");
 
             if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.GroupMessage, from, mid, groupId))
                 return null;
 
-            byte mtype = (byte) quest.wantInt("mtype");
-            String attrs = quest.wantString("attrs");
-            long mtime = quest.wantLong("mtime");
+            byte mtype = (byte) rtmUtils.wantInt(quest,"mtype");
+            String attrs = rtmUtils.wantString(quest,"attrs");
+            long mtime = rtmUtils.wantLong(quest,"mtime");
 
             RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
             userMsg.attrs = attrs;
@@ -298,8 +300,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             }else if (mtype >= RTMStruct.MessageType.IMAGEFILE && mtype <= RTMStruct.MessageType.NORMALFILE) {
                 RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
                 userMsg.fileInfo = fileInfo;
-                String fileRecieve = quest.wantString("msg");
-                String fileattrs = quest.wantString("attrs");
+                String fileRecieve = rtmUtils.wantString(quest,"msg");
+                String fileattrs = rtmUtils.wantString(quest,"attrs");
                 try {
                     JSONObject tt = new JSONObject(fileattrs);
                     JSONObject kk = new JSONObject(fileRecieve);
@@ -332,7 +334,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                         userMsg.attrs = realAttrs;
                     }
                 } catch (JSONException e) {
-                    ErrorRecorder.record("pushgroupmsg parse json error " + e.getMessage());
+                    errorRecorder.recordError("pushgroupmsg parse json error " + e.getMessage());
                 }
                 serverPushProcessor.pushGroupFile(userMsg);
             }else {
@@ -351,16 +353,16 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         Answer pushroommsg(Quest quest, InetSocketAddress peer) {
             rtmGate.sendAnswer(new Answer(quest));
 
-            long from = quest.wantLong("from");
-            long roomId = quest.wantLong("rid");
-            long mid = quest.wantLong("mid");
+            long from = rtmUtils.wantLong(quest,"from");
+            long roomId = rtmUtils.wantLong(quest,"rid");
+            long mid = rtmUtils.wantLong(quest,"mid");
 
             if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.RoomMessage, from, mid, roomId))
                 return null;
 
-            byte mtype = (byte) quest.wantInt("mtype");
-            String attrs = quest.wantString("attrs");
-            long mtime = quest.wantLong("mtime");
+            byte mtype = (byte) rtmUtils.wantInt(quest,"mtype");
+            String attrs = rtmUtils.wantString(quest,"attrs");
+            long mtime = rtmUtils.wantLong(quest,"mtime");
 
             RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
             userMsg.attrs = attrs;
@@ -385,8 +387,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
                 userMsg.fileInfo = fileInfo;
 
-                String fileRecieve = quest.wantString("msg");
-                String fileattrs = quest.wantString("attrs");
+                String fileRecieve = rtmUtils.wantString(quest,"msg");
+                String fileattrs = rtmUtils.wantString(quest,"attrs");
                 try {
                     JSONObject tt = new JSONObject(fileattrs);
                     JSONObject kk = new JSONObject(fileRecieve);
@@ -418,8 +420,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                         }
                         userMsg.attrs = realAttrs;
                     }
-                } catch (JSONException e) {
-                    ErrorRecorder.record("pushroommsg parse json error " + e.getMessage());
+                } catch (Exception e) {
+                    errorRecorder.recordError("pushroommsg parse json error " + e.getMessage());
                 }
                 serverPushProcessor.pushRoomFile(userMsg);
             }else {
@@ -438,15 +440,15 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         Answer pushbroadcastmsg(Quest quest, InetSocketAddress peer) {
             rtmGate.sendAnswer(new Answer(quest));
 
-            long from = quest.wantLong("from");
-            long mid = quest.wantLong("mid");
+            long from = rtmUtils.wantLong(quest,"from");
+            long mid = rtmUtils.wantLong(quest,"mid");
 
             if (!duplicatedFilter.CheckMessage(DuplicatedMessageFilter.MessageCategories.BroadcastMessage, from, mid))
                 return null;
 
-            byte mtype = (byte) quest.wantInt("mtype");
-            String attrs = quest.wantString("attrs");
-            long mtime = quest.wantLong("mtime");
+            byte mtype = (byte) rtmUtils.wantInt(quest,"mtype");
+            String attrs = rtmUtils.wantString(quest,"attrs");
+            long mtime = rtmUtils.wantLong(quest,"mtime");
 
             RTMStruct.RTMMessage userMsg = new RTMStruct.RTMMessage();
             userMsg.attrs = attrs;
@@ -470,8 +472,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 RTMStruct.FileStruct fileInfo = new RTMStruct.FileStruct();
                 userMsg.fileInfo = fileInfo;
 
-                String fileRecieve = quest.wantString("msg");
-                String fileattrs = quest.wantString("attrs");
+                String fileRecieve = rtmUtils.wantString(quest,"msg");
+                String fileattrs = rtmUtils.wantString(quest,"attrs");
                 try {
                     JSONObject tt = new JSONObject(fileattrs);
                     JSONObject kk = new JSONObject(fileRecieve);
@@ -504,7 +506,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                         userMsg.attrs = realAttrs;
                     }
                 } catch (JSONException e) {
-                    ErrorRecorder.record("pushbroadcastmsg parse json error " + e.getMessage());
+                    errorRecorder.recordError("pushbroadcastmsg parse json error " + e.getMessage());
                 }
                 serverPushProcessor.pushBroadcastFile(userMsg);
             }else {
@@ -531,9 +533,9 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
 //        isRelogin.set(true);
         int num = count;
         Map<String, String> kk = loginAttrs;
+        lastReloginAnswer = login(token, lang, kk,"ipv4");
         if (serverPushProcessor.reloginWillStart(uid, lastReloginAnswer, num)) {
-            lastReloginAnswer = login(token, lang, kk,"ipv4");
-            if(lastReloginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value()) {
+            if(lastReloginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value() || lastReloginAnswer.errorCode == RTMErrorCode.RTM_EC_DUPLCATED_AUTH.value()) {
                 isRelogin.set(false);
                 serverPushProcessor.reloginCompleted(uid, true, lastReloginAnswer, num);
                 return;
@@ -626,7 +628,9 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         else
             rtmConfig = config;
 
-        errorRecorder = rtmConfig.defaultErrorRecorder;
+        if (rtmConfig.defaultErrorRecorder != null)
+            errorRecorder = rtmConfig.defaultErrorRecorder;
+        rtmUtils.errorRecorder = errorRecorder;
 
         String errDesc = "";
         if (endpoint == null || endpoint.equals("") || endpoint.lastIndexOf(':') == -1)
@@ -670,17 +674,13 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             return;
         }
         dispatch.setQuestTimeout(rtmConfig.globalQuestTimeoutSeconds);
-        dispatch.SetErrorRecorder(errorRecorder);
+        dispatch.setErrorRecorder(errorRecorder);
     }
 
     public void setErrorRecoder(com.fpnn.sdk.ErrorRecorder value){
         if (value == null)
             return;
-        synchronized (interLocker) {
-            errorRecorder = value;
-            if (dispatch != null)
-                dispatch.SetErrorRecorder(value);
-        }
+        errorRecorder = value;
     }
 
     public void enableEncryptorByDerData(String curve, byte[] peerPublicKey) {
@@ -740,6 +740,14 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         return tt;
     }
 
+
+    RTMAnswer genRTMAnswer(Answer answer, String msg) {
+        if (answer == null)
+            return new RTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(), "invalid connection");
+        return new RTMAnswer(answer.getErrorCode(),answer.getErrorMessage() + " " + msg);
+    }
+
+
     RTMAnswer genRTMAnswer(Answer answer) {
         if (answer == null)
             return new RTMAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(), "invalid connection");
@@ -784,8 +792,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         try {
             answer = client.sendQuest(quest, timeout);
         } catch (Exception e) {
-            if (errorRecorder != null)
-                errorRecorder.recordError(e);
+            errorRecorder.recordError("sendQuest error " + e);
             answer = new Answer(quest);
             answer.fillErrorInfo(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),e.getMessage());
             Thread.currentThread().interrupt();
@@ -903,11 +910,11 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         synchronized (interLocker) {
             if (fileGates.containsKey(endpoint)) {
                 if (fileGates.get(endpoint) != null)
-                    fileGates.get(endpoint).put(client, RTMUtils.getCurrentSeconds());
+                    fileGates.get(endpoint).put(client, Genid.getCurrentSeconds());
             }
             else
                 fileGates.put(endpoint, new HashMap<TCPClient, Long>() {{
-                    put(client, RTMUtils.getCurrentSeconds());
+                    put(client, Genid.getCurrentSeconds());
                 }});
         }
     }
@@ -1059,9 +1066,9 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
 
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
-                return genRTMAnswer(answer);
+                return genRTMAnswer(answer,"when send auth");
             }
-            else if (!answer.wantBoolean("ok")) {
+            else if (!rtmUtils.wantBoolean(answer,"ok")) {
                 if (retry) {
                     closeStatus();
                     return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"retry auth failed");
@@ -1072,13 +1079,14 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                     return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"auth failed token maybe expired");
                 } else {
                     rtmGate = TCPClient.create(endpoint);
+                    rtmGate.setErrorRecorder(errorRecorder);
                     return auth(token, attr, true);
                 }
             }
             synchronized (interLocker) {
                 status = ClientStatus.Connected;
             }
-            processor.setLastPingTime(RTMUtils.getCurrentSeconds());
+            processor.setLastPingTime(Genid.getCurrentSeconds());
             checkRoutineInit();
             connectionId.set(rtmGate.getConnectionId());
             return genRTMAnswer(answer);
@@ -1110,7 +1118,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                     if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
                         closeStatus();
                         callback.onResult(genRTMAnswer(answer, errorCode));
-                    } else if (!answer.wantBoolean("ok")) {
+                    } else if (!rtmUtils.wantBoolean(answer,"ok")) {
                         if (retry) {
                             closeStatus();
                             callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "retry failed auth failed token maybe expired"));
@@ -1121,6 +1129,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                                 callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "auth failed token maybe expired"));
                             } else {
                                 rtmGate = TCPClient.create(endpoint);
+                                rtmGate.setErrorRecorder(errorRecorder);
                                 auth(callback, token, attr, true);
                             }
                         }
@@ -1128,7 +1137,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                         synchronized (interLocker) {
                             status = ClientStatus.Connected;
                         }
-                        processor.setLastPingTime(RTMUtils.getCurrentSeconds());
+                        processor.setLastPingTime(Genid.getCurrentSeconds());
                         checkRoutineInit();
                         connectionId.set(rtmGate.getConnectionId());
                         callback.onResult(genRTMAnswer(errorCode));
@@ -1142,7 +1151,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     }
 
     void login(final IRTMEmptyCallback callback, final String token, final String lang, final String addressType, final Map<String, String> attr) {
-        if (token ==null || addressType == null){
+        if (token ==null){
             callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value()," token  is null"));
             return;
         }
@@ -1161,6 +1170,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 status = ClientStatus.Connecting;
             }
 
+
             if (dispatch == null) {
                 closeStatus();
                 new Thread(new Runnable() {
@@ -1172,6 +1182,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 return;
             }
 
+
             this.token = token;
             if (lang == null)
                 this.lang = "";
@@ -1181,6 +1192,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             closedCase = CloseType.None;
 
             if (rtmGate != null) {
+                rtmGate.close();
                 auth(callback, token, attr);
             } else {
                 AsyncFetchRtmGateEndpoint(addressType, new FunctionalAnswerCallback() {
@@ -1198,6 +1210,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                             } else {
                                 dispatch.close();
                                 rtmGate = TCPClient.create(endpoint);
+                                rtmGate.setErrorRecorder(errorRecorder);
                                 ConfigRtmGateClient(rtmGate);
                                 auth(callback, token, attr);
                             }
@@ -1223,7 +1236,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     }
 
     RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
-        if (token == null || addressType ==null)
+        if (token == null)
             return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), " token  is null");
 
         try {
@@ -1243,6 +1256,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             }
 
             if (rtmGate != null){
+                rtmGate.close();
                 return auth(token, attr);
             }
             if (dispatch == null){
@@ -1256,7 +1270,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             Answer answer = dispatch.sendQuest(quest,rtmConfig.globalQuestTimeoutSeconds);
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
-                return genRTMAnswer(answer);
+                return genRTMAnswer(answer,"when get rtmgate send which to dispatch");
             }
 
             String endpoint = answer.getString("endpoint");
@@ -1266,6 +1280,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 //返回错误码
             }
             rtmGate = TCPClient.create(endpoint);
+            rtmGate.setErrorRecorder(errorRecorder);
             dispatch.close();
             ConfigRtmGateClient(rtmGate);
             return auth(token, attr);

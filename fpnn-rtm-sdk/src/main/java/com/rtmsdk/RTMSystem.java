@@ -81,7 +81,7 @@ class RTMSystem extends RTMUser {
             public void onAnswer(Answer answer, int errorCode) {
                 List<Map<String, String>> attributes = new ArrayList<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    attributes = RTMUtils.wantListHashMap(answer, "attrs");
+                    attributes = rtmUtils.wantListHashMap(answer, "attrs");
                 callback.onResult(attributes, genRTMAnswer(answer,errorCode));
             }
         });
@@ -99,7 +99,7 @@ class RTMSystem extends RTMUser {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.attrs = RTMUtils.wantListHashMap(answer,"attrs");
+            ret.attrs = rtmUtils.wantListHashMap(answer,"attrs");
 
         return ret;
     }
@@ -222,8 +222,8 @@ class RTMSystem extends RTMUser {
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
         if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            ret.p2pPushOptions = RTMUtils.wantDeviceOption(answer,"p2p");
-            ret.groupPushOptions = RTMUtils.wantDeviceOption(answer,"group");
+            ret.p2pPushOptions = rtmUtils.wantDeviceOption(answer,"p2p");
+            ret.groupPushOptions = rtmUtils.wantDeviceOption(answer,"group");
         }
         return ret;
     }
@@ -271,8 +271,8 @@ class RTMSystem extends RTMUser {
             public void onAnswer(Answer answer, int errorCode) {
                 DevicePushOption ret = new DevicePushOption();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    ret.p2pPushOptions = RTMUtils.wantDeviceOption(answer,"p2p");
-                    ret.groupPushOptions = RTMUtils.wantDeviceOption(answer,"group");
+                    ret.p2pPushOptions = rtmUtils.wantDeviceOption(answer,"p2p");
+                    ret.groupPushOptions = rtmUtils.wantDeviceOption(answer,"group");
                 }
                 callback.onResult(ret, genRTMAnswer(answer,errorCode));
             }

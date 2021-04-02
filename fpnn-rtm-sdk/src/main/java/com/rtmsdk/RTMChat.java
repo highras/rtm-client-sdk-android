@@ -657,8 +657,8 @@ class RTMChat extends RTMRoom {
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     List<Long> p2pList = new ArrayList<>();
                     List<Long> groupList = new ArrayList<>();
-                    RTMUtils.wantLongList(answer,"p2p", p2pList);
-                    RTMUtils.wantLongList(answer,"group", groupList);
+                    rtmUtils.wantLongList(answer,"p2p", p2pList);
+                    rtmUtils.wantLongList(answer,"group", groupList);
                     ret.p2pList = p2pList;
                     ret.groupList = groupList;
                 }
@@ -682,8 +682,8 @@ class RTMChat extends RTMRoom {
         List<Long> p2pList = new ArrayList<>();
         List<Long> groupList = new ArrayList<>();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            RTMUtils.wantLongList(answer, "p2p", p2pList);
-            RTMUtils.wantLongList(answer, "group", groupList);
+            rtmUtils.wantLongList(answer, "p2p", p2pList);
+            rtmUtils.wantLongList(answer, "group", groupList);
         }
         ret.p2pList = p2pList;
         ret.groupList = groupList;
@@ -783,8 +783,8 @@ class RTMChat extends RTMRoom {
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     List<Long> p2pList = new ArrayList<>();
                     List<Long> groupList = new ArrayList<>();
-                    RTMUtils.wantLongList(answer,"p2p", p2pList);
-                    RTMUtils.wantLongList(answer,"group", groupList);
+                    rtmUtils.wantLongList(answer,"p2p", p2pList);
+                    rtmUtils.wantLongList(answer,"group", groupList);
                     ret.p2pList = p2pList;
                     ret.groupList = groupList;
                 }
@@ -807,8 +807,8 @@ class RTMChat extends RTMRoom {
         List<Long> p2pList = new ArrayList<>();
         List<Long> groupList = new ArrayList<>();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            RTMUtils.wantLongList(answer, "p2p", p2pList);
-            RTMUtils.wantLongList(answer, "group", groupList);
+            rtmUtils.wantLongList(answer, "p2p", p2pList);
+            rtmUtils.wantLongList(answer, "group", groupList);
         }
         ret.p2pList = p2pList;
         ret.groupList = groupList;
@@ -884,10 +884,10 @@ class RTMChat extends RTMRoom {
             public void onAnswer(Answer answer, int errorCode) {
                 RTMStruct.TranslatedInfo tm = new RTMStruct.TranslatedInfo();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    tm.source = answer.wantString("source");
-                    tm.target = answer.wantString("target");
-                    tm.sourceText = answer.wantString("sourceText");
-                    tm.targetText = answer.wantString("targetText");
+                    tm.source = rtmUtils.wantString(answer,"source");
+                    tm.target = rtmUtils.wantString(answer,"target");
+                    tm.sourceText = rtmUtils.wantString(answer,"sourceText");
+                    tm.targetText = rtmUtils.wantString(answer,"targetText");
                 }
                 callback.onResult(tm, genRTMAnswer(answer,errorCode));
             }
@@ -933,10 +933,10 @@ class RTMChat extends RTMRoom {
 
         RTMStruct.TranslatedInfo translatedMessage = new RTMStruct.TranslatedInfo();
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            translatedMessage.source = answer.wantString("source");
-            translatedMessage.target = answer.wantString("target");
-            translatedMessage.sourceText = answer.wantString("sourceText");
-            translatedMessage.targetText = answer.wantString("targetText");
+            translatedMessage.source = rtmUtils.wantString(answer,"source");
+            translatedMessage.target = rtmUtils.wantString(answer,"target");
+            translatedMessage.sourceText = rtmUtils.wantString(answer,"sourceText");
+            translatedMessage.targetText = rtmUtils.wantString(answer,"targetText");
         }
         translatedMessage.errorCode = result.errorCode;
         translatedMessage.errorMsg = result.errorMsg;
@@ -947,6 +947,7 @@ class RTMChat extends RTMRoom {
      *文本检测 sync(调用此接口需在管理系统启用文本审核系统）
      * @param text          需要检测的文本
      * @return              CheckResult结构
+     * 说明：如果返回的result=2，正常处理是：如果text不为空则可以直接发出(用返回的text)，否则拦截（可能是广告或者隐晦色情等等）
      */
     public RTMStruct.CheckResult textCheck(@NonNull String text){
         Quest quest = new Quest("tcheck");
@@ -956,13 +957,13 @@ class RTMChat extends RTMRoom {
         RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
         RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            checkResult.result = answer.wantInt("result");
+            checkResult.result = rtmUtils.wantInt(answer,"result");
             if (checkResult.result == 2){
                 List<Integer> tags = new ArrayList<>();
                 List<String> wlist = new ArrayList<>();
                 checkResult.text = answer.getString("text");
-                RTMUtils.getIntList(answer,"tags",tags);
-                RTMUtils.getStringList(answer,"wlist",wlist);
+                rtmUtils.getIntList(answer,"tags",tags);
+                rtmUtils.getStringList(answer,"wlist",wlist);
                 checkResult.tags = tags;
                 checkResult.wlist = wlist;
             }
@@ -990,8 +991,8 @@ class RTMChat extends RTMRoom {
                     List<Integer> tags = new ArrayList<>();
                     List<String> wlist = new ArrayList<>();
                     checkResult.text = answer.getString("text");
-                    RTMUtils.getIntList(answer,"tags",tags);
-                    RTMUtils.getStringList(answer,"wlist",wlist);
+                    rtmUtils.getIntList(answer,"tags",tags);
+                    rtmUtils.getStringList(answer,"wlist",wlist);
                     checkResult.tags = tags;
                     checkResult.wlist = wlist;
                 }
@@ -1087,10 +1088,10 @@ class RTMChat extends RTMRoom {
             public void onAnswer(Answer answer, int errorCode) {
                 RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
-                    checkResult.result = answer.wantInt("result");
+                    checkResult.result = rtmUtils.wantInt(answer,"result");
                     if (checkResult.result == 2){
                         List<Integer> tags = new ArrayList<>();
-                        RTMUtils.wantIntList(answer,"tags",tags);
+                        rtmUtils.wantIntList(answer,"tags",tags);
                         checkResult.tags = tags;
                     }
                 }
@@ -1135,10 +1136,10 @@ class RTMChat extends RTMRoom {
         RTMStruct.CheckResult checkResult = new RTMStruct.CheckResult();
         RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
-            checkResult.result = answer.wantInt("result");
+            checkResult.result = rtmUtils.wantInt(answer,"result");
             if (checkResult.result == 2){
                 List<Integer> tags = new ArrayList<>();
-                RTMUtils.wantIntList(answer,"tags",tags);
+                rtmUtils.wantIntList(answer,"tags",tags);
                 checkResult.tags = tags;
             }
         }

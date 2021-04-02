@@ -117,7 +117,7 @@ public class RTMStruct {
                 all.put("messageType", messageType);
                 all.put("messageId", messageId);
                 all.put("stringMessage", stringMessage);
-                all.put("binaryMessage", binaryMessage==null?0:binaryMessage.length);
+                all.put("binaryMessage", binaryMessage==null?"":binaryMessage.length);
                 all.put("attrs", attrs);
                 all.put("modifiedTime", modifiedTime);
 

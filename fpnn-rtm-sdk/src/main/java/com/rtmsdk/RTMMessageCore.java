@@ -36,7 +36,7 @@ class RTMMessageCore extends RTMCore {
                 toWhere = "to";
                 break;
         }
-        long messageId = RTMUtils.genMid();
+        long messageId = Genid.genMid();
 
         Quest quest = new Quest(method);
         quest.param(toWhere, id);
@@ -50,7 +50,7 @@ class RTMMessageCore extends RTMCore {
             return genModifyAnswer(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
         else if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value())
             return genModifyAnswer(answer);
-        return genModifyAnswer(answer,answer.wantLong("mtime"), messageId);
+        return genModifyAnswer(answer,rtmUtils.wantLong(answer,"mtime"), messageId);
     }
 
     private ModifyTimeStruct genModifyAnswer(int code){
@@ -95,7 +95,7 @@ class RTMMessageCore extends RTMCore {
                 toWhere = "to";
                 break;
         }
-        long mid = RTMUtils.genMid();
+        long mid = Genid.genMid();
         final Quest quest = new Quest(method);
         quest.param(toWhere, id);
         quest.param("mid", mid);
@@ -108,8 +108,8 @@ class RTMMessageCore extends RTMCore {
             public void onAnswer(Answer answer, int errorCode) {
                 long mtime = 0;
                 if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    mtime = answer.wantLong("mtime");
-                callback.onResult(mtime, quest.wantLong("mid"),genRTMAnswer(answer,errorCode));
+                    mtime = rtmUtils.wantLong(answer,"mtime");
+                callback.onResult(mtime, rtmUtils.wantLong(quest,"mid"),genRTMAnswer(answer,errorCode));
             }
         });
     }
@@ -128,10 +128,10 @@ class RTMMessageCore extends RTMCore {
         if (result.errorCode != RTMErrorCode.RTM_EC_OK.value())
             return result;
 
-        result.count = answer.wantInt("num");
-        result.lastId = answer.wantLong("lastid");
-        result.beginMsec = answer.wantLong("begin");
-        result.endMsec = answer.wantLong("end");
+        result.count = rtmUtils.wantInt(answer,"num");
+        result.lastId = rtmUtils.wantLong(answer,"lastid");
+        result.beginMsec = rtmUtils.wantLong(answer,"begin");
+        result.endMsec = rtmUtils.wantLong(answer,"end");
         result.messages = new ArrayList<>();
 
         ArrayList<List<Object>> messages = (ArrayList<List<Object>>) answer.want("msgs");
@@ -141,13 +141,13 @@ class RTMMessageCore extends RTMCore {
                 continue;
 
             RTMStruct.HistoryMessage tmp = new RTMStruct.HistoryMessage();
-            tmp.cursorId = RTMUtils.wantLong(value.get(0));
-            tmp.fromUid = RTMUtils.wantLong(value.get(1));
-            tmp.messageType = (byte)RTMUtils.wantInt(value.get(2));
-            tmp.messageId = RTMUtils.wantLong(value.get(3));
+            tmp.cursorId = rtmUtils.wantLong(value.get(0));
+            tmp.fromUid = rtmUtils.wantLong(value.get(1));
+            tmp.messageType = (byte)rtmUtils.wantInt(value.get(2));
+            tmp.messageId = rtmUtils.wantLong(value.get(3));
             Object obj = value.get(5);
             tmp.attrs = String.valueOf(value.get(6));
-            tmp.modifiedTime = RTMUtils.wantLong(value.get(7));
+            tmp.modifiedTime = rtmUtils.wantLong(value.get(7));
             try {
                 if (tmp.messageType >= MessageType.IMAGEFILE && tmp.messageType <= MessageType.NORMALFILE) {
                     String fileinfo = String.valueOf(obj);
@@ -287,10 +287,10 @@ class RTMMessageCore extends RTMCore {
             message.errorCode = answer.getErrorCode();
             message.errorMsg = answer.getErrorMessage();
             if (answer.getErrorCode() == ErrorCode.FPNN_EC_OK.value() && answer.getPayload().keySet().size()>0) {
-                message.cusorId = answer.wantLong("id");
-                message.messageType = (byte) answer.wantInt("mtype");
-                message.attrs = answer.wantString("attrs");
-                message.modifiedTime = answer.wantLong("mtime");
+                message.cusorId = rtmUtils.wantLong(answer,"id");
+                message.messageType = (byte) rtmUtils.wantInt(answer,"mtype");
+                message.attrs = rtmUtils.wantString(answer,"attrs");
+                message.modifiedTime = rtmUtils.wantLong(answer,"mtime");
                 Object obj = answer.want("msg");
                 if (message.messageType >= MessageType.IMAGEFILE && message.messageType <= MessageType.NORMALFILE) {
                     FileStruct fileInfo = new FileStruct();
