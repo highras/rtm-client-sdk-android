@@ -91,9 +91,9 @@ import com.rtmsdk.RTMAudio; //语音相关功能
     client.enableEncryptorByDerData(String curve, byte[] peerPublicKey);
     
     //-- sync
-    client.login(String token, String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
+    client.login(String token)
     //-- Async
-    client.login(loginCallback callback, String token = "", String lang = "", Map<String, String> attr = "", string addrestype = "ipv4")
+    client.login(loginCallback callback, String token)
     
     login成功后可以正常调用rtm相关接口
     client.sendChat/ client.sendMessage.....
