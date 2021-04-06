@@ -11,31 +11,6 @@
 - 支持fpnn ecc加密(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### 依赖集成
-1.  dependency in Gradle
-    - Add jcenter as your repository in project's build.gradle:
-    ~~~
-    allprojects {
-            repositories {
-                jcenter()
-            }
-        }
-    ~~~
-    - Add dependency in your module's build.gradle:
-    ~~~
-    dependencies {
-        api 'com.github.highras:rtm-android:2.4.0'
-    }
-    ~~~
-2. dependency in Maven
-    ~~~
-    <dependency>
-        <groupId>com.github.highras</groupId>
-        <artifactId>rtm-android</artifactId>
-        <version>2.4.0</version>
-        <type>pom</type>
-    </dependency>
-    ~~~
-
 
 
 ### 使用说明
