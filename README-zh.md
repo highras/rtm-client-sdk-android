@@ -11,10 +11,14 @@
 - 支持fpnn ecc加密(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### 依赖集成
-
 ### 使用说明
-- RTM通信需要网络权限，使用语音相关功能需要存储和录音权限
-- 请在子线程初始化RTMClient以及登录和任何发送操作
+- RTM需要的权限
+  ~~~
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    ~~~
 - RTM默认支持自动重连(请继承RTMPushProcessor类的reloginWillStart和reloginCompleted方法) 初始化需要传入applicationContext
 - 服务器push消息:请继承RTMPushProcessor类,重写自己需要的push系列函数(RTM的push回调函数和收发线程在一起 如果用户在push的回调函数中有耗时操作 建议请独开启线程处理)
 - RTM的各项服务配置和增值服务可以在后台配置，请登陆管理后台预览详细的配置参数
