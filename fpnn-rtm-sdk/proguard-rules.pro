@@ -19,9 +19,3 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
-#-keepattributes SourceFile,LineNumberTable
-#-keepclasseswithmembernames class * {
-#native <methods>;
-#}
-#-keep class !org.msgpack.core,** {*;}
-#-keep class !com.rtmsdk,** {*;}

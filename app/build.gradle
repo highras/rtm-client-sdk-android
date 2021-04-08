@@ -20,7 +20,7 @@ android {
 
     defaultConfig {
         applicationId "com.rtm.test"
-        minSdkVersion 19
+        minSdkVersion 16
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -44,9 +44,8 @@ android {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(include: ['*.jar','*.aar'], dir: 'libs')
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
-    api project(path: ':rtmsdk')
-//    implementation project(path: ':fpnnsdk')
+    implementation project(path: ':fpnn-rtm-sdk')
 }

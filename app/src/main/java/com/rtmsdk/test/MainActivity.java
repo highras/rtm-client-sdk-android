@@ -1,8 +1,9 @@
-package com.rtm.test;
+package com.rtmsdk.test;
 
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -15,10 +16,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.rtmsdk.RTMAudio;
-import com.rtmsdk.RTMClient;
-import com.rtmsdk.RTMStruct;
 import com.rtmsdk.TranscribeLang;
-import com.rtmsdk.UserInterface;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -27,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 public class MainActivity extends AppCompatActivity {
     private <T extends View> T $(int resId) {
@@ -39,20 +36,17 @@ public class MainActivity extends AppCompatActivity {
     int REQUEST_CODE_CONTACT = 101;
     File recordFile;
     //    RTMUtils.audioUtils1 audioManage = RTMUtils.audioUtils1.getInstance();
-    RTMAudio audioManage = new RTMAudio();
+    RTMAudio audioManage = RTMAudio.getInstance();
 
     TestClass ceshi;
-    final String[] buttonNames = {"chat", "message", "history", "friend", "group", "room", "file", "data", "system", "user", "stress"};
+    final String[] buttonNames = {"chat", "history", "friend", "group", "room", "file", "data", "system", "user"};
     Map<Integer, String> testButtons = new HashMap<Integer, String>();
 
-    public void testAduio(final byte[] audioData) {
+    public void testAduio() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if (audioData != null && ceshi != null)
-                    ceshi.startAudioTest(audioData);
-                else
-                    mylog.log("audioData is null");
+                    ceshi.startAudioTest();
             }
         }).start();
     }
@@ -63,11 +57,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     if (ceshi != null) {
-                        if (name == "stress")
-                            ;
-//                           ceshi.startStress();
-                        else
-                            ceshi.startCase(name);
+                        ceshi.startCase(name);
                     }
                     else{
                         mylog.log("ceshi is null");
@@ -94,50 +84,59 @@ public class MainActivity extends AppCompatActivity {
         return output.toByteArray();
     }
 
+    boolean controlBackgroudVoice(Context context, boolean pause) {
+        AudioManager am = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
+        if(pause){
+            int result = am.requestAudioFocus(null,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+            return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        }else{
+            int result = am.abandonAudioFocus(null);
+            return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        }
+    }
+
     class AudioButtonListener implements OnClickListener {
         @Override
         public void onClick(View v) {
             switch (v.getId()) {
                 case R.id.record:
+                    controlBackgroudVoice(getApplicationContext(),true);
                     timer.setBase(SystemClock.elapsedRealtime());//计时器清零
                     timer.start();
                     audioManage.startRecord();
+//                    TestClass.audioStruct = audioManage.stopRecord();
                     break;
                 case R.id.stopAudio:
+//                    controlBackgroudVoice(getApplicationContext(),false);
                     timer.stop();
-                    audioManage.stopRecord();
-//                    try {
-//                        testAduio(audioManage.genAudioData());
-//                    } catch (Exception e) {
-//                        mylog.log("hehe:" + e.getMessage());
-//                    }
+                    ceshi.audioStruct = audioManage.stopRecord();
+                    try {
+                        testAduio();
+                    } catch (Exception e) {
+                        mylog.log("hehe:" + e.getMessage());
+                    }
                     break;
                 case R.id.broadAudio:
                     timer.stop();
                     audioManage.stopRecord();
 //                    audioManage.broadRecoder(getResources().openRawResource(R.raw.demo));
 //                    audioManage.broadRecoder(toByteArray((getResources().openRawResource(R.raw.demo))));
-                    audioManage.broadAduio();
+                    audioManage.broadAudio();
                     break;
                 case R.id.stopBroad:
-                    audioManage.stopAduio();
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    mylog.log(Thread.currentThread().toString());
+                    timer.setBase(SystemClock.elapsedRealtime());//计时器清零
+                    timer.start();
+                    audioManage.startRecord();
+
+//                    audioManage.stopAudio();
                     break;
             }
-        }
-    }
-
-    class reloginStartFunc implements UserInterface.IReloginStart{
-        @Override
-        public boolean reloginWillStart(long uid, RTMStruct.RTMAnswer answer, int reloginCount) {
-            mylog.log("重连第 " + reloginCount + "次, 结果 :" + answer.getErrInfo() );
-            return true;
-        }
-    }
-
-    class reloginCompleteFunc implements UserInterface.IReloginCompleted{
-        @Override
-        public void reloginCompleted(long uid, boolean successfulm, RTMStruct.RTMAnswer answer, int reloginCount) {
-            mylog.log("重连结束 结果 " + answer.getErrInfo() + " 重连次数 "+ reloginCount);
         }
     }
 
@@ -187,39 +186,89 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void startTestCase(final long pid, final long uid, final String token, final String endpoint) {
-        ceshi = new TestClass(pid,uid,token,endpoint);
-        ceshi.client  = new RTMClient(endpoint, pid, uid, new RTMExampleQuestProcessor());
-        ceshi.client.setAutoConnect(this,new reloginStartFunc(), new reloginCompleteFunc());
 
-        //test for push another rtm-client//
-/*
-        ceshi.pushUserTokens = new HashMap<Long, String>() {
-            {
-                put(101L, "80E21F51FF13AABBCEE821096ED402E4");
+    void startTestCase() {
+        ceshi = new TestClass();
+        String audioPath = "/sdcard/rtmCache";
+        File audioFilePath = new File(audioPath);
+        if (!audioFilePath.exists()) {
+            boolean ret = audioFilePath.mkdir();
+            if (!ret) {
+                mylog.log("create dir " + audioPath + " error");
+                return;
+            }
+        }
+        File rtmaudiocache = new File(audioPath + "/audiocache");
+        File audioSave = new  File(audioPath + "/audiosave");
+        ceshi.audioSave = audioSave;
+
+        RTMAudio.IAudioAction jj = new RTMAudio.IAudioAction() {
+            @Override
+            public void startRecord() {
+
+            }
+
+            @Override
+            public void stopRecord() {
+
+            }
+
+            @Override
+            public void broadAudio() {
+
+            }
+
+            @Override
+            public void broadFinish() {
+
+            }
+
+            @Override
+            public void listenVolume(double db) {
+//                mylog.log("分贝值："+db);
             }
         };
-        for (final long testuid : ceshi.pushUserTokens.keySet()) {
-            RTMClient rtmUser = new RTMClient(endpoint, pid, testuid, new RTMExampleQuestProcessor());
-            rtmUser.setAutoConnect(this,new reloginStartFunc(), new reloginCompleteFunc());
-            ceshi.addClients(testuid, rtmUser);
-        }
-*/
 
-        RTMAudio.getInstance().init(getExternalCacheDir(), TranscribeLang.ZH_CN,null);
+        RTMAudio.getInstance().init(rtmaudiocache, TranscribeLang.EN_US.getName(),jj);
         byte[] audioData = null;
         try {
-            InputStream inputStream=getAssets().open("AudioDemo");
+//            InputStream inputStream=getAssets().open("audiocache");
+            InputStream inputStream=getAssets().open("audioDemo.amr");
+//            InputStream inputStream=getAssets().open("audiocache-en");
             FileOutputStream outfile = new FileOutputStream(RTMAudio.getInstance().getRecordFile());
             audioData = toByteArray(inputStream);
             outfile.write(audioData);
             outfile.close();
             inputStream.close();
             ceshi.audioFile = RTMAudio.getInstance().getRecordFile();
+            ceshi.rtmAudioData = audioData;
+//            RTMAudio.getInstance().broadAudio(audioData);
+
+            InputStream inputStream2=getAssets().open("videoDemo.mp4");
+            ceshi.videoData = toByteArray(inputStream2);
+
+
+            InputStream inputStream3=getAssets().open("taishan.wav");
+            ceshi.audioData = toByteArray(inputStream3);
+
+            InputStream inputStream4=getAssets().open("nihao.txt");
+            ceshi.fileData = toByteArray(inputStream4);
+
+
+//            InputStream inputStream1=getAssets().open("testpicc.jpeg");
+//            InputStream inputStream1=getAssets().open("testpic.jpeg");
+//            InputStream inputStream1=getAssets().open("ct4.jpeg");
+            InputStream inputStream1=getAssets().open("wendao.png");
+//            InputStream inputStream1=getAssets().open("testpic1.jpeg");
+//            InputStream inputStream1=getAssets().open("bizhi.jpeg");
+//            InputStream inputStream1=getAssets().open("testapk.apk");
+            byte[] picdata = toByteArray(inputStream1);
+            ceshi.piccontent = picdata;
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ceshi.loginRTM();
+        ceshi.loginRTM(getApplicationContext());
     }
 
     @Override
@@ -244,7 +293,6 @@ public class MainActivity extends AppCompatActivity {
 //        NetStateReceiver stateReceiver = new NetStateReceiver();
 //        this.registerReceiver(new netchange(),intentFilter);
 
-        audioManage.init(getExternalCacheDir(),TranscribeLang.EN_US, null);
         TestButtonListener testButtonListener = new TestButtonListener();
         AudioButtonListener audioButtonListener = new AudioButtonListener();
 
@@ -267,25 +315,15 @@ public class MainActivity extends AppCompatActivity {
         broadcast.setOnClickListener(audioButtonListener);
         stopBroad.setOnClickListener(audioButtonListener);
 
-
-        Properties properties = new Properties();
-        try {
-            InputStream in = this.getAssets().open("properties");
-            properties.load(in);
-            in.close();
-        } catch (IOException e) {
-            mylog.log("read properties file error");
-            return;
-        }
-        final long uid = Long.parseLong(properties.getProperty("uid"));
-        final String token = properties.getProperty("usertoken");
-        final String endpoint = properties.getProperty("endpoint");
-        final long pid = Long.parseLong(properties.getProperty("pid"));
         new Thread(new Runnable() {
             @Override
             public void run() {
-                startTestCase(pid, uid, token, endpoint);
+                startTestCase();
             }
         }).start();
+
+//        TestClass.mySleep(20);
+//        ceshi.client.closeRTM();
+//        ceshi.client = null;
     }
 }

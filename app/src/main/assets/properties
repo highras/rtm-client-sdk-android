@@ -1,14 +1,19 @@
-uid = 100
-usertoken = 4ED609739D6A57C330C782450BB5284E
 
 --测试环境--
-pid =  90000033
+pid =  11000002
 endpoint = 161.189.171.91:13325
+uid = 100
+usertoken = B6D772E8F4534BF095947CEDC1C033D7
 
 --宁夏--
 #endpoint = rtm-nx-front.ilivedata.com:13325
-#pid = 60000033
+#pid = 80000071
+#uid = 100
+#usertoken = FE24566671BBF5415C302057E3E4101C
+
 
 --国际环境--
-#pid =  11000002
+#pid =  11000001
 #endpoint = rtm-intl-frontgate.ilivedata.com:13325
+#uid = 100
+#usertoken = CEA30B1BCE3C2B6F01C93B62313855D1
