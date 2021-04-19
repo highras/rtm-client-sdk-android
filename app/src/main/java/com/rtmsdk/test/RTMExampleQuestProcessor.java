@@ -21,6 +21,7 @@ public class RTMExampleQuestProcessor extends RTMPushProcessor {
     AtomicInteger groupCmdCount = new AtomicInteger();
     AtomicInteger groupMessageCount = new AtomicInteger();
     AtomicInteger groupFileCount = new AtomicInteger();
+    AtomicInteger p2pChatCount = new AtomicInteger();
 
     public RTMExampleQuestProcessor(long uid) {
         interlock =  new Object();
@@ -83,11 +84,13 @@ public class RTMExampleQuestProcessor extends RTMPushProcessor {
     }
 
     public void pushChat(RTMMessage message) {
-            mylog.log("uid " + uid + " " + "receive  pushChat time " + System.currentTimeMillis()+ " info "+ message.getInfo());
+//            mylog.log("uid " + uid + " " + "receive  pushChat " + message.getInfo() + " " + p2pChatCount.incrementAndGet());
+            mylog.log("uid " + uid + " " + "receive  pushChat " + p2pChatCount.incrementAndGet());
     }
 
     public void pushGroupChat(RTMMessage message) {
-            mylog.log("uid " + uid + " " + "receive  pushGroupChat " + message.getInfo() + " " + groupChatCount.incrementAndGet());
+//            mylog.log("uid " + uid + " " + "receive  pushGroupChat " + message.getInfo() + " " + groupChatCount.incrementAndGet());
+            mylog.log("uid " + uid + " " + "receive  pushGroupChat " + groupChatCount.incrementAndGet());
 
     }
 
@@ -109,7 +112,7 @@ public class RTMExampleQuestProcessor extends RTMPushProcessor {
 
     public void pushCmd(RTMMessage message) {
         synchronized (interlock) {
-            mylog.log("uid " + uid + " " + "receive  pushCmd " + message.getInfo());
+            mylog.log("uid " + uid + " " + "receive  pushCmd " + message.getInfo() + " " + p2pChatCount.incrementAndGet());
         }
     }
 

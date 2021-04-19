@@ -52,11 +52,11 @@ public class RTMClient extends RTMChat {
     }
 
     public RTMStruct.RTMAnswer login(String token) {
-        return login(token, "", null,"ipv4");
+        return login(token, "", null);
     }
 
     public void login(IRTMEmptyCallback callback, String token) {
-        super.login(callback, token, "", "ipv4",null);
+        super.login(callback, token, "",null);
     }
 
     /**
@@ -66,7 +66,7 @@ public class RTMClient extends RTMChat {
      * @param attr      登陆附加信息
      */
     public RTMStruct.RTMAnswer login(String token, String lang, Map<String, String> attr) {
-        return super.login(token, lang, attr, "ipv4");
+        return super.login(token, lang, attr);
     }
 
     /**
@@ -77,6 +77,6 @@ public class RTMClient extends RTMChat {
      * @param attr      登陆附加信息
      */
     public void login(IRTMEmptyCallback callback,String token, String lang, Map<String, String> attr) {
-        super.login(callback, token, lang, "ipv4", attr);
+        super.login(callback, token, lang, attr);
     }
 }

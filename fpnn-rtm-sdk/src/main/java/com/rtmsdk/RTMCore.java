@@ -68,6 +68,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     private Context context;
     private byte[] encrptyData;
     private boolean autoConnect;
+    private boolean netchange;
 
     private Map<String, String>  loginAttrs;
     private ClientStatus status = ClientStatus.Closed;
@@ -533,8 +534,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
 //        isRelogin.set(true);
         int num = count;
         Map<String, String> kk = loginAttrs;
-        lastReloginAnswer = login(token, lang, kk,"ipv4");
-        if (serverPushProcessor.reloginWillStart(uid, lastReloginAnswer, num)) {
+        if (serverPushProcessor.reloginWillStart(uid, lastReloginAnswer,num)) {
+            lastReloginAnswer = login(token, lang, kk);
             if(lastReloginAnswer.errorCode == ErrorCode.FPNN_EC_OK.value() || lastReloginAnswer.errorCode == RTMErrorCode.RTM_EC_DUPLCATED_AUTH.value()) {
                 isRelogin.set(false);
                 serverPushProcessor.reloginCompleted(uid, true, lastReloginAnswer, num);
@@ -619,6 +620,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                     break;
             }
         }
+
         lastNetType = netWorkState;
     }
 
@@ -1038,10 +1040,10 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
 
 
     //-------------[ Auth(Login) processing functions ]--------------------------//
-    private void AsyncFetchRtmGateEndpoint(String addressType, FunctionalAnswerCallback callback, int timeout) {
+    private void AsyncFetchRtmGateEndpoint(FunctionalAnswerCallback callback, int timeout) {
         Quest quest = new Quest("which");
         quest.param("what", "rtmGated");
-        quest.param("addrType", addressType);
+        quest.param("addrType", "ipv4");
         quest.param("proto", "tcp");
 
         dispatch.sendQuest(quest, callback, timeout);
@@ -1150,7 +1152,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         }, 0);
     }
 
-    void login(final IRTMEmptyCallback callback, final String token, final String lang, final String addressType, final Map<String, String> attr) {
+    void login(final IRTMEmptyCallback callback, final String token, final String lang, final Map<String, String> attr) {
         if (token ==null){
             callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value()," token  is null"));
             return;
@@ -1195,7 +1197,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 rtmGate.close();
                 auth(callback, token, attr);
             } else {
-                AsyncFetchRtmGateEndpoint(addressType, new FunctionalAnswerCallback() {
+                AsyncFetchRtmGateEndpoint( new FunctionalAnswerCallback() {
                     @Override
                     public void onAnswer(Answer answer, int errorCode) {
                         if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
@@ -1235,7 +1237,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         }
     }
 
-    RTMAnswer login(String token, String lang, Map<String, String> attr, String addressType) {
+    RTMAnswer login(String token, String lang, Map<String, String> attr) {
         if (token == null)
             return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), " token  is null");
 
@@ -1265,7 +1267,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             }
             Quest quest = new Quest("which");
             quest.param("what", "rtmGated");
-            quest.param("addrType", addressType);
+            quest.param("addrType", "ipv4");
             quest.param("proto", "tcp");
             Answer answer = dispatch.sendQuest(quest,rtmConfig.globalQuestTimeoutSeconds);
             if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {

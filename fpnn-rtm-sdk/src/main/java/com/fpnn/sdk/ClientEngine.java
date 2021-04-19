@@ -21,6 +21,7 @@ public class ClientEngine {
     private static int questTimeout = 5;
     private static int maxThreadInTaskPool = 4;
     private static int maxPackageLength = 1024 * 1024 * 10;     //-- 10 MB
+
     private static ExecutorService threadPool = null;
 
     public static boolean isAutoStop() {

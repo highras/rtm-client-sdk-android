@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TestClass {
     public long peerUid = 101;
@@ -57,11 +58,15 @@ public class TestClass {
     public Map<Long, RTMClient> pushClients = new HashMap<>();
     public Map<Long, String> pushUserTokens;
     public File audioSave;
-
+    TestErrorRecorder mylogRecoder = new TestErrorRecorder();
+    TestErrorRecorder1 mylogRecoder1 = new TestErrorRecorder1();
     public long loginUid;
     public String loginToken;
+    public Context appContext;
     public String dispatchEndpoint = "161.189.171.91:13325";
-    public long pid = 11000002;
+//    public String dispatchEndpoint = "rtm-nx-front.ilivedata.com:13325";
+//    public long pid = 11000002;
+    public long pid = 90000033;
 
     public RTMClient client = null;
     Random rand = new Random();
@@ -123,9 +128,9 @@ public class TestClass {
 
 //        enterRoomSync(300);
 //        enterRoomSync(400);
-//        newInterface();
+        newInterface();
 //        syncChatTest();
-            asyncChatTest();
+//        asyncChatTest();
 
             //黑名单发送测试
 //        blackListSendTest();
@@ -223,7 +228,7 @@ public class TestClass {
         }
 
         void asyncChatTest() {
-//            client.sendRoomChat(new IRTMDoubleValueCallback<Long,Long>() {
+//            casyncChatlient.sendRoomChat(new IRTMDoubleValueCallback<Long,Long>() {
 //                @Override
 //                public void onResult(Long mtime, Long messageId, RTMAnswer answer) {
 //                    outPutMsg(answer, "sendRoomChat", roomBeizhu, mtime, messageId,false);
@@ -310,13 +315,44 @@ public class TestClass {
 
 //        String klk = null;
 //        mylog.log(klk.toString());
+            long startTime = System.currentTimeMillis();
+            long endTime = System.currentTimeMillis();
+            long sendcount =0;
+            final AtomicLong p2pcount = new AtomicLong(0);
+            final AtomicLong groupcount = new AtomicLong(0);
+            while ( sendcount< 30000){
+                client.sendChat(new IRTMDoubleValueCallback<Long,Long>() {
+                    @Override
+                    public void onResult(Long mtime, Long messageId, RTMAnswer answer) {
+                        if (answer.errorCode != 0)
+                            mylog.log("send chat failed " + answer.getErrInfo());
+                        else {
+                            mylog.log("send chat ok ");
+                            p2pcount.incrementAndGet();
+                        }
+//                        outPutMsg(answer, "sendchat", userBeizhu, mtime, messageId,false);
+                    }
+                }, peerUid, textMessage );
 
-            client.sendChat(new IRTMDoubleValueCallback<Long,Long>() {
-                @Override
-                public void onResult(Long mtime, Long messageId, RTMAnswer answer) {
-                    outPutMsg(answer, "sendchat", userBeizhu, mtime, messageId,false);
-                }
-            }, peerUid, textMessage);
+
+                client.sendGroupChat(new IRTMDoubleValueCallback<Long,Long>() {
+                    @Override
+                    public void onResult(Long mtime, Long messageId, RTMAnswer answer) {
+                        if (answer.errorCode != 0)
+                            mylog.log("send groupchat failed " + answer.getErrInfo());
+                        else {
+                            mylog.log("send groupchat ok ");
+                            groupcount.incrementAndGet();
+                        }
+                    }
+                }, groupId, textMessage);
+//                mySleep1(5);
+                sendcount++;
+            }
+            mySleep(2);
+            mylog.log("send p2pchat  " + p2pcount.get());
+            mylog.log("send groupchat " + groupcount.get());
+
 
 
 //            client.sendCmd(new IRTMDoubleValueCallback<Long,Long>() {
@@ -464,7 +500,9 @@ public class TestClass {
         }
 
         void newInterface(){
+            client.bye();
             client.closeRTM();
+            loginRTM1();
 //        CheckResult pp1 = client.textCheck("System Notification");
 //        mylog.log("textCheck sync result is " + pp1.result);
 //
@@ -2139,26 +2177,27 @@ public class TestClass {
     }
 
     public void loginRTM(Context context) {
-        TestErrorRecorder mylogRecoder = new TestErrorRecorder();
-        TestErrorRecorder1 mylogRecoder1 = new TestErrorRecorder1();
+        appContext = context;
         loginUid = getuid();
-//        loginUid = 101;
-//        loginToken = "72E413B54F1DCF619C6D168DD0A61B3C";
         loginToken = getToken(loginUid);
+        loginUid = 100;
+        loginToken = "80A905645083C5A5864AC0B51FAA604A";
+//        loginUid = 101;
+//        loginToken = "648606B9B32804704791AE1FEF69783A";
         client  = new RTMClient(dispatchEndpoint, pid, loginUid, new RTMExampleQuestProcessor(loginUid),context);
         client.setErrorRecoder(mylogRecoder);
 
-        for(int i= 0;i<1;i++) {
-            peerUid = getuid();
-            userBeizhu = " to user " + peerUid;
-
-            pushUserTokens.put(peerUid,getToken(peerUid));
-            RTMClient rtmUser = new RTMClient(dispatchEndpoint, pid, peerUid, new RTMExampleQuestProcessor(peerUid),context);
-            rtmUser.setErrorRecoder(mylogRecoder1);
-
-            rtmUser.setErrorRecoder(mylogRecoder1);
-            pushClients.put(peerUid, rtmUser);
-        }
+//        for(int i= 0;i<1;i++) {
+//            peerUid = getuid();
+//            userBeizhu = " to user " + peerUid;
+//
+//            pushUserTokens.put(peerUid,getToken(peerUid));
+//            RTMClient rtmUser = new RTMClient(dispatchEndpoint, pid, peerUid, new RTMExampleQuestProcessor(peerUid),context);
+//            rtmUser.setErrorRecoder(mylogRecoder1);
+//
+//            rtmUser.setErrorRecoder(mylogRecoder1);
+//            pushClients.put(peerUid, rtmUser);
+//        }
 
 
         RTMAnswer answer = client.login(loginToken);
@@ -2246,6 +2285,19 @@ public class TestClass {
         }
     }
 
+    public void loginRTM1() {
+        client  = new RTMClient(dispatchEndpoint, pid, loginUid, new RTMExampleQuestProcessor1(),appContext);
+        client.setErrorRecoder(mylogRecoder1);
+
+
+        RTMAnswer answer = client.login(loginToken);
+
+        if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+            mylog.log("user " + loginUid + " login RTM success");
+        else
+            mylog.log("user " + loginUid + " login RTM error:" + answer.getErrInfo());
+    }
+
     public byte[] fileToByteArray(File file) {
         byte[] data;
         try {
@@ -2285,6 +2337,7 @@ public class TestClass {
 
     public  String getToken(long uid) {
         TCPClient kk = TCPClient.create("161.189.171.91:13777",true);
+        kk.setErrorRecorder(mylogRecoder);
         Quest ll = new Quest("getUserToken");
         String gettoken = "";
         ll.param("pid",pid);
@@ -2302,6 +2355,7 @@ public class TestClass {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        kk.close();
         return gettoken;
     }
 

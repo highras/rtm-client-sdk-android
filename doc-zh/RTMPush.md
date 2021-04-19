@@ -9,7 +9,7 @@
     
         /**
          * RTM重连开始接口 每次重连都会判断reloginWillStart返回值 若返回false则中断重连
-         * 参数说明 uid-用户id  answer-本次重连的结果  reloginCount-重连次数
+         * 参数说明 uid-用户id  answer-上次重连的结果  reloginCount-将要重连的次数
          * 备注:需要用户设定一些条件 比如重连间隔 最大重连次数
          */
         public boolean reloginWillStart(long uid, RTMStruct.RTMAnswer answer, int reloginCount){return true;};
