@@ -11,8 +11,7 @@
 - 支持fpnn ecc加密(secp192r1,secp224r1,secp256r1,secp256r1)
 
 ### 依赖集成
- dependency in Gradle
-    - Add maventral as your repository in project's build.gradle:
+- Add maventral as your repository in project's build.gradle:
     ~~~
     allprojects {
             repositories {
@@ -20,11 +19,12 @@
             }
         }
     ~~~
-    - Add dependency in your module's build.gradle:
+- Add dependency in your module's build.gradle:
     ~~~
     dependencies {
         implementation 'com.github.highras:rtm-android:2.4.3'
     }
+    ~~~
 ### 使用说明
 - RTM需要的权限
   ~~~
