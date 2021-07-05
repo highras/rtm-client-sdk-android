@@ -35,8 +35,12 @@ public class TCPClient {
 
     private KeyGenerator keyGenerator;
 
-    private ErrorRecorder errorRecorder;
+    private ErrorRecorder errorRecorder = new ErrorRecorder();
 
+
+    public InetSocketAddress getAddres(){
+        return peerAddress;
+    }
 
     public void setErrorRecorder(ErrorRecorder recorder)
     {
@@ -80,6 +84,17 @@ public class TCPClient {
     }
 
     public static TCPClient create(String endpoint, boolean autoConnect) throws IllegalArgumentException {
+//        String host = "";
+//        int  port = 0;
+//        int index = endpoint.lastIndexOf(":");
+//        if (index > 0){
+//            host = endpoint.substring(0,index);
+//            port = Integer.parseInt(endpoint.substring(index + 1));
+//        }
+//        if (port <= 0 || port > 65535)
+//            throw new IllegalArgumentException("Port in endpoint is invalid.");
+//        return new TCPClient(host, port, autoConnect);
+
         String[] endpointInfo = endpoint.split(":");
         if (endpointInfo.length != 2)
             throw new IllegalArgumentException("Endpoint " + endpoint + " is invalid format.");
@@ -195,6 +210,7 @@ public class TCPClient {
     public void sendQuest(Quest quest, AnswerCallback callback, int timeoutInSeconds) {
         TCPConnection conn = null;
         boolean needConnect = false;
+        StringBuilder msg = new StringBuilder("");
 
         synchronized (interLocker) {
             if (status == ClientStatus.Closed) {
@@ -211,8 +227,9 @@ public class TCPClient {
 
         if (needConnect) {
             try {
-                needConnect = !connect(false);
+                needConnect = !connect(false,msg);
             } catch (InterruptedException e) {
+                msg.append( "Reconnect for send quest action failed. Peer: " + peerAddress.toString() + e.getMessage());
                 errorRecorder.recordError("Reconnect for send quest action failed. Peer: " + peerAddress.toString(), e);
             }
         }
@@ -226,8 +243,15 @@ public class TCPClient {
 
         if (conn != null)
             conn.sendQuest(quest, callback, (timeoutInSeconds != 0) ? timeoutInSeconds : questTimeout);
-        else
-            TCPConnection.runCallback(callback, ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
+        else {
+            if (!msg.toString().isEmpty()){
+                Answer retanswer = new Answer(new Quest("test"));
+                retanswer.fillErrorInfo(ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value(),msg.toString());
+                TCPConnection.runCallback(callback, retanswer);
+            }
+            else
+                TCPConnection.runCallback(callback, ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION.value());
+        }
     }
 
     public void sendQuest(Quest quest, FunctionalAnswerCallback callback) {
@@ -369,6 +393,9 @@ public class TCPClient {
     }
 
     public boolean connect(boolean synchronous) throws InterruptedException {
+        return connect(synchronous, null);
+    }
+        public boolean connect(boolean synchronous, StringBuilder msg) throws InterruptedException {
 
         ClientEngine.startEngine();
 
@@ -381,6 +408,9 @@ public class TCPClient {
                 try {
                     encKit = keyGenerator.gen();
                 } catch (GeneralSecurityException e) {
+                    if (msg != null){
+                        msg.append("Init encryption modules failed." + e.getMessage()) ;
+                    }
                     errorRecorder.recordError("Init encryption modules failed.", e);
                     return false;
                 }
@@ -408,6 +438,9 @@ public class TCPClient {
                     connStatus = connection.connect();
                 } catch (Exception e) {
                     connStatus = false;
+                    if (msg != null){
+                        msg.append(String.format("Connection open channel failed. Peer:  exception: %s", e));
+                    }
                     errorRecorder.recordError("Connection open channel failed. Peer: " + peerAddress.toString(), e);
                 }
 

@@ -12,7 +12,12 @@ public class SyncAnswerCallback extends AnswerCallback {
             notifyAll();
         }
     }
+
     public void onException(Answer answer, int errorCode) {
+        onException(answer, errorCode, "");
+    }
+
+    public void onException(Answer answer, int errorCode, String msg) {
 
         if (answer == null) {
             answer = new Answer(getSeqNum());

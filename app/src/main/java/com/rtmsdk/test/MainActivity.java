@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.Chronometer;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,8 +32,9 @@ public class MainActivity extends AppCompatActivity {
         return (T) super.findViewById(resId);
     }
 
+    public static TextView  hehe;
     Chronometer timer;
-    Context mycontext = this;
+//    Context mycontext = this;
     int REQUEST_CODE_CONTACT = 101;
     File recordFile;
     //    RTMUtils.audioUtils1 audioManage = RTMUtils.audioUtils1.getInstance();
@@ -269,12 +271,26 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         ceshi.loginRTM(getApplicationContext());
+
+
+//        for(int i = 0; i<100; i ++){
+//            ceshi.exist();
+//            TestClass.mySleep(5);
+//            ceshi.loginRTM(getApplicationContext());
+//        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        try {
+            hehe = $(R.id.hehe);
+
+        }
+        catch (Exception e){
+            mylog.log("11111 " + e.getMessage());
+        }
 
         if (Build.VERSION.SDK_INT >= 23) {
             String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.READ_EXTERNAL_STORAGE};

@@ -168,44 +168,57 @@
 
 
     /**
-     *获取p2p未读条目数(sync)
+     *获取p2p未读条目数(async)
      * @param uids      用户id集合(建议通过getSession接口获取)
-     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
-     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天和文件相关消息类型，不包含自定义的type)
      *return        UnreadNum结构
      */
     public UnreadNum getP2PUnread(HashSet<Long> uids, long lastMessageTime, HashSet<Integer> messageTypes)
     
     
-      /**
+         /**
      *获取群组未读条目数(sync)
      * @param gids      群组id集合(建议通过getSession接口获取)
-     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
-     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天和文件相关消息类型，不包含自定义的type)
      *  return UnreadNum结构
      */
     public UnreadNum getGroupUnread(HashSet<Long> gids, long lastMessageTime, HashSet<Integer> messageTypes)
     
     
-    /**
+         /**
      *获取p2p未读条目数(async)
-     * @param callback   IRTMCallback<Map<String, Integer>> 用户id，未读消息条目数
+     * @param callback   IRTMCallback<UnreadNum> 用户id，未读消息条目数
      * @param uids      用户id集合(建议通过getSession接口获取)
-     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
-     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，只要是设置为保存的消息，均可获取未读)
      */
     public void getP2PUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids,long lastMessageTime, HashSet<Integer> messageTypes) 
     
     
-     /**
+         /**
      *获取群组未读条目数(async)
-     * @param callback   IRTMCallback<Map<String, Integer>> 群组id，未读消息条目数
+     * @param callback   IRTMCallback<UnreadNum> 群组id，未读消息条目数
      * @param gids      群组id集合(建议通过getSession接口获取)
-     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间)
-     * @param messageTypes  消息类型集合(如果不传默认所有聊天相关消息类型，不包含自定义的type)
-     */
+     * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
+     * @para
     public void getGroupUnread(@NonNull final IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids,long lastMessageTime, HashSet<Integer> messageTypes) 
     
+    /**
+     * 获取群组用户   sync
+     * @param groupId   群组id
+     * return  GroupCount
+     * */
+    public GroupCount getGroupCount(long groupId);
+
+    /**
+     * 获取群组人数   async
+     * @param callback  IRTMCallback回调
+     * @param groupId   群组id
+     * */
+    public void getGroupCount(@NonNull final IRTMCallback<GroupCount> callback, long groupId) ;
+
     
     /**
      *获取服务器未读消息(async)

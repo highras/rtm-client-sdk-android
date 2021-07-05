@@ -29,9 +29,9 @@ public class RTMUtils {
 //        return System.currentTimeMillis() / 1000;
 //    }
 //
-//    long getCurrentMilliseconds() {
-//        return System.currentTimeMillis();
-//    }
+    long getCurrentMilliseconds() {
+        return System.currentTimeMillis();
+    }
 
     Map<String, String>  wantStringMap(Message message,String key) {
         Map<String, String> map = new HashMap<>();

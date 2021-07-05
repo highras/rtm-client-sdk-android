@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.provider.Settings;
 
 import com.fpnn.sdk.*;
@@ -56,7 +57,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             }
         }
     }
-    /**for network change**/
+    /**or network change**/
 
     //-------------[ Fields ]--------------------------//
     private final Object interLocker =  new Object();
@@ -69,6 +70,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     private byte[] encrptyData;
     private boolean autoConnect;
     private boolean netchange;
+    private String endpoint;
 
     private Map<String, String>  loginAttrs;
     private ClientStatus status = ClientStatus.Closed;
@@ -80,7 +82,6 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     private Thread checkThread;
     private RTMQuestProcessor processor;
     ErrorRecorder errorRecorder = new ErrorRecorder();
-    private TCPClient dispatch;
     private TCPClient rtmGate;
     private Map<String, Map<TCPClient, Long>> fileGates;
     private AtomicLong connectionId = new AtomicLong(0);
@@ -648,6 +649,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             errorRecorder.recordError("rtmclient init error." + errDesc);
             return;
         }
+        this.endpoint = endpoint;
 
         this.pid = pid;
         this.uid = uid;
@@ -659,9 +661,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         ClientEngine.setMaxThreadInTaskPool(rtmConfig.globalMaxThread);
 
         try {
-            dispatch = TCPClient.create(endpoint, true);
             if (autoConnect) {
-                if (applicationContext == null){
+                if (applicationContext == null) {
                     errorRecorder.recordError("applicationContext is null ");
                     return;
                 }
@@ -672,11 +673,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             }
         }
         catch (Exception ex){
-            errorRecorder.recordError("RTMInit error ",ex);
-            return;
+            errorRecorder.recordError("registerReceiver exception:" + ex.getMessage());
         }
-        dispatch.setQuestTimeout(rtmConfig.globalQuestTimeoutSeconds);
-        dispatch.setErrorRecorder(errorRecorder);
     }
 
     public void setErrorRecoder(com.fpnn.sdk.ErrorRecorder value){
@@ -794,7 +792,7 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         try {
             answer = client.sendQuest(quest, timeout);
         } catch (Exception e) {
-            errorRecorder.recordError("sendQuest error " + e);
+            errorRecorder.recordError("sendQuest eror " + e);
             answer = new Answer(quest);
             answer.fillErrorInfo(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),e.getMessage());
             Thread.currentThread().interrupt();
@@ -1038,52 +1036,27 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         });
     }
 
-
-    //-------------[ Auth(Login) processing functions ]--------------------------//
-    private void AsyncFetchRtmGateEndpoint(FunctionalAnswerCallback callback, int timeout) {
-        Quest quest = new Quest("which");
-        quest.param("what", "rtmGated");
-        quest.param("addrType", "ipv4");
-        quest.param("proto", "tcp");
-
-        dispatch.sendQuest(quest, callback, timeout);
-    }
-
     private RTMAnswer auth(String token, Map<String, String> attr) {
-        return auth(token, attr, false);
-    }
-
-    private RTMAnswer auth(String token, Map<String, String> attr, boolean retry) {
+        String deviceid = Build.BRAND + "-" + Build.MODEL;
         Quest qt = new Quest("auth");
         qt.param("pid", pid);
         qt.param("uid", uid);
         qt.param("token", token);
         qt.param("lang", lang);
         qt.param("version", "Android-" + rtmConfig.SDKVersion);
+        qt.param("device", deviceid);
 
         if (attr != null)
             qt.param("attrs", attr);
         try {
-            Answer answer = rtmGate.sendQuest(qt,rtmConfig.globalQuestTimeoutSeconds);
-
-            if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
+            Answer answer = rtmGate.sendQuest(qt);
+            if (answer  == null || answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
                 closeStatus();
-                return genRTMAnswer(answer,"when send auth");
+                return genRTMAnswer(answer,"when send auth original endpoint:" + endpoint);
             }
             else if (!rtmUtils.wantBoolean(answer,"ok")) {
-                if (retry) {
-                    closeStatus();
-                    return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"retry auth failed");
-                }
-                String endpoint = answer.getString("gate");
-                if (endpoint.equals("")) {
-                    closeStatus();
-                    return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"auth failed token maybe expired");
-                } else {
-                    rtmGate = TCPClient.create(endpoint);
-                    rtmGate.setErrorRecorder(errorRecorder);
-                    return auth(token, attr, true);
-                }
+                closeStatus();
+                return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(),"auth failed token maybe expired");
             }
             synchronized (interLocker) {
                 status = ClientStatus.Connected;
@@ -1099,16 +1072,14 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
         }
     }
 
-    private void auth(UserInterface.IRTMEmptyCallback callback, String token, Map<String, String> attr) {
-        auth(callback, token, attr, false);
-    }
-
-    private void auth(final IRTMEmptyCallback callback, final String token, final Map<String, String> attr, final boolean retry) {
+    private void auth(final IRTMEmptyCallback callback, final String token, final Map<String, String> attr) {
+        String deviceid = Build.BRAND + "-" + Build.MODEL;
         Quest qt = new Quest("auth");
         qt.param("pid", pid);
         qt.param("uid", uid);
         qt.param("token", token);
         qt.param("lang", lang);
+        qt.param("device", deviceid);
         qt.param("version", "Android-" + rtmConfig.SDKVersion);
         if (attr != null)
             qt.param("attrs", attr);
@@ -1119,22 +1090,13 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 try {
                     if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
                         closeStatus();
-                        callback.onResult(genRTMAnswer(answer, errorCode));
+                        if (answer == null)
+                            callback.onResult(genRTMAnswer( errorCode, "when send auth to rtmgate orgnall endpoint:" + endpoint));
+                        else
+                            callback.onResult(genRTMAnswer( errorCode, "when send auth to rtmgate " + answer.getErrorMessage() +  " orgnall endpoint:" + endpoint));
                     } else if (!rtmUtils.wantBoolean(answer,"ok")) {
-                        if (retry) {
-                            closeStatus();
-                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "retry failed auth failed token maybe expired"));
-                        } else {
-                            String endpoint = answer.getString("gate");
-                            if (endpoint.equals("")) {
-                                closeStatus();
-                                callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "auth failed token maybe expired"));
-                            } else {
-                                rtmGate = TCPClient.create(endpoint);
-                                rtmGate.setErrorRecorder(errorRecorder);
-                                auth(callback, token, attr, true);
-                            }
-                        }
+                        closeStatus();
+                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "auth failed token maybe expired"));
                     } else {
                         synchronized (interLocker) {
                             status = ClientStatus.Connected;
@@ -1146,45 +1108,55 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                     }
                 }
                 catch (Exception e){
-                    callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),e.getMessage()));
+                    callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),"when auth " + e.getMessage()));
                 }
             }
         }, 0);
     }
 
     void login(final IRTMEmptyCallback callback, final String token, final String lang, final Map<String, String> attr) {
-        if (token ==null){
-            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value()," token  is null"));
+        if (token ==null || token.isEmpty()){
+            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value()," token  is null or empty"));
             return;
         }
 
-        try {
-            synchronized (interLocker) {
-                if (status == ClientStatus.Connected || status == ClientStatus.Connecting) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_OK.value()));
-                        }
-                    }).start();
-                    return;
-                }
-                status = ClientStatus.Connecting;
-            }
+        if (endpoint == null || endpoint.isEmpty()){
+            callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value()," endpoint  is null or empty"));
+            return;
+        }
 
-
-            if (dispatch == null) {
-                closeStatus();
+        synchronized (interLocker) {
+            if (status == ClientStatus.Connected || status == ClientStatus.Connecting) {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), "rtmclient not init success"));
+                        callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_OK.value()));
                     }
                 }).start();
                 return;
             }
+            status = ClientStatus.Connecting;
+        }
 
-
+        if (rtmGate != null) {
+            rtmGate.close();
+            auth(callback, token, attr);
+        } else {
+            try {
+                rtmGate = TCPClient.create(endpoint);
+                rtmGate.setErrorRecorder(errorRecorder);
+            }
+            catch (IllegalArgumentException ex){
+                callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),"create rtmgate error endpoint Illegal:" +ex.getMessage() + " :" +  endpoint ));
+                return;
+            }
+            catch (Exception e){
+                String msg = "create rtmgate error orginal error:" + e.getMessage() + " endpoint: " + endpoint;
+                if (rtmGate != null)
+                    msg = msg + " parse endpoint " + rtmGate.endpoint();
+                callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),msg ));
+                return;
+            }
             this.token = token;
             if (lang == null)
                 this.lang = "";
@@ -1192,42 +1164,9 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
                 this.lang = lang;
             this.loginAttrs = attr;
             closedCase = CloseType.None;
-
-            if (rtmGate != null) {
-                rtmGate.close();
-                auth(callback, token, attr);
-            } else {
-                AsyncFetchRtmGateEndpoint( new FunctionalAnswerCallback() {
-                    @Override
-                    public void onAnswer(Answer answer, int errorCode) {
-                        if (errorCode != ErrorCode.FPNN_EC_OK.value()) {
-                            closeStatus();
-                            callback.onResult(genRTMAnswer(errorCode));
-                        }
-                        else {
-                            String endpoint = answer.getString("endpoint");
-                            if (endpoint.equals("")) {
-                                closeStatus();
-                                callback.onResult(genRTMAnswer(errorCode));
-                            } else {
-                                dispatch.close();
-                                rtmGate = TCPClient.create(endpoint);
-                                rtmGate.setErrorRecorder(errorRecorder);
-                                ConfigRtmGateClient(rtmGate);
-                                auth(callback, token, attr);
-                            }
-                        }
-                    }
-                }, rtmConfig.globalQuestTimeoutSeconds);
-            }
+            ConfigRtmGateClient(rtmGate);
+            auth(callback, token, attr);
         }
-        catch (final Exception ex){
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    callback.onResult(genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), "rtm login error " + ex.getMessage()));
-                }
-            }).start();        }
     }
 
     private  void closeStatus()
@@ -1238,10 +1177,38 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
     }
 
     RTMAnswer login(String token, String lang, Map<String, String> attr) {
-        if (token == null)
-            return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(), " token  is null");
+        if (token == null || token.isEmpty())
+            return genRTMAnswer(RTMErrorCode.RTM_EC_INVALID_AUTH_TOEKN.value(), "login failed token  is null or empty");
 
-        try {
+        if (endpoint == null || endpoint.isEmpty()){
+            return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value()," endpoint  is null or empty");
+        }
+
+
+        synchronized (interLocker) {
+            if (status == ClientStatus.Connected || status == ClientStatus.Connecting)
+                return genRTMAnswer(ErrorCode.FPNN_EC_OK.value());
+
+            status = ClientStatus.Connecting;
+        }
+
+        if (rtmGate != null) {
+            rtmGate.close();
+            return auth(token, attr);
+        } else {
+            try {
+                rtmGate = TCPClient.create(endpoint);
+                rtmGate.setErrorRecorder(errorRecorder);
+            }
+            catch (IllegalArgumentException ex){
+                return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),"create rtmgate error endpoint Illegal:" +ex.getMessage() + " :" +  endpoint );
+            }
+            catch (Exception e){
+                String msg = "create rtmgate error orginal error:" + e.getMessage() + " endpoint: " + endpoint;
+                if (rtmGate != null)
+                    msg = msg + " parse endpoint " + rtmGate.endpoint();
+                return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),msg );
+            }
             if (lang == null)
                 this.lang = "";
             else
@@ -1249,46 +1216,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             this.token =  token;
             this.loginAttrs = attr;
             closedCase = CloseType.None;
-
-            synchronized (interLocker) {
-                if (status == ClientStatus.Connected || status == ClientStatus.Connecting)
-                    return genRTMAnswer(ErrorCode.FPNN_EC_OK.value());
-
-                status = ClientStatus.Connecting;
-            }
-
-            if (rtmGate != null){
-                rtmGate.close();
-                return auth(token, attr);
-            }
-            if (dispatch == null){
-                closeStatus();
-                return  genRTMAnswer(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value(),"rtmclient not init success");
-            }
-            Quest quest = new Quest("which");
-            quest.param("what", "rtmGated");
-            quest.param("addrType", "ipv4");
-            quest.param("proto", "tcp");
-            Answer answer = dispatch.sendQuest(quest,rtmConfig.globalQuestTimeoutSeconds);
-            if (answer.getErrorCode() != ErrorCode.FPNN_EC_OK.value()) {
-                closeStatus();
-                return genRTMAnswer(answer,"when get rtmgate send which to dispatch");
-            }
-
-            String endpoint = answer.getString("endpoint");
-            if (endpoint.equals("")) {
-                closeStatus();
-                return genRTMAnswer(RTMErrorCode.RTM_EC_UNKNOWN_ERROR.value(),"rtmgate not get");
-                //返回错误码
-            }
-            rtmGate = TCPClient.create(endpoint);
-            rtmGate.setErrorRecorder(errorRecorder);
-            dispatch.close();
             ConfigRtmGateClient(rtmGate);
             return auth(token, attr);
-        } catch (Exception e) {
-            closeStatus();
-            return  genRTMAnswer(ErrorCode.FPNN_EC_CORE_UNKNOWN_ERROR.value(),e.getMessage());
         }
     }
 
@@ -1297,8 +1226,8 @@ class RTMCore  extends BroadcastReceiver implements INetEvent{
             initCheckThread.set(false);
             running.set(false);
             fileGates.clear();
-            if (status == ClientStatus.Closed)
-                return;
+//            if (status == ClientStatus.Closed)
+//                return;
             status = ClientStatus.Closed;
         }
         if (rtmGate !=null)

@@ -54,6 +54,11 @@ class TCPConnection {
     private KeyGenerator.EncryptionKit encryptionKit;
     ErrorRecorder errorRecorder;
 
+
+    public  InetSocketAddress getAddress(){
+        return peerAddress;
+    }
+
     public void setErrorRecorder(ErrorRecorder recorder)
     {
         if (recorder == null){
@@ -160,7 +165,7 @@ class TCPConnection {
                 });
     }
 
-    private static void runCallback(final AnswerCallback callback, final Answer answer) {
+     static void runCallback(final AnswerCallback callback, final Answer answer) {
         ClientEngine.getThreadPool().execute(
                 new Runnable() {
                     @Override

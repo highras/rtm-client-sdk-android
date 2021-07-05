@@ -22,6 +22,17 @@ public class RTMStruct {
         Mail
     }
 
+    public static class MembersStruct extends RTMAnswer{
+        public  HashSet<Long> uids = new HashSet<>(); //用户列表
+        public  HashSet<Long> onlineUids = new HashSet<>(); //在线用户列表
+    }
+
+
+    public static class GroupCount extends RTMAnswer{
+        public int totalCount; //总人数
+        public int onlineCount; //在线人数
+    }
+
     //敏感词过滤类型
     public enum ProfanityType {
         Off, //不进行敏感词过滤
@@ -70,7 +81,8 @@ public class RTMStruct {
     //未读消息条目数结构
     public static class UnreadNum extends RTMAnswer
     {
-        public HashMap<String, Integer> unreadInfo; //uid/groupid集合
+        public HashMap<String, Integer> unreadInfo; //key-uid/groupid value-unreadnumber
+        public HashMap<String, Integer> latestTime; //每个session的的最新一条消息时间
     }
 
 
@@ -232,10 +244,6 @@ public class RTMStruct {
         public long beginMsec; //开始时间戳(毫秒)
         public long endMsec;    //结束时间戳(毫秒)
         public List<HistoryMessage> messages; //历史消息详细信息结构集合
-    }
-
-    public static class MembersStruct extends RTMAnswer{
-        public  HashSet<Long> uids = new HashSet<>();
     }
 
     public static class DataInfo extends RTMAnswer{

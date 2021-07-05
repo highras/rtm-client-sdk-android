@@ -68,21 +68,71 @@ class RTMGroup extends RTMFile {
     }
 
     /**
-     * 获取群组用户   async
+     * 获取群组用户   sync
+     * @param groupId   群组id
+     * return  GroupCount
+     * */
+    public GroupCount getGroupCount(long groupId){
+        Quest quest = new Quest("getgroupcount");
+        quest.param("gid", groupId);
+        quest.param("online", true);
+
+        Answer answer = sendQuest(quest);
+        RTMAnswer result = genRTMAnswer(answer);
+        GroupCount ret = new GroupCount();
+        ret.errorCode = result.errorCode;
+        ret.errorMsg = result.errorMsg;
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            ret.totalCount = rtmUtils.wantInt( answer,"cn");
+            ret.onlineCount = rtmUtils.wantInt( answer,"online");
+        }
+        return ret;
+    }
+
+
+    /**
+     * 获取群组人数   async
      * @param callback  IRTMCallback回调
      * @param groupId   群组id
      * */
-    public void getGroupMembers(@NonNull final IRTMCallback<HashSet<Long>> callback, long groupId) {
-        Quest quest = new Quest("getgroupmembers");
+    public void getGroupCount(@NonNull final IRTMCallback<GroupCount> callback, long groupId) {
+        Quest quest = new Quest("getgroupcount");
         quest.param("gid", groupId);
+        quest.param("online", true);
 
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashSet<Long> uids = new HashSet<>();
-                if (errorCode == ErrorCode.FPNN_EC_OK.value())
-                    uids  = rtmUtils.wantLongHashSet(answer,"uids");
-                callback.onResult(uids, genRTMAnswer(answer,errorCode));
+                GroupCount retgroup = new GroupCount();
+                int totalCount = 0,  onlineCount = 0;
+                if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    retgroup.totalCount = rtmUtils.wantInt( answer,"cn");
+                    retgroup.onlineCount = rtmUtils.wantInt( answer,"online");
+                }
+                callback.onResult(retgroup,genRTMAnswer(answer,errorCode));
+            }
+        });
+    }
+
+    /**
+     * 获取群组用户   async
+     * @param callback  IRTMCallback回调
+     * @param groupId   群组id
+     * */
+    public void getGroupMembers(@NonNull final IRTMCallback<MembersStruct> callback, long groupId) {
+        Quest quest = new Quest("getgroupmembers");
+        quest.param("gid", groupId);
+        quest.param("online", true);
+
+        sendQuest(quest, new FunctionalAnswerCallback() {
+            @Override
+            public void onAnswer(Answer answer, int errorCode) {
+                MembersStruct retmap = new MembersStruct();
+                if (errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+                    retmap.uids = rtmUtils.wantLongHashSet(answer, "uids");
+                    retmap.onlineUids = rtmUtils.wantLongHashSet(answer, "onlines");
+                }
+                callback.onResult(retmap,genRTMAnswer(answer,errorCode));
             }
         });
     }
@@ -95,15 +145,17 @@ class RTMGroup extends RTMFile {
     public MembersStruct getGroupMembers(long groupId){
         Quest quest = new Quest("getgroupmembers");
         quest.param("gid", groupId);
+        quest.param("online", true);
 
         Answer answer = sendQuest(quest);
         RTMAnswer result = genRTMAnswer(answer);
         MembersStruct ret = new MembersStruct();
         ret.errorCode = result.errorCode;
         ret.errorMsg = result.errorMsg;
-        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value())
-            ret.uids = rtmUtils.wantLongHashSet(answer,"uids");
-
+        if (ret.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
+            ret.uids = rtmUtils.wantLongHashSet(answer, "uids");
+            ret.onlineUids = rtmUtils.wantLongHashSet(answer, "onlines");
+        }
         return ret;
     }
 

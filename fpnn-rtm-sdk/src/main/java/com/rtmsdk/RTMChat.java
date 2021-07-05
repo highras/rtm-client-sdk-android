@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import com.rtmsdk.RTMStruct.UnreadNum;
 
 class RTMChat extends RTMRoom {
     private String defaultCodec = "AMR_WB";
@@ -161,19 +162,19 @@ class RTMChat extends RTMRoom {
         return getP2PUnread(uids,0, messageTypes);
     }
 
-    public void getP2PUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids){
+    public void getP2PUnread(final UserInterface.IRTMCallback<UnreadNum> callback, HashSet<Long> uids){
         getP2PUnread(callback,uids,0,null);
     }
 
-    public void getP2PUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids, List<Byte> messageTypes){
+    public void getP2PUnread(final UserInterface.IRTMCallback<UnreadNum> callback, HashSet<Long> uids, List<Byte> messageTypes){
         getP2PUnread(callback,uids,0,messageTypes);
     }
 
-    public void getGroupUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids) {
+    public void getGroupUnread(final UserInterface.IRTMCallback<UnreadNum> callback, HashSet<Long> gids) {
         getGroupUnread(callback,gids,0, null);
     }
 
-    public void getGroupUnread(final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long>gids, List<Byte> messageTypes) {
+    public void getGroupUnread(final UserInterface.IRTMCallback<UnreadNum> callback, HashSet<Long>gids, List<Byte> messageTypes) {
         getGroupUnread(callback,gids,0, messageTypes);
     }
         //重载end
@@ -585,12 +586,12 @@ class RTMChat extends RTMRoom {
 
     /**
      *获取p2p未读条目数(async)
-     * @param callback   IRTMCallback<Map<String, Integer>> 用户id，未读消息条目数
+     * @param callback   IRTMCallback<UnreadNum> 用户id，未读消息条目数
      * @param uids      用户id集合(建议通过getSession接口获取)
      * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
-     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，不包含自定义的type)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，只要是设置为保存的消息，均可获取未读)
      */
-    public void getP2PUnread(@NonNull final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes) {
+    public void getP2PUnread(@NonNull final UserInterface.IRTMCallback<RTMStruct.UnreadNum> callback, HashSet<Long> uids, long lastMessageTime, List<Byte> messageTypes) {
         Quest quest = new Quest("getp2punread");
         quest.param("uids",uids);
         if (lastMessageTime != 0)
@@ -598,45 +599,59 @@ class RTMChat extends RTMRoom {
         if (messageTypes != null)
             quest.param("mtypes",messageTypes);
 
+        final RTMStruct.UnreadNum res = new RTMStruct.UnreadNum();
+
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashMap<String, Integer> p2pUnread = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
+                    HashMap<String, Integer> p2pUnread = new HashMap<>();
+                    HashMap<String, Integer> p2pLtime = new HashMap<>();
                     Map<String, Integer> ob = (Map<String, Integer>)answer.want("p2p");
+                    Map<String, Integer> oc = (Map<String, Integer>)answer.want("ltime");
                     for (String uid:ob.keySet())
                         p2pUnread.put(uid,ob.get(uid));
+                    for (String session: oc.keySet())
+                        p2pLtime.put(session,oc.get(session));
+                    res.unreadInfo = p2pUnread;
+                    res.latestTime = p2pLtime;
                 }
-                callback.onResult(p2pUnread, genRTMAnswer(answer,errorCode));
+                callback.onResult(res, genRTMAnswer(answer,errorCode));
             }
         });
     }
 
     /**
      *获取群组未读条目数(async)
-     * @param callback   IRTMCallback<Map<String, Integer>> 群组id，未读消息条目数
+     * @param callback   IRTMCallback<UnreadNum> 群组id，未读消息条目数
      * @param gids      群组id集合(建议通过getSession接口获取)
      * @param lastMessageTime 最后一条消息的时间戳(毫秒)(如果不传默认用户最后一次下线时间,重连建议传入收到消息或者拉取历史的最后一次时间)
-     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，不包含自定义的type)
+     * @param messageTypes  消息类型集合(如果不传默认所有聊天,文件相关消息类型，只要是设置为保存的消息，均可获取未读)
      */
-    public void getGroupUnread(@NonNull final UserInterface.IRTMCallback<Map<String, Integer>> callback, HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes) {
+    public void getGroupUnread(@NonNull final UserInterface.IRTMCallback<RTMStruct.UnreadNum> callback, HashSet<Long> gids, long lastMessageTime, List<Byte> messageTypes) {
         Quest quest = new Quest("getgroupunread");
         quest.param("gids", gids);
         if (lastMessageTime != 0)
             quest.param("mtime",lastMessageTime);
         if (messageTypes != null)
             quest.param("mtypes",messageTypes);
-
+        final RTMStruct.UnreadNum res = new RTMStruct.UnreadNum();
+        final HashMap<String, Integer> groupUnread = new HashMap<>();
+        final HashMap<String, Integer> p2pLtime = new HashMap<>();
         sendQuest(quest, new FunctionalAnswerCallback() {
             @Override
             public void onAnswer(Answer answer, int errorCode) {
-                HashMap<String, Integer> p2pUnread = new HashMap<>();
                 if (errorCode == ErrorCode.FPNN_EC_OK.value()) {
                     Map<String, Integer> ob = (Map<String, Integer>)answer.want("group");
+                    Map<String, Integer> oc = (Map<String, Integer>)answer.want("ltime");
                     for (String uid:ob.keySet())
-                        p2pUnread.put(uid,ob.get(uid));
+                        groupUnread.put(uid,ob.get(uid));
+                    for (String session: oc.keySet())
+                        p2pLtime.put(session,oc.get(session));
                 }
-                callback.onResult(p2pUnread, genRTMAnswer(answer,errorCode));
+                res.unreadInfo = groupUnread;
+                res.latestTime = p2pLtime;
+                callback.onResult(res, genRTMAnswer(answer,errorCode));
             }
         });
     }
@@ -712,13 +727,18 @@ class RTMChat extends RTMRoom {
         RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         RTMStruct.UnreadNum res = new RTMStruct.UnreadNum();
         HashMap<String, Integer> groupUnread = new HashMap<>();
+        HashMap<String, Integer> p2pLtime = new HashMap<>();
 
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             Map<String, Integer> ob = (Map<String, Integer>)answer.want("group");
+            Map<String, Integer> oc = (Map<String, Integer>)answer.want("ltime");
             for (String uid:ob.keySet())
                 groupUnread.put(uid,ob.get(uid));
+            for (String session: oc.keySet())
+                p2pLtime.put(session,oc.get(session));
         }
         res.unreadInfo = groupUnread;
+        res.latestTime = p2pLtime;
         res.errorCode = result.errorCode;
         res.errorMsg = result.errorMsg;
         return res;
@@ -743,13 +763,18 @@ class RTMChat extends RTMRoom {
         RTMStruct.RTMAnswer result = genRTMAnswer(answer);
         RTMStruct.UnreadNum res = new RTMStruct.UnreadNum();
         HashMap<String, Integer> p2pUnread = new HashMap<>();
+        HashMap<String, Integer> p2pLtime = new HashMap<>();
 
         if (result.errorCode == RTMErrorCode.RTM_EC_OK.value()) {
             Map<String, Integer> ob = (Map<String, Integer>)answer.want("p2p");
+            Map<String, Integer> oc = (Map<String, Integer>)answer.want("ltime");
             for (String uid:ob.keySet())
                 p2pUnread.put(uid,ob.get(uid));
+            for (String session: oc.keySet())
+                p2pLtime.put(session,oc.get(session));
         }
         res.unreadInfo = p2pUnread;
+        res.latestTime = p2pLtime;
         res.errorCode = result.errorCode;
         res.errorMsg = result.errorMsg;
         return res;

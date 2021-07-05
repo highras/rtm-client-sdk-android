@@ -3,6 +3,8 @@ package com.fpnn.sdk;
 import android.util.Log;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -178,22 +180,19 @@ class ClientEngineCore extends Thread {
             catch (Exception e) {
                 succeed = false;
                 closedChannels.add(channel);
-
-                String peer = "<Get server address failed>";
                 try {
                     String name = "";
                     if (channel.socket().getInetAddress() != null)
                         name = channel.socket().getInetAddress().getHostName();
 
                     int port = channel.socket().getPort();
-//                        InetSocketAddress address = (InetSocketAddress) channel.socket().getInetAddress().getHostName();
-                    peer = name + ':' + port;
+                    InetAddress  dd  = channel.socket().getInetAddress();
                     channel.close();
                 }
                 catch (Exception e2) {
                 }
                 if (conn.errorRecorder != null)
-                    conn.errorRecorder.recordError("Finish connect action failed. Peer: " + peer, e);
+                    conn.errorRecorder.recordError("Finish connect action failed. address: " + conn.getAddress(), e);
             }
             conn.processConnectedEvent(succeed);
         }

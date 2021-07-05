@@ -51,6 +51,7 @@ public class RTMExampleQuestProcessor extends RTMPushProcessor {
     }
 
     public void kickout() {
+        MainActivity.hehe.setText("nihao");
         synchronized (interlock) {
             mylog.log("Received kickout.");
         }

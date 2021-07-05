@@ -9,6 +9,7 @@ import com.fpnn.sdk.proto.Answer;
 import com.fpnn.sdk.proto.Quest;
 import com.rtmsdk.RTMAudio;
 import com.rtmsdk.RTMClient;
+import com.rtmsdk.RTMStruct;
 import com.rtmsdk.RTMStruct.AttrsStruct;
 import com.rtmsdk.RTMStruct.AudioTextStruct;
 import com.rtmsdk.RTMStruct.CheckResult;
@@ -60,13 +61,14 @@ public class TestClass {
     public File audioSave;
     TestErrorRecorder mylogRecoder = new TestErrorRecorder();
     TestErrorRecorder1 mylogRecoder1 = new TestErrorRecorder1();
-    public long loginUid;
-    public String loginToken;
+    public long loginUid = 999;
+    public String loginToken = "1C68107913115A986993D9BB70768FFC";
     public Context appContext;
-    public String dispatchEndpoint = "161.189.171.91:13325";
-//    public String dispatchEndpoint = "rtm-nx-front.ilivedata.com:13325";
-//    public long pid = 11000002;
-    public long pid = 90000033;
+//    public String dispatchEndpoint = "161.189.171.91:13325";
+    public String dispatchEndpoint = "rtm-intl-frontgate.ilivedata2.com:13321";
+//    public String dispatchEndpoint = "";
+    public long pid = 11000001;
+//    public long pid = 90000033;
 
     public RTMClient client = null;
     Random rand = new Random();
@@ -500,9 +502,31 @@ public class TestClass {
         }
 
         void newInterface(){
-            client.bye();
-            client.closeRTM();
-            loginRTM1();
+            HashSet<Long> p2puids = new HashSet<>();
+            p2puids.add(100L);
+            RTMStruct.UnreadNum hehe9;
+//            hehe9 = client.getP2PUnread(p2puids);
+//            mylog.log(hehe9 + " ");
+//
+//
+//            client.getP2PUnread(new IRTMCallback<RTMStruct.UnreadNum>() {
+//                @Override
+//                public void onResult(RTMStruct.UnreadNum unreadNum, RTMAnswer answer) {
+//                    mylog.log("lala");
+//                }
+//            },p2puids);
+//
+            hehe9 = client.getGroupUnread(p2puids);
+            mylog.log(hehe9 + " ");
+
+            client.getGroupUnread(new IRTMCallback<RTMStruct.UnreadNum>() {
+                @Override
+                public void onResult(RTMStruct.UnreadNum unreadNum, RTMAnswer answer) {
+                    mylog.log("lala");
+                }
+            },p2puids);
+
+
 //        CheckResult pp1 = client.textCheck("System Notification");
 //        mylog.log("textCheck sync result is " + pp1.result);
 //
@@ -1215,7 +1239,10 @@ public class TestClass {
 
         void syncGroupTest(){
             MembersStruct answer = client.getGroupMembers(groupId);
-            outPutMsg(answer, "getGroupMembers", answer.toString());
+            outPutMsg(answer, "getGroupMembers", answer.onlineUids.toString() + " " + answer.uids.toString());
+
+            RTMStruct.GroupCount hehe = client.getGroupCount(groupId);
+            outPutMsg(hehe, "getGroupCount", hehe.totalCount + " " + hehe.onlineCount);
 
             RTMAnswer ret = client.addGroupMembers(groupId, uids);
             outPutMsg(ret, "addGroupMembers");
@@ -1241,13 +1268,20 @@ public class TestClass {
         }
 
         void asyncGroupTest(){
-            client.getGroupMembers(new IRTMCallback<HashSet<Long>>() {
+            client.getGroupMembers(new IRTMCallback<MembersStruct>() {
                 @Override
-                public void onResult(HashSet<Long> uids, RTMAnswer answer) {
-                    asyncOutPutMsg(answer,"getGroupMembers",uids!=null?uids.toString():"");
+                public void onResult(MembersStruct uidInfos, RTMAnswer answer) {
+                    asyncOutPutMsg(answer,"getGroupMembers",uidInfos.uids.toString() + " " + uidInfos.onlineUids.toString());
                 }
             },groupId);
 
+            client.getGroupCount(new IRTMCallback<RTMStruct.GroupCount>() {
+                @Override
+                public void onResult(RTMStruct.GroupCount groupCount, RTMAnswer answer) {
+                    asyncOutPutMsg(answer,"getGroupCount",groupCount.totalCount + " " + groupCount.onlineCount);
+
+                }
+            },groupId);
             client.addGroupMembers(new IRTMEmptyCallback() {
                 @Override
                 public void onResult(RTMAnswer answer) {
@@ -2176,12 +2210,50 @@ public class TestClass {
         }
     }
 
+
+    public void repeatLogin(Context context){
+        loginUid = 100;
+        loginToken = getToken(loginUid);
+        client  = new RTMClient(dispatchEndpoint, pid, loginUid, new RTMExampleQuestProcessor(loginUid),context);
+        client.setErrorRecoder(mylogRecoder);
+    }
+
+
+    public void exist(){
+        if (client == null)
+            return;;
+        client.bye();
+        client.closeRTM();
+        client= null;
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                if (client == null)
+//                    return;;
+//                client.bye();
+//                client.closeRTM();
+//            }
+//        }).start();
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                if (client == null)
+//                    return;;
+////                client.closeRTM();
+//                client= null;
+//            }
+//        }).start();
+
+    }
+
     public void loginRTM(Context context) {
         appContext = context;
-        loginUid = getuid();
-        loginToken = getToken(loginUid);
-        loginUid = 100;
-        loginToken = "80A905645083C5A5864AC0B51FAA604A";
+//        loginUid = getuid();
+//        loginUid = 100;
+//        loginToken = getToken(loginUid);
+//        loginToken = "80A905645083C5A5864AC0B51FAA604A";
 //        loginUid = 101;
 //        loginToken = "648606B9B32804704791AE1FEF69783A";
         client  = new RTMClient(dispatchEndpoint, pid, loginUid, new RTMExampleQuestProcessor(loginUid),context);
@@ -2200,6 +2272,18 @@ public class TestClass {
 //        }
 
 
+        client.login(new IRTMEmptyCallback() {
+            @Override
+            public void onResult(RTMAnswer answer) {
+                if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
+                    mylog.log("user " + loginUid + " login RTM success");
+                else
+                    mylog.log("user " + loginUid + " login RTM error:" + answer.getErrInfo());
+            }
+        },loginToken);
+        if(true)
+            return;
+        mylog.log("nihao send  login");
         RTMAnswer answer = client.login(loginToken);
 
         if (answer.errorCode ==ErrorCode.FPNN_EC_OK.value())
@@ -2319,7 +2403,7 @@ public class TestClass {
         return data;
     }
 
-    public void mySleep(int second) {
+    public static void mySleep(int second) {
         try {
             Thread.sleep(second*1000);
         } catch (InterruptedException e) {
