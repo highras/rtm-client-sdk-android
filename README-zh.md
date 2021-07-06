@@ -22,7 +22,7 @@
 - Add dependency in your module's build.gradle:
     ~~~
     dependencies {
-        implementation 'com.github.highras:rtm-android:2.4.3'
+        implementation 'com.github.highras:rtm-android:2.7.0'
     }
     ~~~
 ### 使用说明
