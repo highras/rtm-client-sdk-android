@@ -65,7 +65,7 @@ public class TestClass {
     public String loginToken = "1C68107913115A986993D9BB70768FFC";
     public Context appContext;
 //    public String dispatchEndpoint = "161.189.171.91:13325";
-    public String dispatchEndpoint = "rtm-intl-frontgate.ilivedata2.com:13321";
+    public String dispatchEndpoint = "rtm-intl-frontgate.ilivedata.com:13321";
 //    public String dispatchEndpoint = "";
     public long pid = 11000001;
 //    public long pid = 90000033;
